@@ -1,0 +1,31 @@
+services:
+    Jsor\Doctrine\PostGIS\Event\ORMSchemaEventSubscriber:
+        tags: [{ name: doctrine.event_subscriber, connection: default }]
+
+    # Required by the library (see vendor/jsor/doctrine-postgis README) for
+    # correct schema introspection of geometry/geography columns; not added
+    # by the Flex recipe, so wired here by hand.
+    Jsor\Doctrine\PostGIS\Driver\Middleware:
+        tags: [doctrine.middleware]
+
+doctrine:
+    dbal:
+        mapping_types:
+            _text: string
+        types:
+            geometry: 'Jsor\Doctrine\PostGIS\Types\GeometryType'
+            geography: 'Jsor\Doctrine\PostGIS\Types\GeographyType'
+    orm:
+        dql:
+            string_functions:
+                ST_AsGeoJSON: 'Jsor\Doctrine\PostGIS\Functions\ST_AsGeoJSON'
+                ST_GeomFromGeoJSON: 'Jsor\Doctrine\PostGIS\Functions\ST_GeomFromGeoJSON'
+                ST_AsText: 'Jsor\Doctrine\PostGIS\Functions\ST_AsText'
+                ST_GeomFromText: 'Jsor\Doctrine\PostGIS\Functions\ST_GeomFromText'
+                ST_GeomFromEWKT: 'Jsor\Doctrine\PostGIS\Functions\ST_GeomFromEWKT'
+                ST_Contains: 'Jsor\Doctrine\PostGIS\Functions\ST_Contains'
+                ST_Within: 'Jsor\Doctrine\PostGIS\Functions\ST_Within'
+                ST_DWithin: 'Jsor\Doctrine\PostGIS\Functions\ST_DWithin'
+                ST_Centroid: 'Jsor\Doctrine\PostGIS\Functions\ST_Centroid'
+            numeric_functions:
+                ST_Distance: 'Jsor\Doctrine\PostGIS\Functions\ST_Distance'
