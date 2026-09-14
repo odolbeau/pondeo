@@ -4,6 +4,13 @@ This is a Symfony project. Check `composer.json` for the exact Symfony/PHP versi
 in use, and read `symfony.lock` to see which recipes ran. Don't assume Doctrine,
 Twig, API Platform, Messenger, or Lock are installed unless one of those says so.
 
+## Folder-specific rules
+
+Some directories have rules of their own (naming, structure, …) beyond what's
+in this file. Before working on a file, check `.agents/rules/README.md` for an
+entry matching its directory — a match adds to (or overrides, if it conflicts)
+the rules here for that path.
+
 ## Ask before generating
 
 If the task doesn't specify, ask rather than guess:
