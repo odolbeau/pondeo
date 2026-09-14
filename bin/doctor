@@ -1,0 +1,29 @@
+#!/bin/bash
+
+RETURN=0
+
+# List of binaries that MUST be installed on the laptop
+REQUIRED_SOFTS=(composer docker make)
+
+for soft in "${REQUIRED_SOFTS[@]}"; do
+    if ! which "$soft" >/dev/null 2>&1; then
+        echo -e "\033[33mERROR\033[0m"
+        echo -e "\033[33mPlease install $soft on your laptop.\033[0m"
+        RETURN=1
+    else
+        echo -e "\033[32m$soft is correctly installed.\033[0m"
+    fi
+done
+
+if [ ! $RETURN -eq 0 ]; then
+    echo ""
+    echo -e "\033[31m#########################################################\033[0m"
+    echo -e "\033[31m#                   AN ERROR OCCURRED.                  #\033[0m"
+    echo -e "\033[31m#########################################################\033[0m"
+    echo -e "\033[31m#                                                       #\033[0m"
+    echo -e "\033[31m# Please follow instructions above and run bin/doctor.  #\033[0m"
+    echo -e "\033[31m#                                                       #\033[0m"
+    echo -e "\033[31m#########################################################\033[0m"
+fi
+
+exit $RETURN

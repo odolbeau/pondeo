@@ -1,0 +1,16 @@
+parameters:
+    level: max
+
+    paths:
+        - bin/
+        - config/
+        - public/
+        - src/
+        - tests/
+
+    excludePaths:
+        - config/reference.php
+        - public/index.php
+
+    doctrine:
+      objectManagerLoader: tests/doctrine-object-manager.php
