@@ -37,6 +37,7 @@ final class CommuneFactory extends PersistentObjectFactory
     {
         return [
             'departement' => DepartementFactory::new(),
+            'region' => RegionFactory::new(),
             'inseeCode' => self::faker()->text(5),
             'name' => self::faker()->text(255),
         ];
