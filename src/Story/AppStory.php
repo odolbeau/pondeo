@@ -4,71 +4,35 @@ declare(strict_types=1);
 
 namespace App\Story;
 
+use App\Entity\Commune;
 use App\Entity\ZoneCriterionValue;
 use App\Enum\CriterionValueType;
-use App\Enum\EpciType;
-use App\Factory\CommuneFactory;
 use App\Factory\CriterionFactory;
-use App\Factory\DepartementFactory;
-use App\Factory\EpciFactory;
 use App\Factory\PoiCategoryFactory;
 use App\Factory\PoiCommuneLocationFactory;
 use App\Factory\PoiFactory;
-use App\Factory\RegionFactory;
+use App\Repository\CommuneRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Zenstruck\Foundry\Attribute\AsFixture;
 use Zenstruck\Foundry\Story;
 
 /**
- * Minimal dev dataset — just enough to exercise both comparison patterns
- * (POI presence/brand and nearest-POI distance) end to end, not a real
- * import (see plan §8/§9: the actual INSEE/IGN/POI import pipeline is a
- * separate future task).
+ * Demo POI/criteria on real communes — requires `app:zones:import` to
+ * have run first.
  */
 #[AsFixture(name: 'main')]
 final class AppStory extends Story
 {
-    public function __construct(private readonly EntityManagerInterface $entityManager)
-    {
+    public function __construct(
+        private readonly EntityManagerInterface $entityManager,
+        private readonly CommuneRepository $communeRepository,
+    ) {
     }
 
     public function build(): void
     {
-        $region = RegionFactory::new()->create([
-            'inseeCode' => '11',
-            'name' => 'Île-de-France',
-            'boundary' => 'SRID=4326;MULTIPOLYGON(((1.4 48.1, 3.6 48.1, 3.6 49.3, 1.4 49.3, 1.4 48.1)))',
-        ]);
-
-        $departement = DepartementFactory::new()->create([
-            'inseeCode' => '91',
-            'name' => 'Essonne',
-            'region' => $region,
-            'boundary' => 'SRID=4326;MULTIPOLYGON(((2.0 48.3, 2.6 48.3, 2.6 48.8, 2.0 48.8, 2.0 48.3)))',
-        ]);
-
-        $epci = EpciFactory::new()->create([
-            'sirenCode' => '200084589',
-            'name' => 'CA Paris-Saclay',
-            'epciType' => EpciType::CommunauteDAgglomeration,
-            'boundary' => 'SRID=4326;MULTIPOLYGON(((2.15 48.65, 2.35 48.65, 2.35 48.80, 2.15 48.80, 2.15 48.65)))',
-        ]);
-
-        $massy = CommuneFactory::new()->create([
-            'inseeCode' => '91377',
-            'name' => 'Massy',
-            'departement' => $departement,
-            'epci' => $epci,
-            'boundary' => 'SRID=4326;MULTIPOLYGON(((2.27 48.72, 2.29 48.72, 2.29 48.74, 2.27 48.74, 2.27 48.72)))',
-        ]);
-
-        $palaiseau = CommuneFactory::new()->create([
-            'inseeCode' => '91477',
-            'name' => 'Palaiseau',
-            'departement' => $departement,
-            'epci' => $epci,
-            'boundary' => 'SRID=4326;MULTIPOLYGON(((2.24 48.70, 2.26 48.70, 2.26 48.72, 2.24 48.72, 2.24 48.70)))',
-        ]);
+        $massy = $this->findRealCommune('91377', 'Massy');
+        $palaiseau = $this->findRealCommune('91477', 'Palaiseau');
 
         $hardwareStoreCategory = PoiCategoryFactory::new()->create([
             'code' => 'hardware_store',
@@ -117,5 +81,11 @@ final class AppStory extends Story
         $this->entityManager->persist(ZoneCriterionValue::forZone($population, $palaiseau, 33_000));
         $this->entityManager->persist(ZoneCriterionValue::forZone($rainyDays, $massy, 111.5));
         $this->entityManager->flush();
+    }
+
+    private function findRealCommune(string $inseeCode, string $name): Commune
+    {
+        return $this->communeRepository->findOneBy(['inseeCode' => $inseeCode])
+            ?? throw new \LogicException(\sprintf('%s (%s) not found — run `bin/console app:zones:import` before loading fixtures.', $name, $inseeCode));
     }
 }

@@ -63,6 +63,10 @@ db-reset: ## Reset DB
 .PHONY: db-reset-test
 db-reset-test: ## Reset test DB
 	docker compose run --rm -e APP_ENV=test php bin/reset-db
+	@mkdir -p var && touch var/.test-db-ready
+
+var/.test-db-ready:
+	@$(MAKE) db-reset-test
 
 ##@ Assets commands
 .PHONY: assets-install
@@ -71,12 +75,12 @@ assets-install: ## Download assets dependencies
 
 ##@ Quality commands
 .PHONY: sanitize-and-check
-sanitize-and-check: phpstan rector-fix cs-fix db-reset-test test ## Run Rector, PHP-CS-fixer, PHPStan & tests
+sanitize-and-check: phpstan rector-fix cs-fix test ## Run Rector, PHP-CS-fixer, PHPStan & tests
 	docker compose run --rm -e APP_ENV=test php bin/console doctrine:schema:validate
 	docker compose run --rm php composer dump-autoload --optimize --strict-psr --strict-ambiguous
 
 .PHONY: test
-test: ## Run all tests
+test: var/.test-db-ready ## Run all tests
 	docker compose run --rm php rm -f var/cache/bab_tested_routes_checker_bundle_route_storage
 	docker compose run --rm php bin/phpunit
 	docker compose run --rm php bin/console bab:tested-routes-checker:check
