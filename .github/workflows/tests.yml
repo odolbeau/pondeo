@@ -8,7 +8,7 @@ jobs:
 
     services:
       database:
-        image: postgis:16
+        image: postgis/postgis:16-3.5
         env:
           POSTGRES_DB: app
           POSTGRES_PASSWORD: app
