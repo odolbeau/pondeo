@@ -7,6 +7,25 @@ doctrine:
         #server_version: '16'
 
         profiling_collect_backtrace: '%kernel.debug%'
+
+        # PostGIS ships its own schemas (topology, tiger, tiger_data) that
+        # Doctrine doesn't know about — exclude them so schema-diff/migrations
+        # don't try to drop them. See jsor/doctrine-postgis docs/symfony.md
+        # "Known Problems > PostGIS Schema Exclusion".
+        schema_filter: '~^(?!tiger)(?!tiger_data)(?!topology)~'
+
+        # NOTE on `doctrine:schema:validate` / `schema:update --dump-sql`:
+        # the GiST spatial indexes (on boundary/centroid/location columns)
+        # and the generated `centroid` columns are created by hand in
+        # migrations (see migrations/) but ARE properly modeled on the ORM
+        # side too — `#[ORM\Index(flags: ['spatial'])]` on the zone/Poi
+        # entities, and each `centroid` column's `default` option (see
+        # Region::$centroid's docblock) — so schema:validate should report
+        # 0 diffs. The zone_criterion_value CHECK constraints, on the other
+        # hand, are genuinely invisible to schema:validate either way:
+        # DBAL's PostgreSQLSchemaManager doesn't introspect CHECK
+        # constraints at all, so they never show up as drift in the first
+        # place (nothing to reconcile).
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore

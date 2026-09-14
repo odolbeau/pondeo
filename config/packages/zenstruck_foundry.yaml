@@ -4,6 +4,14 @@ when@dev: &dev
         persistence:
             # Flush only once per call of `PersistentObjectFactory::create()`
             flush_once: true
+        orm:
+            reset:
+                # Default SCHEMA mode rebuilds the DB straight from ORM
+                # mapping (SchemaTool), bypassing migrations entirely — so
+                # it never runs our migration's `CREATE EXTENSION postgis`,
+                # and fixture loading fails with "type geometry does not
+                # exist". MIGRATE mode runs the real migrations instead.
+                mode: !php/enum Zenstruck\Foundry\ORM\ResetDatabase\ResetDatabaseMode::MIGRATE
 
     # If you use the `make:factory --test` command, you may need to uncomment the following.
     # See https://symfony.com/bundles/ZenstruckFoundryBundle/current/index.html#generate
