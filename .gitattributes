@@ -1,0 +1,2 @@
+resources/geo/*.csv filter=lfs diff=lfs merge=lfs -text
+resources/geo/*.geojson filter=lfs diff=lfs merge=lfs -text
