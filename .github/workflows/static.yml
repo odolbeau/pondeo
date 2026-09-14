@@ -33,6 +33,9 @@ jobs:
         with:
           php-version: 8.5
 
+      - name: Download dependencies
+        uses: ramsey/composer-install@v4
+
       - name: PHP-CS-Fixer
         run: vendor/bin/php-cs-fixer fix --dry-run --diff --config=.php-cs-fixer.dist.php
 
@@ -69,6 +72,9 @@ jobs:
         uses: shivammathur/setup-php@v2
         with:
           php-version: 8.5
+
+      - name: Download dependencies
+        uses: ramsey/composer-install@v4
 
       - name: Twig CS Fixer
         run: vendor/bin/twig-cs-fixer lint
