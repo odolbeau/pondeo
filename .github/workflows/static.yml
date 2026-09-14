@@ -131,6 +131,16 @@ jobs:
         shell: bash
         run: composer audit
 
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install front dependencies
+        shell: bash
+        run: npm ci
+
       - name: Check whether a front dependency is compromised
         shell: bash
-        run: bin/console importmap:audit
+        run: npm audit

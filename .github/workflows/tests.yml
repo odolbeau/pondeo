@@ -38,8 +38,14 @@ jobs:
         with:
           composer-options: "--optimize-autoloader"
 
-      - name: Install assets
-        run: bin/console importmap:install
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build assets
+        run: npm ci && npm run build
 
       - name: Create database
         run: bin/reset-db

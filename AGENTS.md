@@ -52,6 +52,8 @@ Three specifics worth spelling out, because they are easy to get wrong:
 
 ## Everyday workflow
 
+- Before considering a change done, run `make sanitize-and-check` (Rector,
+  PHP-CS-Fixer, PHPStan, tests) and fix whatever it flags.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
   (`feat:`, `fix:`, `chore:`, ...).
 - When something fails, read `var/log/dev.log` and the web profiler
@@ -106,5 +108,5 @@ AI Mate: project diagnostic tools, exposed through the `docker compose run --rm 
 - Invocation: always run Mate as `docker compose run --rm php vendor/bin/mate`; another interpreter reports on a runtime that is not this application's, and Mate refuses to start under one.
 - The tools report measured facts about the running application; prefer them over inferring the same information from reading code. They are described in `mate/AGENT_INSTRUCTIONS.md`.
 - Discover the tool surface with `docker compose run --rm php vendor/bin/mate tools:list`, inspect parameters with `tools:inspect <tool>`, and run a tool with `tools:call <tool> --<param>=<value>` (add `--format=json` for machine-readable output).
-- Installed extensions: See `mate/extensions.php`.
+- Installed extensions: symfony/ai-mate.
 <!-- END AI_MATE_INSTRUCTIONS -->
