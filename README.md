@@ -11,3 +11,7 @@ make install
 ```
 
 Then visit <http://pondeo.localhost>.
+
+## Documentation
+
+Project documentation lives under [`docs/`](docs/), in English.

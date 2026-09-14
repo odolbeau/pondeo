@@ -72,7 +72,13 @@ class Commune implements ZoneInterface
     #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
     private ?Epci $epci = null;
 
-    public function __construct(string $inseeCode, string $name, Departement $departement)
+    /**
+     * $region is taken explicitly rather than derived from
+     * `$departement->getRegion()` so that both arguments can safely be
+     * unloaded Doctrine references (see ZoneImporter) — dereferencing one
+     * to read the other would force a premature hydration.
+     */
+    public function __construct(string $inseeCode, string $name, Departement $departement, Region $region)
     {
         $this->id = Uuid::v7();
         $this->createdAt = new \DateTimeImmutable();
@@ -80,7 +86,7 @@ class Commune implements ZoneInterface
         $this->inseeCode = $inseeCode;
         $this->name = $name;
         $this->departement = $departement;
-        $this->region = $departement->getRegion();
+        $this->region = $region;
     }
 
     public function getCode(): string
