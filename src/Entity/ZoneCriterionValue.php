@@ -15,7 +15,8 @@ use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
 /**
- * Fact table (EAV-style): one row = one criterion's value for one zone.
+ * Fact table (EAV-style): one row = one criterion's value for one zone, for
+ * one reference year ($period — e.g. an INSEE census year).
  *
  * Exactly one of $commune/$epci/$departement/$region is set (matching
  * $zoneType), and exactly one of the typed value columns is set (matching
@@ -23,9 +24,16 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
  * below and, as defense-in-depth, by a CHECK constraint added by hand in
  * the migration (see plan §6/§2.6 — Doctrine attributes can't express
  * cross-column CHECK constraints).
+ *
+ * Uniqueness is NOT declared via #[ORM\UniqueConstraint] here: a plain SQL
+ * UNIQUE constraint across commune_id/epci_id/departement_id/region_id
+ * doesn't actually constrain anything, because SQL never considers two
+ * NULLs equal — and for any given row, three of those four columns are
+ * always NULL. Enforced instead by 4 partial unique indexes (one per zone
+ * type, `WHERE <fk> IS NOT NULL`), added by hand in the migration — same
+ * "Doctrine attributes can't express this" pattern as the GiST indexes.
  */
 #[ORM\Entity(repositoryClass: ZoneCriterionValueRepository::class)]
-#[ORM\UniqueConstraint(columns: ['criterion_id', 'zone_type', 'commune_id', 'epci_id', 'departement_id', 'region_id'])]
 #[Assert\Callback('validateExactlyOneZoneAndValue')]
 class ZoneCriterionValue
 {
@@ -40,6 +48,10 @@ class ZoneCriterionValue
 
     #[ORM\Column(length: 20, enumType: ZoneType::class)]
     private ZoneType $zoneType;
+
+    /** Reference year of this value (e.g. an INSEE census year). */
+    #[ORM\Column(type: 'smallint')]
+    private int $period;
 
     #[ORM\ManyToOne(targetEntity: Commune::class)]
     #[ORM\JoinColumn(nullable: true, onDelete: 'CASCADE')]
@@ -69,20 +81,27 @@ class ZoneCriterionValue
     #[ORM\Column(nullable: true)]
     private ?bool $valueBoolean = null;
 
-    private function __construct(Criterion $criterion, ZoneInterface $zone, int|float|string|bool $value)
+    private function __construct(Criterion $criterion, ZoneInterface $zone, int|float|string|bool $value, int $period)
     {
         $this->id = Uuid::v7();
         $this->createdAt = new \DateTimeImmutable();
         $this->updatedAt = $this->createdAt;
         $this->criterion = $criterion;
         $this->zoneType = $zone->getType();
+        $this->period = $period;
         $this->assignZone($zone);
         $this->assignValue($criterion->getValueType(), $value);
     }
 
-    public static function forZone(Criterion $criterion, ZoneInterface $zone, int|float|string|bool $value): self
+    public static function forZone(Criterion $criterion, ZoneInterface $zone, int|float|string|bool $value, int $period): self
     {
-        return new self($criterion, $zone, $value);
+        return new self($criterion, $zone, $value, $period);
+    }
+
+    /** Update path for an existing (criterion, zone, period) row — see forZone(). */
+    public function setValue(int|float|string|bool $value): void
+    {
+        $this->assignValue($this->criterion->getValueType(), $value);
     }
 
     private function assignZone(ZoneInterface $zone): void
@@ -114,6 +133,11 @@ class ZoneCriterionValue
     public function getZoneType(): ZoneType
     {
         return $this->zoneType;
+    }
+
+    public function getPeriod(): int
+    {
+        return $this->period;
     }
 
     public function getZone(): ZoneInterface

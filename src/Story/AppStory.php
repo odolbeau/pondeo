@@ -60,13 +60,10 @@ final class AppStory extends Story
         ]);
         PoiCommuneLocationFactory::new()->create(['poi' => $powerPlant, 'commune' => $palaiseau]);
 
-        $population = CriterionFactory::new()->create([
-            'code' => 'population',
-            'label' => 'Population',
-            'unit' => 'hab.',
-            'valueType' => CriterionValueType::Integer,
-        ]);
-
+        // No fictional "population" criterion here: `app:criteria:population:import`
+        // already gives Massy/Palaiseau real values, and Foundry's create()
+        // would collide on the "population" code (it inserts, it doesn't
+        // find-or-create).
         $rainyDays = CriterionFactory::new()->create([
             'code' => 'avg_annual_rainy_days',
             'label' => 'Jours de pluie (moyenne annuelle)',
@@ -77,9 +74,7 @@ final class AppStory extends Story
         // ZoneCriterionValue has no persistence factory (its constructor is
         // private — see plan §2.6/§3): built via its own named constructor
         // and persisted directly.
-        $this->entityManager->persist(ZoneCriterionValue::forZone($population, $massy, 50_000));
-        $this->entityManager->persist(ZoneCriterionValue::forZone($population, $palaiseau, 33_000));
-        $this->entityManager->persist(ZoneCriterionValue::forZone($rainyDays, $massy, 111.5));
+        $this->entityManager->persist(ZoneCriterionValue::forZone($rainyDays, $massy, 111.5, 2023));
         $this->entityManager->flush();
     }
 
