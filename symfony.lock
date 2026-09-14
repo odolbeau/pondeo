@@ -95,21 +95,6 @@
             "bin/phpunit"
         ]
     },
-    "symfony/asset-mapper": {
-        "version": "8.1",
-        "recipe": {
-            "repo": "github.com/symfony/recipes",
-            "branch": "main",
-            "version": "6.4",
-            "ref": "c01c47af2ec66a74ec046eccb919cfe27d3464ec"
-        },
-        "files": [
-            "assets/app.js",
-            "assets/styles/app.css",
-            "config/packages/asset_mapper.yaml",
-            "importmap.php"
-        ]
-    },
     "symfony/console": {
         "version": "8.1",
         "recipe": {
@@ -248,6 +233,20 @@
         },
         "files": [
             "config/packages/property_info.yaml"
+        ]
+    },
+    "symfony/reprise": {
+        "version": "1.1",
+        "recipe": {
+            "repo": "github.com/symfony/recipes",
+            "branch": "main",
+            "version": "1.1",
+            "ref": "7cd4e200a8b8a7d48a146c9221863a2ad6533219"
+        },
+        "files": [
+            "assets/app.js",
+            "assets/styles/app.css",
+            "config/packages/reprise.yaml"
         ]
     },
     "symfony/routing": {

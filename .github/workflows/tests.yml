@@ -8,7 +8,7 @@ jobs:
 
     services:
       database:
-        image: postgres:16
+        image: postgis/postgis:16-3.5
         env:
           POSTGRES_DB: app
           POSTGRES_PASSWORD: app
@@ -38,8 +38,14 @@ jobs:
         with:
           composer-options: "--optimize-autoloader"
 
-      - name: Install assets
-        run: bin/console importmap:install
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Build assets
+        run: npm ci && npm run build
 
       - name: Create database
         run: bin/reset-db

@@ -1,6 +1,10 @@
 .DEFAULT_GOAL := help
 SHELL := bash
 
+# Silences `docker compose`'s "[+] Running ..." / "Container ... Creating/Created"
+# progress lines — keeps only the actual command output.
+export COMPOSE_PROGRESS := quiet
+
 .PHONY: help
 help:
 	@echo -e "\033[1;36mAVAILABLE COMMANDS :\033[0m"
@@ -24,7 +28,7 @@ vendors-install: ## Install vendors
 .PHONY: vendors-update
 vendors-update: ## Update all vendors
 	docker compose run --rm php composer up
-	docker compose run --rm php bin/console importmap:update
+	docker compose run --rm node npm update
 
 ##@ Docker commands
 .PHONY: build
@@ -71,7 +75,7 @@ var/.test-db-ready:
 ##@ Assets commands
 .PHONY: assets-install
 assets-install: ## Download assets dependencies
-	docker compose run --rm php bin/console importmap:install
+	docker compose run --rm node npm install
 
 ##@ Quality commands
 .PHONY: sanitize-and-check
