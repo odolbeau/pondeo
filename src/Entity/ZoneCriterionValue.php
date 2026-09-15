@@ -142,8 +142,12 @@ class ZoneCriterionValue
 
     public function getZone(): ZoneInterface
     {
-        return $this->commune ?? $this->epci ?? $this->departement ?? $this->region
-            ?? throw new \LogicException('ZoneCriterionValue has no zone set.');
+        $zone = $this->commune ?? $this->epci ?? $this->departement ?? $this->region;
+        if (null === $zone) {
+            throw new \LogicException('ZoneCriterionValue has no zone set.');
+        }
+
+        return $zone;
     }
 
     /**
@@ -156,11 +160,20 @@ class ZoneCriterionValue
     public function getTypedValue(): int|float|string|bool
     {
         return match ($this->criterion->getValueType()) {
-            CriterionValueType::Decimal => null !== $this->valueDecimal ? (float) $this->valueDecimal : throw new \LogicException('valueDecimal is not set.'),
-            CriterionValueType::Integer => $this->valueInteger ?? throw new \LogicException('valueInteger is not set.'),
-            CriterionValueType::Text => $this->valueText ?? throw new \LogicException('valueText is not set.'),
-            CriterionValueType::Boolean => $this->valueBoolean ?? throw new \LogicException('valueBoolean is not set.'),
+            CriterionValueType::Decimal => (float) $this->requireValue($this->valueDecimal, 'valueDecimal'),
+            CriterionValueType::Integer => $this->requireValue($this->valueInteger, 'valueInteger'),
+            CriterionValueType::Text => $this->requireValue($this->valueText, 'valueText'),
+            CriterionValueType::Boolean => $this->requireValue($this->valueBoolean, 'valueBoolean'),
         };
+    }
+
+    private function requireValue(int|float|string|bool|null $value, string $field): int|float|string|bool
+    {
+        if (null === $value) {
+            throw new \LogicException("{$field} is not set.");
+        }
+
+        return $value;
     }
 
     public function validateExactlyOneZoneAndValue(ExecutionContextInterface $context): void

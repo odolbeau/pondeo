@@ -80,7 +80,11 @@ final class AppStory extends Story
 
     private function findRealCommune(string $inseeCode, string $name): Commune
     {
-        return $this->communeRepository->findOneBy(['inseeCode' => $inseeCode])
-            ?? throw new \LogicException(\sprintf('%s (%s) not found — run `bin/console app:zones:import` before loading fixtures.', $name, $inseeCode));
+        $commune = $this->communeRepository->findOneBy(['inseeCode' => $inseeCode]);
+        if (null === $commune) {
+            throw new \LogicException(\sprintf('%s (%s) not found — run `bin/console app:zones:import` before loading fixtures.', $name, $inseeCode));
+        }
+
+        return $commune;
     }
 }

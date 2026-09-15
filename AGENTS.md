@@ -3,11 +3,11 @@
 This is a Symfony project. Check `composer.json` for the exact Symfony/PHP version
 in use, and read `symfony.lock` to see which recipes ran.
 
-## Folder-specific rules
+## Rules index
 
-Some directories have rules of their own (naming, structure, …) beyond what's
-in this file. Before working on a file, check `.agents/rules/README.md` for an
-entry matching its directory — a match adds to (or overrides, if it conflicts)
+`.agents/rules/README.md` centralizes code style rules and an index of rules
+scoped to specific directories (naming, structure, …). Before working on a
+file, check it — a directory entry adds to (or overrides, if it conflicts)
 the rules here for that path.
 
 ## Adding features: Flex, not hand-wiring
@@ -79,12 +79,7 @@ root `README.md` stays a short entry point that links into `docs/`.
 
 ## Code style
 
-Run `make cs-fix` to correct all files.
-
-Comments are for the *why* — a non-obvious constraint, a tradeoff, a gotcha
-that bit someone. Don't narrate the *what* when the code already says it.
-Keep them short; a paragraph explaining something the reader can get from the
-code and a couple of words is a sign to cut it, not polish it.
+See `.agents/rules/README.md` for code style rules (comments, control flow).
 
 ## Discover, don't guess
 

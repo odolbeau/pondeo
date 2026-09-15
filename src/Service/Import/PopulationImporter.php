@@ -69,8 +69,11 @@ final readonly class PopulationImporter
             $existingId = $existingIdsByCommuneAndPeriod[$communeId->toRfc4122().'-'.$period] ?? null;
 
             if (null === $existingId) {
-                $communeRef = $this->entityManager->getReference(Commune::class, $communeId)
-                    ?? throw new \LogicException("No reference for commune id {$communeId}.");
+                $communeRef = $this->entityManager->getReference(Commune::class, $communeId);
+                if (null === $communeRef) {
+                    throw new \LogicException("No reference for commune id {$communeId}.");
+                }
+
                 $this->entityManager->persist(ZoneCriterionValue::forZone($criterion, $communeRef, $population, $period));
             } else {
                 $connection->executeStatement(
@@ -95,8 +98,12 @@ final readonly class PopulationImporter
 
     private function fetchCriterion(Uuid $id): Criterion
     {
-        return $this->entityManager->getRepository(Criterion::class)->find($id)
-            ?? throw new \LogicException("Population criterion {$id} vanished.");
+        $criterion = $this->entityManager->getRepository(Criterion::class)->find($id);
+        if (null === $criterion) {
+            throw new \LogicException("Population criterion {$id} vanished.");
+        }
+
+        return $criterion;
     }
 
     private function findOrCreatePopulationCriterion(): Criterion

@@ -71,10 +71,15 @@ final readonly class ZoneImporter
             // france-geojson's départements file has no région code in its
             // properties — resolved from the commune↔EPCI CSV instead
             // (which does carry both dep_code and reg_code per row).
-            $regionCode = $regionCodeByDepartementCode[$code]
-                ?? throw new \RuntimeException(\sprintf('No région mapped for département %s (%s).', $code, $name));
-            $region = $this->regionRepository->findOneBy(['inseeCode' => $regionCode])
-                ?? throw new \RuntimeException(\sprintf('Région %s not found — run importRegions() first.', $regionCode));
+            $regionCode = $regionCodeByDepartementCode[$code] ?? null;
+            if (null === $regionCode) {
+                throw new \RuntimeException(\sprintf('No région mapped for département %s (%s).', $code, $name));
+            }
+
+            $region = $this->regionRepository->findOneBy(['inseeCode' => $regionCode]);
+            if (null === $region) {
+                throw new \RuntimeException(\sprintf('Région %s not found — run importRegions() first.', $regionCode));
+            }
 
             $departement = $this->departementRepository->findOneBy(['inseeCode' => $code]);
             if (null === $departement) {
@@ -139,10 +144,16 @@ final readonly class ZoneImporter
                 // Managed references (no DB hit) — never dereferenced, so
                 // safe to use as relation targets even across the periodic
                 // clear() below (see Commune's constructor docblock).
-                $departementRef = $this->entityManager->getReference(Departement::class, $departementId)
-                    ?? throw new \LogicException("No reference for département id {$departementId}.");
-                $regionRef = $this->entityManager->getReference(Region::class, $regionId)
-                    ?? throw new \LogicException("No reference for région id {$regionId}.");
+                $departementRef = $this->entityManager->getReference(Departement::class, $departementId);
+                if (null === $departementRef) {
+                    throw new \LogicException("No reference for département id {$departementId}.");
+                }
+
+                $regionRef = $this->entityManager->getReference(Region::class, $regionId);
+                if (null === $regionRef) {
+                    throw new \LogicException("No reference for région id {$regionId}.");
+                }
+
                 $commune = new Commune($code, $name, $departementRef, $regionRef);
                 $this->entityManager->persist($commune);
                 $communeId = $commune->getId();
