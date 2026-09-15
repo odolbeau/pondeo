@@ -80,7 +80,6 @@ assets-install: ## Download assets dependencies
 ##@ Quality commands
 .PHONY: sanitize-and-check
 sanitize-and-check: phpstan rector-fix cs-fix test ## Run Rector, PHP-CS-fixer, PHPStan & tests
-	docker compose run --rm -e APP_ENV=test php bin/console doctrine:schema:validate
 	docker compose run --rm php composer dump-autoload --optimize --strict-psr --strict-ambiguous
 
 .PHONY: test

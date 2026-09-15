@@ -32,6 +32,7 @@ final readonly class ZoneImporter
         private DepartementRepository $departementRepository,
         private EpciRepository $epciRepository,
         private CommuneRepository $communeRepository,
+        private CsvReader $csvReader,
     ) {
     }
 
@@ -175,7 +176,7 @@ final readonly class ZoneImporter
     public function buildDepartementRegionMap(string $csvPath): array
     {
         $map = [];
-        foreach ($this->readCsv($csvPath) as $row) {
+        foreach ($this->csvReader->read($csvPath) as $row) {
             $map[$row['dep_code']] ??= $row['reg_code'];
         }
 
@@ -203,7 +204,7 @@ final readonly class ZoneImporter
         $connection = $this->entityManager->getConnection();
         $count = 0;
 
-        foreach ($this->readCsv($csvPath) as $row) {
+        foreach ($this->csvReader->read($csvPath) as $row) {
             if ('COM' !== $row['typecom']) {
                 continue; // Skip communes déléguées/arrondissements (Paris/Lyon/Marseille) — out of v1 scope.
             }
@@ -297,30 +298,6 @@ final readonly class ZoneImporter
         foreach ($data['features'] as $feature) {
             yield [$feature['properties']['code'], $feature['properties']['nom'], $feature['geometry']];
         }
-    }
-
-    /**
-     * @return iterable<array{code_insee: string, typecom: string, dep_code: string, reg_code: string, epci_code: string, epci_nom: string}>
-     */
-    private function readCsv(string $csvPath): iterable
-    {
-        $handle = fopen($csvPath, 'r') ?: throw new \RuntimeException("Cannot read {$csvPath}");
-        $header = array_map(strval(...), fgetcsv($handle, escape: '\\') ?: throw new \RuntimeException("Empty CSV: {$csvPath}"));
-
-        while (false !== ($row = fgetcsv($handle, escape: '\\'))) {
-            /** @var array<string, string> $associative */
-            $associative = array_combine($header, array_map(strval(...), $row));
-            yield [
-                'code_insee' => $associative['code_insee'],
-                'typecom' => $associative['typecom'],
-                'dep_code' => $associative['dep_code'],
-                'reg_code' => $associative['reg_code'],
-                'epci_code' => $associative['epci_code'],
-                'epci_nom' => $associative['epci_nom'],
-            ];
-        }
-
-        fclose($handle);
     }
 
     /**

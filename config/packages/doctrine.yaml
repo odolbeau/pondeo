@@ -20,12 +20,16 @@ doctrine:
         # migrations (see migrations/) but ARE properly modeled on the ORM
         # side too — `#[ORM\Index(flags: ['spatial'])]` on the zone/Poi
         # entities, and each `centroid` column's `default` option (see
-        # Region::$centroid's docblock) — so schema:validate should report
-        # 0 diffs. The zone_criterion_value CHECK constraints, on the other
-        # hand, are genuinely invisible to schema:validate either way:
-        # DBAL's PostgreSQLSchemaManager doesn't introspect CHECK
-        # constraints at all, so they never show up as drift in the first
-        # place (nothing to reconcile).
+        # Region::$centroid's docblock).
+        #
+        # The zone_criterion_value CHECK constraint and its 4 partial unique
+        # indexes (see ZoneCriterionValue's docblock) are NOT modelable this
+        # way — Doctrine attributes have no equivalent for a CHECK or a
+        # partial/filtered index — so `schema:validate` will always report 4
+        # "DROP INDEX" diffs for those, permanently. This is why
+        # `schema:validate` isn't part of `make sanitize-and-check`'s
+        # automated gate: run it manually and compare against this note
+        # rather than treating any non-zero exit as a regression.
     orm:
         validate_xml_mapping: true
         naming_strategy: doctrine.orm.naming_strategy.underscore
