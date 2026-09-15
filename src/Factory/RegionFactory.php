@@ -36,7 +36,7 @@ final class RegionFactory extends PersistentObjectFactory
     protected function defaults(): array
     {
         return [
-            'inseeCode' => self::faker()->numerify('##'),
+            'inseeCode' => self::faker()->numerify('###'),
             'name' => self::faker()->text(255),
         ];
     }

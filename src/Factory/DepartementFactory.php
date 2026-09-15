@@ -36,7 +36,7 @@ final class DepartementFactory extends PersistentObjectFactory
     protected function defaults(): array
     {
         return [
-            'inseeCode' => self::faker()->numerify('##'),
+            'inseeCode' => self::faker()->numerify('###'),
             'name' => self::faker()->text(255),
             'region' => RegionFactory::new(),
         ];
