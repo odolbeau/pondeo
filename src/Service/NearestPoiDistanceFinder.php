@@ -22,13 +22,6 @@ use Symfony\Component\Uid\Uuid;
  */
 final readonly class NearestPoiDistanceFinder
 {
-    private const array TABLE_BY_ZONE_TYPE = [
-        ZoneType::Commune->value => 'commune',
-        ZoneType::Epci->value => 'epci',
-        ZoneType::Departement->value => 'departement',
-        ZoneType::Region->value => 'region',
-    ];
-
     public function __construct(private Connection $connection)
     {
     }
@@ -39,7 +32,7 @@ final readonly class NearestPoiDistanceFinder
      */
     public function distanceToNearestPoi(ZoneType $zoneType, Uuid $zoneId, PoiCategory $category): ?float
     {
-        $table = self::TABLE_BY_ZONE_TYPE[$zoneType->value];
+        $table = $zoneType->tableName();
 
         $result = $this->connection->fetchOne(
             <<<SQL

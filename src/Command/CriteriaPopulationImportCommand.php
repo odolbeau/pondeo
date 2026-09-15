@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Enum\CriterionValueType;
 use App\Enum\ZoneType;
+use App\Service\Import\CriterionAggregator;
 use App\Service\Import\CriterionCsvSpec;
 use App\Service\Import\CsvCriterionImporter;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -16,13 +17,15 @@ use Symfony\Component\Console\Style\SymfonyStyle;
 
 #[AsCommand(
     name: 'app:criteria:population:import',
-    description: 'Import the population criterion (all years) from resources/geo/population-historique.csv',
+    description: 'Import the population criterion (all years) from resources/geo/population-historique.csv, then aggregate it up to EPCI/département/région',
     help: 'Idempotent — safe to re-run. See <comment>app:criteria:population:download</comment> to refresh the source file first.',
 )]
 final class CriteriaPopulationImportCommand extends Command
 {
-    public function __construct(private readonly CsvCriterionImporter $csvCriterionImporter)
-    {
+    public function __construct(
+        private readonly CsvCriterionImporter $csvCriterionImporter,
+        private readonly CriterionAggregator $criterionAggregator,
+    ) {
         parent::__construct();
     }
 
@@ -47,7 +50,14 @@ final class CriteriaPopulationImportCommand extends Command
         );
 
         $count = $this->csvCriterionImporter->import($spec, $csvPath);
-        $io->success(\sprintf('%d population values imported.', $count));
+        $io->writeln(\sprintf('%d commune-level population values imported.', $count));
+
+        foreach ([ZoneType::Epci, ZoneType::Departement, ZoneType::Region] as $zoneType) {
+            $aggregated = $this->criterionAggregator->aggregate('population', $zoneType);
+            $io->writeln(\sprintf('%s: %d values aggregated.', $zoneType->value, $aggregated));
+        }
+
+        $io->success('Population imported and aggregated to EPCI/département/région.');
 
         return Command::SUCCESS;
     }

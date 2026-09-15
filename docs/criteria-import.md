@@ -30,9 +30,16 @@ Source: INSEE's [Mélodi API](https://portail-api.insee.fr/), dataset
 
 ```
 bin/console app:criteria:population:download   # refresh the vendored CSV
-bin/console app:criteria:population:import      # upsert into the DB (all years at once)
+bin/console app:criteria:population:import      # upsert into the DB, then aggregate up to EPCI/département/région
 ```
 
-Commune-level only for now — no EPCI/département/région aggregation yet
-(would be a `SUM(...) GROUP BY` over member communes, same idea as
-`ZoneImporter::computeEpciBoundaries()`'s `ST_Union`).
+## Aggregating up from communes
+
+Some criteria are meaningfully additive across a zone's member communes (e.g.
+population is a straight sum); others aren't (e.g. an average temperature
+shouldn't be summed). For the former, a shared aggregator sums a criterion's
+commune-level values up to EPCI/département/région and upserts the result the
+same way the CSV import does — idempotent, versioned by `period`. Aggregation
+is opt-in per criterion, wired into that criterion's own import command
+(see `CriteriaPopulationImportCommand` for the reference example), not run
+automatically for every criterion.

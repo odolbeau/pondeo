@@ -4,60 +4,26 @@ declare(strict_types=1);
 
 namespace App\Service\Import;
 
-use App\Entity\Commune;
 use App\Entity\Criterion;
-use App\Entity\Departement;
-use App\Entity\Epci;
-use App\Entity\Region;
-use App\Entity\ZoneInterface;
 use App\Enum\CriterionValueType;
 use App\Enum\ZoneType;
 use App\Repository\CriterionRepository;
-use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
  * Generic CSV → ZoneCriterionValue importer, driven by a {@see CriterionCsvSpec}.
  * Covers any criterion shaped as one CSV row = one (zone code, period,
- * value) tuple — which is every criterion so far. Upserts in batches via a
- * single `INSERT ... ON CONFLICT ... DO UPDATE` per batch, targeting the
- * partial unique index for the criterion's zone type (see
- * ZoneCriterionValue's docblock) — handles create and update uniformly,
- * without preloading existing rows or going through the ORM per row.
+ * value) tuple — which is every criterion so far. Delegates the actual
+ * upsert to {@see ZoneCriterionValueWriter}.
  */
 final readonly class CsvCriterionImporter
 {
-    private const int BATCH_SIZE = 500;
-
-    /** @var array<string, class-string<ZoneInterface>> */
-    private const array ZONE_ENTITY_CLASS_BY_TYPE = [
-        ZoneType::Commune->value => Commune::class,
-        ZoneType::Epci->value => Epci::class,
-        ZoneType::Departement->value => Departement::class,
-        ZoneType::Region->value => Region::class,
-    ];
-
-    // Never interpolated from external input — same "fixed allowlist"
-    // principle as NearestPoiDistanceFinder::TABLE_BY_ZONE_TYPE.
-    private const array FK_COLUMN_BY_ZONE_TYPE = [
-        ZoneType::Commune->value => 'commune_id',
-        ZoneType::Epci->value => 'epci_id',
-        ZoneType::Departement->value => 'departement_id',
-        ZoneType::Region->value => 'region_id',
-    ];
-
-    private const array VALUE_COLUMN_BY_VALUE_TYPE = [
-        CriterionValueType::Integer->value => 'value_integer',
-        CriterionValueType::Decimal->value => 'value_decimal',
-        CriterionValueType::Text->value => 'value_text',
-        CriterionValueType::Boolean->value => 'value_boolean',
-    ];
-
     public function __construct(
         private EntityManagerInterface $entityManager,
         private CriterionRepository $criterionRepository,
         private CsvReader $csvReader,
+        private ZoneCriterionValueWriter $zoneCriterionValueWriter,
     ) {
     }
 
@@ -66,10 +32,9 @@ final readonly class CsvCriterionImporter
         $criterionId = $this->findOrCreateCriterion($spec)->getId();
         $zoneIdsByCode = $this->loadZoneIdsByCode($spec->zoneType);
 
-        $connection = $this->entityManager->getConnection();
         $zoneType = $spec->zoneType;
-        $fkColumn = self::FK_COLUMN_BY_ZONE_TYPE[$zoneType->value];
-        $valueColumn = self::VALUE_COLUMN_BY_VALUE_TYPE[$spec->valueType->value];
+        $fkColumn = $zoneType->foreignKeyColumn();
+        $valueColumn = $spec->valueType->valueColumn();
 
         $count = 0;
         $batch = [];
@@ -88,13 +53,13 @@ final readonly class CsvCriterionImporter
             ];
             ++$count;
 
-            if (\count($batch) >= self::BATCH_SIZE) {
-                $this->upsertBatch($connection, $criterionId, $zoneType, $fkColumn, $valueColumn, $batch);
+            if (\count($batch) >= ZoneCriterionValueWriter::BATCH_SIZE) {
+                $this->zoneCriterionValueWriter->upsertBatch($criterionId, $zoneType, $fkColumn, $valueColumn, $batch);
                 $batch = [];
             }
         }
 
-        $this->upsertBatch($connection, $criterionId, $zoneType, $fkColumn, $valueColumn, $batch);
+        $this->zoneCriterionValueWriter->upsertBatch($criterionId, $zoneType, $fkColumn, $valueColumn, $batch);
 
         return $count;
     }
@@ -121,7 +86,7 @@ final readonly class CsvCriterionImporter
      */
     private function loadZoneIdsByCode(ZoneType $zoneType): array
     {
-        $zoneClass = self::ZONE_ENTITY_CLASS_BY_TYPE[$zoneType->value];
+        $zoneClass = $zoneType->entityClass();
 
         /** @var array<string, Uuid> $idsByCode */
         $idsByCode = [];
@@ -142,47 +107,5 @@ final readonly class CsvCriterionImporter
             CriterionValueType::Text => $raw,
             CriterionValueType::Boolean => \in_array(strtolower($raw), ['1', 'true', 'yes'], true),
         };
-    }
-
-    /**
-     * @param list<array{id: Uuid, zoneId: Uuid, period: int, value: int|string|bool}> $rows
-     */
-    private function upsertBatch(Connection $connection, Uuid $criterionId, ZoneType $zoneType, string $fkColumn, string $valueColumn, array $rows): void
-    {
-        if ([] === $rows) {
-            return;
-        }
-
-        $now = new \DateTimeImmutable()->format('Y-m-d H:i:s');
-
-        $placeholders = [];
-        $params = [
-            'criterionId' => $criterionId->toRfc4122(),
-            'zoneType' => $zoneType->value,
-            'now' => $now,
-        ];
-
-        foreach ($rows as $i => $row) {
-            $placeholders[] = "(:id{$i}, :criterionId, :zoneType, :zoneId{$i}, :period{$i}, :value{$i}, :now, :now)";
-            $params["id{$i}"] = $row['id']->toRfc4122();
-            $params["zoneId{$i}"] = $row['zoneId']->toRfc4122();
-            $params["period{$i}"] = $row['period'];
-            $params["value{$i}"] = $row['value'];
-        }
-
-        $connection->executeStatement(
-            \sprintf(
-                <<<'SQL'
-                    INSERT INTO zone_criterion_value (id, criterion_id, zone_type, %1$s, period, %2$s, created_at, updated_at)
-                    VALUES %3$s
-                    ON CONFLICT (criterion_id, %1$s, period) WHERE %1$s IS NOT NULL
-                    DO UPDATE SET %2$s = EXCLUDED.%2$s, updated_at = EXCLUDED.updated_at
-                    SQL,
-                $fkColumn,
-                $valueColumn,
-                implode(', ', $placeholders),
-            ),
-            $params,
-        );
     }
 }
