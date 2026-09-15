@@ -1,7 +1,13 @@
 # Administrative zones — reference data
 
 Files vendored under `resources/geo/` (committed to the repo, not
-downloaded at import time — see `App\Command\ZonesImportCommand`):
+downloaded at import time — see `App\Command\ZonesImportCommand`), tracked
+via [Git LFS](https://git-lfs.com/) (`.gitattributes`) since they run tens
+of MB and are replaced wholesale on every refresh — keeps the checked-out
+repository itself small regardless of how much reference data (zones,
+criteria) accumulates over time. Requires `git-lfs` installed locally (see
+`bin/doctor`) and `git lfs install` run once per machine; a plain `git
+clone` then fetches the real file content transparently.
 
 - `regions.geojson`, `departements.geojson`, `communes.geojson` —
   boundaries (France métropolitaine only, no overseas territories),

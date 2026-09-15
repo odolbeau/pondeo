@@ -3,7 +3,7 @@
 RETURN=0
 
 # List of binaries that MUST be installed on the laptop
-REQUIRED_SOFTS=(composer docker make)
+REQUIRED_SOFTS=(composer docker make git-lfs)
 
 for soft in "${REQUIRED_SOFTS[@]}"; do
     if ! which "$soft" >/dev/null 2>&1; then
