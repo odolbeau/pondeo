@@ -50,6 +50,7 @@ services:
     depends_on:
       - php
       - database
+      - node
 ###< doctrine/doctrine-bundle ###
 
 volumes:

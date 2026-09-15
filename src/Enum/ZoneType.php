@@ -47,4 +47,13 @@ enum ZoneType: string
             self::Region => Region::class,
         };
     }
+
+    /** The column holding this zone's official code — EPCI uses a SIREN code, the others an INSEE code. */
+    public function codeColumn(): string
+    {
+        return match ($this) {
+            self::Epci => 'siren_code',
+            self::Commune, self::Departement, self::Region => 'insee_code',
+        };
+    }
 }

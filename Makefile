@@ -79,8 +79,12 @@ assets-install: ## Download assets dependencies
 
 ##@ Quality commands
 .PHONY: sanitize-and-check
-sanitize-and-check: phpstan rector-fix cs-fix test ## Run Rector, PHP-CS-fixer, PHPStan & tests
+sanitize-and-check: phpstan rector-fix cs-fix ts-check test ## Run Rector, PHP-CS-fixer, PHPStan, TypeScript & tests
 	docker compose run --rm php composer dump-autoload --optimize --strict-psr --strict-ambiguous
+
+.PHONY: ts-check
+ts-check: ## Type-check the TypeScript frontend code
+	docker compose run --rm node npm run check-types
 
 .PHONY: test
 test: var/.test-db-ready ## Run all tests

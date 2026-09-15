@@ -1,0 +1,53 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Controller\Api;
+
+use App\Entity\ZoneCriterionValue;
+use App\Enum\CriterionValueType;
+use App\Factory\CriterionFactory;
+use App\Factory\EpciFactory;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Zenstruck\Foundry\Test\Factories;
+use Zenstruck\Foundry\Test\ResetDatabase;
+
+final class EpciMapDataControllerTest extends WebTestCase
+{
+    use Factories;
+    use ResetDatabase;
+
+    public function testDataEndpointOnlyReturnsEpcisWithinPopulationRange(): void
+    {
+        $client = self::createClient();
+
+        $small = EpciFactory::createOne(['sirenCode' => '000000001', 'boundary' => 'SRID=4326;MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))']);
+        $medium = EpciFactory::createOne(['sirenCode' => '000000002', 'boundary' => 'SRID=4326;MULTIPOLYGON(((1 0,1 1,2 1,2 0,1 0)))']);
+        $large = EpciFactory::createOne(['sirenCode' => '000000003', 'boundary' => 'SRID=4326;MULTIPOLYGON(((2 0,2 1,3 1,3 0,2 0)))']);
+
+        $criterion = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+
+        foreach ([[$small, 5_000], [$medium, 50_000], [$large, 500_000]] as [$epci, $population]) {
+            $entityManager->persist(ZoneCriterionValue::forZone($criterion, $epci, $population, 2023));
+        }
+
+        $entityManager->flush();
+
+        $client->request('GET', '/carte/epci/donnees', ['populationMin' => 10_000, 'populationMax' => 100_000]);
+
+        self::assertResponseIsSuccessful();
+        $content = $client->getResponse()->getContent();
+        self::assertIsString($content);
+
+        /** @var array{type: string, features: list<array{properties: array{code: string}}>} $data */
+        $data = json_decode($content, true, flags: \JSON_THROW_ON_ERROR);
+
+        self::assertSame('FeatureCollection', $data['type']);
+        self::assertCount(1, $data['features']);
+        self::assertSame('000000002', $data['features'][0]['properties']['code']);
+    }
+}

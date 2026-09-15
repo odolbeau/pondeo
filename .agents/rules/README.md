@@ -31,8 +31,9 @@ structure, …) are listed in the table — before working on a file, look up it
 directory here, a matching entry adds to (or overrides) the root `AGENTS.md`
 for that path.
 
-| Path             | File            | Summary                                                  |
-|------------------|-----------------|-----------------------------------------------------------|
-| `src/Command`    | `command.md`    | Console command class/file naming from the command name |
-| `src/Controller` | `controller.md` | Invokable-only controllers, one action per class          |
+| Path                 | File                | Summary                                                  |
+|----------------------|---------------------|-----------------------------------------------------------|
+| `src/Command`        | `command.md`        | Console command class/file naming from the command name |
+| `src/Controller`     | `controller.md`     | Invokable-only controllers, one action per class          |
+| `src/Controller/Api` | `controller-api.md` | API controllers live here; paired DTO is named `<Name>Input` |
 
