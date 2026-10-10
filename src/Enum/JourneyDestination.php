@@ -31,4 +31,19 @@ enum JourneyDestination: string
             self::Paris => 'Paris',
         };
     }
+
+    /**
+     * Whether a station is in the destination itself, so has no journey to
+     * it. Paris is the whole city; Nantes only its main station, the others
+     * (Pirmil, Chantenay...) are genuine origins.
+     *
+     * @param string $uicCodes the station's UIC codes, ";"-separated
+     */
+    public function isInside(string $uicCodes, string $inseeCommuneCode): bool
+    {
+        return match ($this) {
+            self::Nantes => \in_array('87481002', explode(';', $uicCodes), true),
+            self::Paris => str_starts_with($inseeCommuneCode, '75'),
+        };
+    }
 }
