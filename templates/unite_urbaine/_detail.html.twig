@@ -21,12 +21,18 @@
     {% endif %}
 </header>
 
+<div data-controller="criteria-filter">
+{% if groups %}
+    <input type="search" placeholder="Filtrer les critères" aria-label="Filtrer les critères"
+           data-criteria-filter-target="input" data-action="input->criteria-filter#filter"
+           class="mt-8 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none">
+{% endif %}
 {% for group in groups %}
-    <details open class="mt-8 border-t border-slate-800 pt-4">
+    <details open class="mt-6 border-t border-slate-800 pt-4" data-criteria-filter-target="group">
         <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">{{ group.label }}</summary>
         <dl class="mt-2 divide-y divide-slate-800/60">
             {% for criterion in group.criteria %}
-                <div class="flex items-center justify-between gap-4 py-3">
+                <div class="flex items-center justify-between gap-4 py-3" data-criteria-filter-target="row" data-label="{{ criterion.label }}">
                     <div class="min-w-0">
                         <dt class="text-sm text-slate-300">{{ criterion.label }}</dt>
                         <dd class="mt-1 text-xs text-slate-500">
@@ -51,6 +57,7 @@
         </dl>
     </details>
 {% endfor %}
+</div>
 
 {% if poiCategories %}
     <details open class="mt-8 border-t border-slate-800 pt-4">

@@ -45,6 +45,8 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('header', '2e sur 2');
         self::assertSelectorTextContains('details summary', 'Démographie');
         self::assertSelectorExists('turbo-frame#unite-urbaine-detail polyline');
+        self::assertSelectorExists('[data-controller="criteria-filter"] input[type="search"]');
+        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="Population"]');
         self::assertSelectorNotExists('a[data-turbo-frame="_top"]');
     }
 
