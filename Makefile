@@ -16,10 +16,13 @@ doctor: ## Check that everything is OK
 	@bin/doctor
 
 .PHONY: install
-install: build start vendors-install db-reset assets-install ## Start the docker stack and prepare the application
+install: serve assets-install ## Start the docker stack and prepare the application
 	@echo -e "\n"
 	@echo -e "\033[32m🥳 EVERYTHING IS RUNNING! 🥳\033[0m"
-	@echo -e "\033[32mVisit http://pondeo.localhost to continue.\033[0m"
+
+.PHONY: serve
+serve: ## Start this worktree's stack on demand (installs/seeds only what's missing) and print its URL
+	bin/serve
 
 .PHONY: vendors-install
 vendors-install: ## Install vendors
@@ -44,7 +47,7 @@ stop: ## Stop the docker stack
 	docker compose stop
 
 .PHONY: destroy
-destroy: ## Destroy all containers, volumes, networks, ...
+destroy: ## Destroy all containers, volumes, networks, ... (run by Orca when archiving a worktree, see orca.yaml)
 	docker compose down --remove-orphans --volumes --rmi=local
 
 .PHONY: bash

@@ -1,0 +1,59 @@
+# Local environment
+
+Every git worktree runs its own isolated stack, so several branches can be
+served side by side. `/serve` (Claude Code) or `make serve` starts the current
+worktree's stack and prints its URL.
+
+## One stack per worktree
+
+The Docker Compose project is named after the worktree's directory, which
+gives each worktree its own containers, volumes and hostname:
+
+| Worktree directory | URL                                |
+|--------------------|------------------------------------|
+| `<dir>`            | `https://<dir>.pondeo.localhost`   |
+
+Nothing is published on the host. `*.localhost` resolves to the local machine
+by itself, so no DNS or `/etc/hosts` entry is needed.
+
+## Database
+
+Each worktree has its own database (its own Compose volume): branches with
+different migrations never step on each other. `make serve` seeds it the first
+time, when the schema doesn't exist yet, and otherwise only applies pending
+migrations. `make db-reset` rebuilds it from scratch.
+
+## Dev proxy
+
+HTTPS is terminated by a reverse proxy (Traefik) that is **machine-wide
+infrastructure shared by all local projects**, not part of this repository.
+It owns host ports 80 and 443 and discovers containers through Docker labels.
+The contract with this project:
+
+- A Docker network named `dev-proxy`, which the proxy and the project's web
+  container (`nginx`) are both attached to. The project declares it as
+  external; it never creates it.
+- Routing is declared by Traefik labels on `nginx` (see `compose.yaml`): the
+  hostname above, TLS enabled, plain HTTP to the container. The app trusts
+  the proxy's `X-Forwarded-*` headers (`TRUSTED_PROXIES`) so generated URLs
+  are `https://`.
+- Certificates are dropped by the project in the proxy's directory
+  (`~/.local/share/dev-proxy`, or `$DEV_PROXY_DIR`): the certificate and key
+  in `certs/`, and a Traefik file-provider snippet in `dynamic/`. The proxy
+  watches that directory, so no restart is needed. `bin/certs` does this, and
+  `make serve` runs it when the certificate is missing.
+
+`make serve` refuses to start, and says why, when the proxy isn't running.
+
+## Trusted certificate
+
+With [mkcert](https://github.com/FiloSottile/mkcert) installed, the
+certificate is signed by a local certificate authority that `bin/doctor`
+makes browsers trust (it asks for sudo once). Without it the certificate is
+self-signed and browsers show a warning. Install mkcert later, then re-run
+`bin/doctor`: it regenerates the certificate.
+
+## Archiving a worktree
+
+[Orca](../orca.yaml) runs `make destroy` when a worktree is archived, which
+removes its containers, volumes and images if the stack was ever started.

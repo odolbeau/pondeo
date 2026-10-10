@@ -1,6 +1,7 @@
 #!/bin/bash
 
 RETURN=0
+ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
 # List of binaries that MUST be installed on the laptop
 REQUIRED_SOFTS=(composer docker make git-lfs)
@@ -14,6 +15,35 @@ for soft in "${REQUIRED_SOFTS[@]}"; do
         echo -e "\033[32m$soft is correctly installed.\033[0m"
     fi
 done
+
+# Recommended only: without them, the dev certificate is self-signed and
+# browsers warn about it (see bin/certs). `certutil` lets `mkcert -install`
+# register the local CA in Firefox's and Chrome's own trust stores.
+RECOMMENDED_SOFTS=(mkcert certutil)
+
+for soft in "${RECOMMENDED_SOFTS[@]}"; do
+    if ! which "$soft" >/dev/null 2>&1; then
+        echo -e "\033[33mWARNING\033[0m"
+        echo -e "\033[33m$soft isn't installed: browsers will warn about the dev certificate.\033[0m"
+        echo -e "\033[33mInstall it (e.g. \`sudo apt install mkcert libnss3-tools\`), then re-run bin/doctor.\033[0m"
+    else
+        echo -e "\033[32m$soft is correctly installed.\033[0m"
+    fi
+done
+
+# Once mkcert is installed: make browsers trust its local CA (asks for sudo
+# the first time only), and replace a certificate generated before mkcert
+# was around (self-signed) with one it signs. If there's no certificate yet,
+# the first `make serve` generates it.
+if which mkcert >/dev/null 2>&1; then
+    mkcert -install
+
+    CERT="${DEV_PROXY_DIR:-$HOME/.local/share/dev-proxy}/certs/pondeo.crt"
+    if [ -f "$CERT" ] && ! openssl verify -CAfile "$(mkcert -CAROOT)/rootCA.pem" "$CERT" >/dev/null 2>&1; then
+        echo -e "\033[32mRegenerating the dev certificate with mkcert.\033[0m"
+        "$ROOT/bin/certs"
+    fi
+fi
 
 if [ ! $RETURN -eq 0 ]; then
     echo ""

@@ -10,7 +10,11 @@ A website to compare French areas (cities, departments, regions, ...) according 
 make install
 ```
 
-Then visit <https://pondeo.localhost:8443> (<http://pondeo.localhost:8089> redirects there).
+Then visit `https://<directory name>.pondeo.localhost`, printed at the end.
+
+Each git worktree runs its own stack: `make serve` (or `/serve` in Claude
+Code) starts the current one. See [`docs/local-environment.md`](docs/local-environment.md),
+including the machine-wide dev proxy it requires.
 
 ## Documentation
 

@@ -9,13 +9,11 @@ export default defineConfig({
     server: {
         // Bind to all interfaces (reachable from nginx's `node:5173` on the
         // Docker network). nginx reverse-proxies /build/ (see
-        // .docker/nginx/default.conf) so the browser only ever talks to
-        // https://pondeo.localhost — a self-signed cert only that origin is
-        // trusted for would otherwise fail (or need its own browser
-        // exception) on the dev server's own port, and a plain :5173 origin
-        // would be cross-origin/mixed-content from the https page.
+        // .docker/nginx/default.conf) so the browser only ever talks to the
+        // worktree's https origin, set by compose.yaml: the dev server's own
+        // port isn't published and would be cross-origin/mixed-content.
         host: true,
-        origin: 'https://pondeo.localhost',
+        origin: process.env.PONDEO_ORIGIN,
     },
     optimizeDeps: {
         // maplibre-gl spawns its own worker via a relative import.meta.url,

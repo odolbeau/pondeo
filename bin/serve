@@ -1,0 +1,50 @@
+#!/bin/bash
+#
+# Starts this worktree's stack on demand and prints its URL. Idempotent:
+# only installs dependencies that changed, seeds the database when it's
+# empty (no schema yet, whether the volume is new or not) and otherwise just
+# applies the pending migrations, so it's safe to re-run anytime.
+
+set -euo pipefail
+
+cd "$(dirname "${BASH_SOURCE[0]}")/.."
+
+DEV_PROXY_DIR="${DEV_PROXY_DIR:-$HOME/.local/share/dev-proxy}"
+
+# The compose project is named after the directory (see compose.yaml).
+PROJECT="$(docker compose config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])')"
+
+if ! docker network inspect dev-proxy >/dev/null 2>&1 \
+    || [ -z "$(docker ps --quiet --filter label=com.docker.compose.project=dev-proxy)" ]; then
+    echo -e "\033[31mThe dev proxy isn't running (network \`dev-proxy\`).\033[0m" >&2
+    echo "It is machine-wide infrastructure, not part of this project: see docs/local-environment.md." >&2
+    if [ -n "$(docker ps --quiet --filter publish=443)" ]; then
+        echo "Something else owns port 443:" >&2
+        docker ps --filter publish=443 --format '  {{.Names}}' >&2
+    fi
+    exit 1
+fi
+
+if [ ! -f "$DEV_PROXY_DIR/certs/pondeo.crt" ]; then
+    bin/certs
+fi
+
+docker compose up --detach --build --remove-orphans
+docker compose run --rm php composer install
+
+PSQL=(docker compose exec -T database psql -U "${POSTGRES_USER:-app}" -d "${POSTGRES_DB:-app}" -Atc)
+
+# Postgres may still be starting: wait for it, so a failed query is never
+# mistaken for an empty database (the reset below drops it).
+until "${PSQL[@]}" "SELECT 1" >/dev/null 2>&1; do sleep 1; done
+
+# Only an explicit "f" seeds: a volume can outlive a failed first run and
+# stay empty.
+if [ "$("${PSQL[@]}" "SELECT to_regclass('public.unite_urbaine') IS NOT NULL")" = f ]; then
+    make db-reset
+else
+    docker compose run --rm php bin/console doctrine:migrations:migrate -n --no-debug
+fi
+
+echo ""
+echo -e "\033[32mhttps://${PROJECT}.pondeo.localhost\033[0m"
