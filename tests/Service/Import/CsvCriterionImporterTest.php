@@ -60,6 +60,41 @@ final class CsvCriterionImporterTest extends KernelTestCase
         unlink($csvPath);
     }
 
+    public function testImportStoresTheGroupAndKeepsAnExistingCriterionInStep(): void
+    {
+        $unit = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        CommuneFactory::createOne(['inseeCode' => '56260', 'uniteUrbaine' => $unit]);
+
+        $csvPath = tempnam(sys_get_temp_dir(), 'csv-criterion-importer-test-');
+        \assert(false !== $csvPath);
+        file_put_contents($csvPath, "code_insee,year,value\n56260,2020,100\n");
+
+        $importer = self::getContainer()->get(CsvCriterionImporter::class);
+        \assert($importer instanceof CsvCriterionImporter);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+
+        $specFor = static fn (?string $groupLabel): CriterionCsvSpec => new CriterionCsvSpec(
+            code: 'test_metric',
+            label: 'Test metric',
+            valueType: CriterionValueType::Integer,
+            unit: null,
+            communeCodeColumn: 'code_insee',
+            periodColumn: 'year',
+            valueColumn: 'value',
+            groupLabel: $groupLabel,
+        );
+        $storedGroup = static fn (): mixed => $entityManager->getConnection()->fetchOne("SELECT group_label FROM criterion WHERE code = 'test_metric'");
+
+        $importer->import($specFor('Démographie'), $csvPath);
+        self::assertSame('Démographie', $storedGroup());
+
+        $importer->import($specFor('Économie'), $csvPath);
+        self::assertSame('Économie', $storedGroup());
+
+        unlink($csvPath);
+    }
+
     public function testImportRejectsNonAdditiveCriterion(): void
     {
         $spec = new CriterionCsvSpec(

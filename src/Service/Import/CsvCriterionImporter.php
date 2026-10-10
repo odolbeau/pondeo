@@ -85,11 +85,18 @@ final readonly class CsvCriterionImporter
     {
         $criterion = $this->criterionRepository->findOneBy(['code' => $spec->code]);
         if (null !== $criterion) {
+            // Keeps a criterion created before groups existed in step with its spec.
+            if ($criterion->getGroupLabel() !== $spec->groupLabel) {
+                $criterion->setGroupLabel($spec->groupLabel);
+                $this->entityManager->flush();
+            }
+
             return $criterion;
         }
 
         $criterion = new Criterion($spec->code, $spec->label, $spec->valueType);
         $criterion->setUnit($spec->unit);
+        $criterion->setGroupLabel($spec->groupLabel);
 
         $this->entityManager->persist($criterion);
         $this->entityManager->flush();

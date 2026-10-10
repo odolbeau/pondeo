@@ -38,6 +38,7 @@ final class CriteriaPopulationImportCommand extends Command
             communeCodeColumn: 'code_insee',
             periodColumn: 'year',
             valueColumn: 'population',
+            groupLabel: 'Démographie',
         );
 
         $count = $this->csvCriterionImporter->import($spec, $csvPath);

@@ -67,6 +67,7 @@ final class AppStory extends Story
             'code' => 'avg_annual_rainy_days',
             'label' => 'Jours de pluie (moyenne annuelle)',
             'unit' => 'jours',
+            'groupLabel' => 'Climat',
             'valueType' => CriterionValueType::Decimal,
         ]);
 

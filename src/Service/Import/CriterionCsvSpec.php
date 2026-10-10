@@ -22,6 +22,7 @@ final readonly class CriterionCsvSpec
         public string $communeCodeColumn,
         public string $periodColumn,
         public string $valueColumn,
+        public ?string $groupLabel = null,
     ) {
     }
 }

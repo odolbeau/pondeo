@@ -35,6 +35,10 @@ class Criterion
     #[ORM\Column(length: 50, nullable: true)]
     private ?string $unit = null;
 
+    /** Display section the criterion is listed under (e.g. "Démographie"); null means "Autres". */
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $groupLabel = null;
+
     #[ORM\Column(length: 20, enumType: CriterionValueType::class)]
     private CriterionValueType $valueType;
 
@@ -92,6 +96,18 @@ class Criterion
     public function setUnit(?string $unit): static
     {
         $this->unit = $unit;
+
+        return $this;
+    }
+
+    public function getGroupLabel(): ?string
+    {
+        return $this->groupLabel;
+    }
+
+    public function setGroupLabel(?string $groupLabel): static
+    {
+        $this->groupLabel = $groupLabel;
 
         return $this;
     }

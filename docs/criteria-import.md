@@ -10,6 +10,14 @@ criterion (code, label, value type, unit, CSV column names) and delegates to
 the shared, generic importer. `CriteriaPopulationImportCommand` is the
 reference example of adding a criterion of this shape.
 
+## Groups
+
+A criterion belongs to a display group ("Démographie", "Climat", ...), set by
+the import command through the spec's `groupLabel`. The urban unit detail page
+lists criteria section by section under these groups; a criterion without one
+lands in "Autres". Re-running an import brings an already-existing criterion's
+group in line with its spec.
+
 ## Stored per urban unit
 
 Values are stored at the **urban unit** level only, never per commune. The
