@@ -66,14 +66,17 @@ final readonly class DayJourneys
             return null;
         }
 
+        if (!ctype_digit($transfers)) {
+            throw new \InvalidArgumentException(\sprintf('Invalid number of transfers "%s".', $transfers));
+        }
+
         $parsed = [];
         foreach (explode(';', $departures) as $entry) {
-            [$time, $minutes] = explode(':', $entry) + [1 => ''];
-            if (1 !== preg_match('/^\d{4}$/', $time) || !ctype_digit($minutes)) {
+            if (1 !== preg_match('/^(\d{4}):(\d+)$/', $entry, $matches)) {
                 throw new \InvalidArgumentException(\sprintf('Invalid departure "%s".', $entry));
             }
 
-            $parsed[] = ['time' => $time, 'minutes' => (int) $minutes];
+            $parsed[] = ['time' => $matches[1], 'minutes' => (int) $matches[2]];
         }
 
         return new self((int) $transfers, $parsed);
@@ -85,6 +88,16 @@ final readonly class DayJourneys
             static fn (array $departure): string => \sprintf('%s:%d', $departure['time'], $departure['minutes']),
             $this->departures,
         ));
+    }
+
+    /** Fewer transfers first, then more departures. */
+    public function isBetterThan(self $other): bool
+    {
+        if ($this->transfers !== $other->transfers) {
+            return $this->transfers < $other->transfers;
+        }
+
+        return $this->trainsPerDay() > $other->trainsPerDay();
     }
 
     public function trainsPerDay(): int
