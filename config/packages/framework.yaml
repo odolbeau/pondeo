@@ -10,6 +10,21 @@ framework:
     trusted_proxies: '%env(TRUSTED_PROXIES)%'
     trusted_headers: ['x-forwarded-for', 'x-forwarded-host', 'x-forwarded-proto', 'x-forwarded-port']
 
+    http_client:
+        scoped_clients:
+            # SNCF API (Navitia): the token is the basic-auth user, no password.
+            sncf.client:
+                base_uri: 'https://api.sncf.com/v1/coverage/sncf/'
+                auth_basic: '%env(SNCF_API_TOKEN)%:'
+                timeout: 30
+                # Server errors only: quota refusals (429) are handled by
+                # SncfApiClient, which waits as long as the quota requires.
+                retry_failed:
+                    http_codes: [500, 502, 503, 504]
+                    max_retries: 3
+                    delay: 1000
+                    multiplier: 3
+
     #esi: true
     #fragments: true
 
