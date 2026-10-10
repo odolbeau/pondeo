@@ -25,6 +25,7 @@ final class UniteUrbaineMapController extends AbstractController
         return $this->render('map/index.html.twig', [
             'title' => 'Carte des unités urbaines',
             'dataUrl' => $this->generateUrl('app_map_data'),
+            'plantsUrl' => $this->generateUrl('app_map_nuclear_plants'),
             'populationMin' => $bounds['min'],
             'populationMax' => $bounds['max'],
         ]);

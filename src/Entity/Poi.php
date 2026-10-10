@@ -7,6 +7,7 @@ namespace App\Entity;
 use App\Entity\Trait\TimestampableTrait;
 use App\Entity\Trait\UuidIdTrait;
 use App\Repository\PoiRepository;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -54,6 +55,15 @@ class Poi
      */
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $externalId = null;
+
+    /**
+     * Source-specific details that no other POI shares (e.g. a nuclear
+     * plant's reactor count and power).
+     *
+     * @var array<string, mixed>|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true, options: ['jsonb' => true])]
+    private ?array $attributes = null;
 
     /**
      * Containing unité urbaine, resolved at write time (see
@@ -154,6 +164,24 @@ class Poi
     public function setUniteUrbaine(?UniteUrbaine $uniteUrbaine): static
     {
         $this->uniteUrbaine = $uniteUrbaine;
+
+        return $this;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function getAttributes(): ?array
+    {
+        return $this->attributes;
+    }
+
+    /**
+     * @param array<string, mixed>|null $attributes
+     */
+    public function setAttributes(?array $attributes): static
+    {
+        $this->attributes = $attributes;
 
         return $this;
     }

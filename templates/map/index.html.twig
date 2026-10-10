@@ -6,6 +6,7 @@
 <div class="flex h-[calc(100vh-3.5rem)] bg-slate-950 text-slate-100"
      data-controller="map"
      data-map-data-url-value="{{ dataUrl }}"
+     data-map-plants-url-value="{{ plantsUrl }}"
      data-map-detail-url-value="{{ path('app_unite_urbaine_detail', {code: 'XXXXX'}) }}"
      data-map-population-min-value="{{ populationMin }}"
      data-map-population-max-value="{{ populationMax }}"
@@ -69,6 +70,21 @@
                 <span>commerces pour 1000 hab.</span>
             </span>
             <span class="mt-1 block text-xs text-slate-500">Tous commerces confondus (INSEE, BPE)</span>
+        </label>
+
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Centrales nucléaires</h2>
+
+        <label class="mt-4 block text-sm text-slate-300">
+            Écarter les villes à moins de
+            <span class="mt-2 flex items-center gap-2">
+                <input type="number" inputmode="decimal" step="5" min="0" placeholder="0"
+                       aria-label="Distance minimale à une centrale nucléaire, en kilomètres"
+                       data-map-target="nuclearExclusionKm"
+                       data-action="input->map#onNuclearInput"
+                       class="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
+                <span>km d'une centrale</span>
+            </span>
+            <span class="mt-1 block text-xs text-slate-500">Distance mesurée depuis le centre de la ville ; le rayon est tracé sur la carte</span>
         </label>
     </aside>
 

@@ -70,13 +70,14 @@ final readonly class UniteUrbaineMapDataProvider
      * A unité urbaine with no attraction category is never excluded: unknown
      * is not the same as satellite. Likewise, with a commerce density
      * minimum, an unité urbaine without a density value is left out: it
-     * cannot be said to reach it.
+     * cannot be said to reach it. With a nuclear exclusion radius, an unité urbaine whose
+     * centroid is within it of a plant is left out.
      *
      * @param list<AttractionCategory> $excludedAttractionCategories
      *
      * @return list<array{id: string, code: string, name: string, population: int, geometryJson: string}>
      */
-    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null): array
+    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null): array
     {
         $criterionId = $this->populationCriterionId();
         $excludedCategoryValues = array_map(static fn (AttractionCategory $category): string => $category->value, $excludedAttractionCategories);
@@ -108,6 +109,13 @@ final readonly class UniteUrbaineMapDataProvider
                         )
                         AND density.value_decimal >= CAST(:densityMin AS numeric)
                   ))
+                  AND (CAST(:nuclearKm AS numeric) IS NULL OR NOT EXISTS (
+                      SELECT 1
+                      FROM poi plant
+                      INNER JOIN poi_category plant_category ON plant_category.id = plant.category_id
+                      WHERE plant_category.code = 'nuclear_power_plant'
+                        AND ST_DWithin(uu.centroid, plant.location, CAST(:nuclearKm AS numeric) * 1000)
+                  ))
                 SQL,
             [
                 'criterionId' => $criterionId,
@@ -115,6 +123,7 @@ final readonly class UniteUrbaineMapDataProvider
                 'min' => $populationMin,
                 'max' => $populationMax,
                 'densityMin' => $commerceDensityMin,
+                'nuclearKm' => $nuclearExclusionKm,
                 // An empty IN () list is invalid SQL: a value no category has keeps the clause a no-op.
                 'excludedCategories' => [] === $excludedCategoryValues ? [''] : $excludedCategoryValues,
             ],
@@ -153,6 +162,40 @@ final readonly class UniteUrbaineMapDataProvider
         return '{"type":"FeatureCollection","features":['.implode(',', $features).']}';
     }
 
+    /**
+     * GeoJSON FeatureCollection of the nuclear plants, for the map markers.
+     */
+    public function findNuclearPlantsJson(): string
+    {
+        $rows = $this->connection->fetchAllAssociative(
+            <<<'SQL'
+                SELECT p.name AS name, p.attributes AS attributes,
+                       ST_X(p.location::geometry) AS lon, ST_Y(p.location::geometry) AS lat
+                FROM poi p
+                INNER JOIN poi_category pc ON pc.id = p.category_id
+                WHERE pc.code = 'nuclear_power_plant'
+                ORDER BY p.name
+                SQL,
+        );
+
+        $features = array_map(static function (array $row): array {
+            /** @var array{reactors?: int, powerMw?: int} $attributes */
+            $attributes = \is_string($row['attributes']) ? json_decode($row['attributes'], true, flags: \JSON_THROW_ON_ERROR) : [];
+
+            return [
+                'type' => 'Feature',
+                'geometry' => ['type' => 'Point', 'coordinates' => [(float) self::toNumeric($row['lon']), (float) self::toNumeric($row['lat'])]],
+                'properties' => [
+                    'name' => self::toString($row['name']),
+                    'reactors' => $attributes['reactors'] ?? null,
+                    'powerMw' => $attributes['powerMw'] ?? null,
+                ],
+            ];
+        }, $rows);
+
+        return json_encode(['type' => 'FeatureCollection', 'features' => $features], \JSON_THROW_ON_ERROR);
+    }
+
     private function populationCriterionId(): string
     {
         $criterion = $this->criterionRepository->findOneBy(['code' => 'population']);
@@ -170,6 +213,15 @@ final readonly class UniteUrbaineMapDataProvider
         }
 
         return (int) $value;
+    }
+
+    private static function toNumeric(mixed $value): int|float|string
+    {
+        if (!is_numeric($value)) {
+            throw new \LogicException('Expected a numeric database value, got '.get_debug_type($value));
+        }
+
+        return $value;
     }
 
     private static function toString(mixed $value): string

@@ -12,7 +12,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * filter is a new property here. Null population bounds mean "not set" — the
  * controller falls back to the full bounds. The exclusions default to off:
  * every unité urbaine is shown until asked otherwise. The commerce
- * density minimum (shops per 1000 inhabitants) is likewise off when null.
+ * density minimum (shops per 1000 inhabitants) is likewise off when null, as is the exclusion radius (km) around nuclear plants.
  */
 final readonly class UniteUrbaineMapDataInput
 {
@@ -25,6 +25,8 @@ final readonly class UniteUrbaineMapDataInput
         public bool $excludePolesSecondaires = false,
         #[Assert\PositiveOrZero]
         public ?float $commerceDensityMin = null,
+        #[Assert\PositiveOrZero]
+        public ?float $nuclearExclusionKm = null,
     ) {
     }
 

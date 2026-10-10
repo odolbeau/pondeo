@@ -31,16 +31,10 @@ final class AppStory extends Story
     public function build(): void
     {
         $vannes = $this->findRealUniteUrbaine('56501', 'Vannes');
-        $nantes = $this->findRealUniteUrbaine('44701', 'Nantes');
 
         $hardwareStoreCategory = PoiCategoryFactory::new()->create([
             'code' => 'hardware_store',
             'label' => 'Grande surface de bricolage',
-        ]);
-
-        $powerPlantCategory = PoiCategoryFactory::new()->create([
-            'code' => 'nuclear_power_plant',
-            'label' => 'Centrale nucléaire',
         ]);
 
         PoiFactory::new()->create([
@@ -49,14 +43,6 @@ final class AppStory extends Story
             'brand' => 'Leroy Merlin',
             'location' => 'SRID=4326;POINT(-2.73 47.64)',
             'uniteUrbaine' => $vannes,
-        ]);
-
-        PoiFactory::new()->create([
-            'name' => 'Centrale nucléaire (exemple)',
-            'category' => $powerPlantCategory,
-            'brand' => null,
-            'location' => 'SRID=4326;POINT(-1.55 47.22)',
-            'uniteUrbaine' => $nantes,
         ]);
 
         // No fictional "population" criterion here: `app:import:criteria:population`

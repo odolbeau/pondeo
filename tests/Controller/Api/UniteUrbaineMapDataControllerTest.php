@@ -8,6 +8,8 @@ use App\Entity\CriterionValue;
 use App\Enum\AttractionCategory;
 use App\Enum\CriterionValueType;
 use App\Factory\CriterionFactory;
+use App\Factory\PoiCategoryFactory;
+use App\Factory\PoiFactory;
 use App\Factory\UniteUrbaineFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
@@ -109,6 +111,63 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         self::assertSame(['00001', '00002', '00003'], $this->codes($client, []));
         self::assertSame(['00001'], $this->codes($client, ['commerceDensityMin' => '10']));
         self::assertSame(['00001', '00002'], $this->codes($client, ['commerceDensityMin' => '4.2']));
+    }
+
+    public function testDataEndpointCanExcludeUnitesUrbainesNearANuclearPlant(): void
+    {
+        $client = self::createClient();
+
+        // Centroids at 0.5°, 1.5° and 2.5° of longitude: ~11, ~100 and ~210 km from the plant.
+        $near = UniteUrbaineFactory::createOne(['inseeCode' => '00001', 'boundary' => 'SRID=4326;MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))']);
+        $middle = UniteUrbaineFactory::createOne(['inseeCode' => '00002', 'boundary' => 'SRID=4326;MULTIPOLYGON(((1 0,1 1,2 1,2 0,1 0)))']);
+        $far = UniteUrbaineFactory::createOne(['inseeCode' => '00003', 'boundary' => 'SRID=4326;MULTIPOLYGON(((2 0,2 1,3 1,3 0,2 0)))']);
+
+        $population = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ([$near, $middle, $far] as $uniteUrbaine) {
+            $entityManager->persist(new CriterionValue($population, $uniteUrbaine, 10_000, 2023));
+        }
+
+        $entityManager->flush();
+
+        PoiFactory::createOne([
+            'category' => PoiCategoryFactory::createOne(['code' => 'nuclear_power_plant']),
+            'location' => 'SRID=4326;POINT(0.6 0.5)',
+        ]);
+        // Another kind of POI never counts as a plant.
+        PoiFactory::createOne(['location' => 'SRID=4326;POINT(2.5 0.5)']);
+
+        self::assertSame(['00001', '00002', '00003'], $this->codes($client, []));
+        self::assertSame(['00002', '00003'], $this->codes($client, ['nuclearExclusionKm' => '50']));
+        self::assertSame(['00003'], $this->codes($client, ['nuclearExclusionKm' => '150']));
+    }
+
+    public function testNuclearPlantsEndpointReturnsThePlantsWithTheirDetails(): void
+    {
+        $client = self::createClient();
+
+        PoiFactory::createOne([
+            'name' => 'Le Blayais',
+            'category' => PoiCategoryFactory::createOne(['code' => 'nuclear_power_plant']),
+            'location' => 'SRID=4326;POINT(-0.690606 45.257605)',
+            'attributes' => ['reactors' => 4, 'powerMw' => 3704],
+        ]);
+        PoiFactory::createOne(['name' => 'Not a plant']);
+
+        $client->request('GET', '/carte/centrales');
+
+        self::assertResponseIsSuccessful();
+        $content = $client->getResponse()->getContent();
+        self::assertIsString($content);
+        /** @var array{features: list<mixed>} $data */
+        $data = json_decode($content, true, flags: \JSON_THROW_ON_ERROR);
+
+        self::assertSame([[
+            'type' => 'Feature',
+            'geometry' => ['type' => 'Point', 'coordinates' => [-0.690606, 45.257605]],
+            'properties' => ['name' => 'Le Blayais', 'reactors' => 4, 'powerMw' => 3704],
+        ]], $data['features']);
     }
 
     /**
