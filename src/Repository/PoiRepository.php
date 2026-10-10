@@ -21,6 +21,24 @@ class PoiRepository extends ServiceEntityRepository
     }
 
     /**
+     * The unité urbaine is fetched in the same query, not left as a lazy
+     * proxy: initialising one of those fails on UuidIdTrait's readonly id
+     * (Doctrine ORM lazy ghost objects), which bites any bulk update of POIs.
+     *
+     * @return list<Poi>
+     */
+    public function findByCategoryWithUniteUrbaine(PoiCategory $category): array
+    {
+        return $this->createQueryBuilder('poi')
+            ->addSelect('uniteUrbaine')
+            ->leftJoin('poi.uniteUrbaine', 'uniteUrbaine')
+            ->andWhere('poi.category = :category')
+            ->setParameter('category', $category)
+            ->getQuery()
+            ->getResult();
+    }
+
+    /**
      * @return list<array{category: PoiCategory, total: int}>
      */
     public function countByCategory(UniteUrbaine $uniteUrbaine): array

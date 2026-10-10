@@ -14,12 +14,12 @@ final class CsvReader
     /**
      * @return iterable<array<string, string>>
      */
-    public function read(string $csvPath): iterable
+    public function read(string $csvPath, string $separator = ','): iterable
     {
         $handle = fopen($csvPath, 'r') ?: throw new \RuntimeException("Cannot read {$csvPath}");
-        $header = array_map(strval(...), fgetcsv($handle, escape: '\\') ?: throw new \RuntimeException("Empty CSV: {$csvPath}"));
+        $header = array_map(strval(...), fgetcsv($handle, separator: $separator, escape: '\\') ?: throw new \RuntimeException("Empty CSV: {$csvPath}"));
 
-        while (false !== ($row = fgetcsv($handle, escape: '\\'))) {
+        while (false !== ($row = fgetcsv($handle, separator: $separator, escape: '\\'))) {
             /** @var array<string, string> $associative */
             $associative = array_combine($header, array_map(strval(...), $row));
             yield $associative;
