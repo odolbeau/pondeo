@@ -16,7 +16,7 @@ use Zenstruck\Foundry\Attribute\AsFixture;
 use Zenstruck\Foundry\Story;
 
 /**
- * Demo POI/criteria on real unités urbaines — requires `app:zones:import` to
+ * Demo POI/criteria on real unités urbaines — requires `app:import:zones` to
  * have run first.
  */
 #[AsFixture(name: 'main')]
@@ -59,7 +59,7 @@ final class AppStory extends Story
             'uniteUrbaine' => $nantes,
         ]);
 
-        // No fictional "population" criterion here: `app:criteria:population:import`
+        // No fictional "population" criterion here: `app:import:criteria:population`
         // already gives these unités urbaines real values, and Foundry's create()
         // would collide on the "population" code (it inserts, it doesn't
         // find-or-create).
@@ -81,7 +81,7 @@ final class AppStory extends Story
     {
         $uniteUrbaine = $this->uniteUrbaineRepository->findOneBy(['inseeCode' => $inseeCode]);
         if (null === $uniteUrbaine) {
-            throw new \LogicException(\sprintf('Unité urbaine %s (%s) not found — run `bin/console app:zones:import` before loading fixtures.', $name, $inseeCode));
+            throw new \LogicException(\sprintf('Unité urbaine %s (%s) not found — run `bin/console app:import:zones` before loading fixtures.', $name, $inseeCode));
         }
 
         return $uniteUrbaine;

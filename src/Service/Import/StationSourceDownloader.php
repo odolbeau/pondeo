@@ -2,29 +2,19 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace App\Service\Import;
 
-use App\Service\Import\CsvReader;
-use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-#[AsCommand(
-    name: 'app:pois:stations:download',
-    description: 'Refresh the vendored railway stations list (resources/geo/gares-voyageurs.csv)',
-    help: <<<'HELP'
-        Downloads the "Gares de voyageurs" dataset (SNCF Gares & Connexions, data.gouv.fr, ODbL): the passenger
-        stations of the French network, with WGS84 coordinates. The source writes the position as
-        "latitude, longitude" in one cell; the vendored file splits it into <comment>lat</comment> and
-        <comment>lon</comment>. A station with several UIC codes keeps them all, joined by ";", in
-        <comment>code_uic</comment> — <comment>id_gare</comment> is the stable key.
-        HELP,
-)]
-final class PoisStationsDownloadCommand extends Command
+/**
+ * Refreshes `resources/geo/gares-voyageurs.csv` from the "Gares de voyageurs"
+ * dataset (SNCF Gares & Connexions, data.gouv.fr, ODbL). The source writes
+ * the position as "latitude, longitude" in one cell; the vendored file splits
+ * it into `lat` and `lon`. A station with several UIC codes keeps them all,
+ * joined by ";", in `code_uic` — `id_gare` is the stable key.
+ */
+final readonly class StationSourceDownloader
 {
     // Stable resource redirect, always resolves to the publisher's current version.
     private const string STATIONS_CSV_URL = 'https://www.data.gouv.fr/api/1/datasets/r/cbacca02-6925-4a46-aab6-7194debbb9b7';
@@ -32,37 +22,31 @@ final class PoisStationsDownloadCommand extends Command
     private const array CSV_COLUMNS = ['id_gare', 'name', 'lat', 'lon', 'code_commune', 'code_uic'];
 
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        private readonly CsvReader $csvReader,
+        private HttpClientInterface $httpClient,
+        private CsvReader $csvReader,
     ) {
-        parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    /**
+     * @param \Closure(string): void $progress
+     *
+     * @throws ExceptionInterface when the download fails
+     */
+    public function download(string $targetDir, \Closure $progress): void
     {
-        $io = new SymfonyStyle($input, $output);
-        $targetPath = \dirname(__DIR__, 2).'/resources/geo/gares-voyageurs.csv';
-
         $source = tempnam(sys_get_temp_dir(), 'gares-');
         if (false === $source) {
             throw new \RuntimeException('Cannot create a temporary file.');
         }
 
         try {
-            $io->writeln('Downloading <info>gares-voyageurs.csv</info>...');
             file_put_contents($source, $this->httpClient->request('GET', self::STATIONS_CSV_URL)->getContent());
-            $count = $this->writeStations($source, $targetPath);
-        } catch (ExceptionInterface $e) {
-            $io->error(\sprintf('Download failed: %s', $e->getMessage()));
 
-            return Command::FAILURE;
+            $progress('Downloading gares-voyageurs.csv...');
+            $progress(\sprintf('  %d stations', $this->writeStations($source, $targetDir.'/gares-voyageurs.csv')));
         } finally {
             unlink($source);
         }
-
-        $io->success(\sprintf('%d stations written. Review with `git diff resources/geo/` before committing.', $count));
-
-        return Command::SUCCESS;
     }
 
     private function writeStations(string $sourcePath, string $targetPath): int

@@ -45,9 +45,8 @@ Neither is on by default: every unit is shown until asked otherwise.
 
 INSEE, [base des aires d'attraction des villes 2020](https://www.insee.fr/fr/information/4803954),
 communes composition, vendored as `resources/geo/communes-aires-attraction.csv`
-(Git LFS, restricted to the communes of an urban unit). It is refreshed by
-`app:zones:download` together with the other zone files, and applied by
-`app:zones:import`.
+(Git LFS, restricted to the communes of an urban unit). It is refreshed with the other zone
+files by `app:import:zones --download`, and applied by `app:import:zones`.
 
 The zoning is built from the 2016 census commuting data, with a yearly
 geography update: the file's vintage (1 January of the year) is hardcoded in

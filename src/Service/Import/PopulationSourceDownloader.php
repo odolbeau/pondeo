@@ -2,20 +2,16 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace App\Service\Import;
 
-use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-#[AsCommand(
-    name: 'app:criteria:population:download',
-    description: 'Refresh the vendored population history (resources/geo/population-historique.csv) from INSEE\'s Mélodi API',
-)]
-final class CriteriaPopulationDownloadCommand extends Command
+/**
+ * Refreshes `resources/geo/population-historique.csv` from INSEE's Mélodi
+ * API: the annual municipal population, one request per page and year.
+ */
+final readonly class PopulationSourceDownloader
 {
     private const string API_URL = 'https://api.insee.fr/melodi/data/DS_POPULATIONS_HISTORIQUES';
 
@@ -30,30 +26,28 @@ final class CriteriaPopulationDownloadCommand extends Command
     // for what is an occasional, manual refresh.
     private const int THROTTLE_MICROSECONDS = 2_100_000;
 
-    public function __construct(private readonly HttpClientInterface $httpClient)
+    public function __construct(private HttpClientInterface $httpClient)
     {
-        parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    /**
+     * @param \Closure(string): void $progress called with a line per year downloaded
+     *
+     * @throws ExceptionInterface when a request fails
+     */
+    public function download(string $targetDir, \Closure $progress): void
     {
-        $io = new SymfonyStyle($input, $output);
-        $targetPath = \dirname(__DIR__, 2).'/resources/geo/population-historique.csv';
+        $targetPath = $targetDir.'/population-historique.csv';
 
         $handle = fopen($targetPath, 'w') ?: throw new \RuntimeException("Cannot write {$targetPath}");
         fputcsv($handle, ['code_insee', 'year', 'population'], escape: '\\');
 
         for ($year = self::FIRST_YEAR; $year <= self::LAST_YEAR; ++$year) {
-            $io->writeln(\sprintf('Downloading %d...', $year));
-            $rowCount = $this->downloadYear($year, $handle);
-            $io->writeln(\sprintf('  %d communes', $rowCount));
+            $progress(\sprintf('Downloading %d...', $year));
+            $progress(\sprintf('  %d communes', $this->downloadYear($year, $handle)));
         }
 
         fclose($handle);
-
-        $io->success('Population history refreshed. Review with `git diff resources/geo/` before committing.');
-
-        return Command::SUCCESS;
     }
 
     /**

@@ -21,7 +21,7 @@ final class Version20261010092620 extends AbstractMigration
         // docs/urban-units.md), so they are dropped and recreated instead
         // of migrated column by column — commune would otherwise need a
         // NOT NULL unite_urbaine_id on rows that cannot have one yet.
-        // Re-run `app:zones:import` and `app:criteria:population:import`
+        // Re-run `app:import:zones` and `app:import:criteria:population`
         // afterwards.
         $this->addSql('DROP TABLE zone_criterion_value');
         $this->addSql('DROP TABLE poi_commune_location');

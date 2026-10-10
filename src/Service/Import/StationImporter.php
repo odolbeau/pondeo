@@ -13,7 +13,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Reads the vendored `resources/geo/gares-voyageurs.csv` (see
- * PoisStationsDownloadCommand) and upserts the stations as POIs of the
+ * StationSourceDownloader) and upserts the stations as POIs of the
  * "railway_station" category, matched on the source's station id. Idempotent:
  * re-running updates in place, never duplicates, and drops the stations the
  * source no longer lists. Needs the zones imported first, to attach each

@@ -70,14 +70,15 @@ merge every year. A vendored file does not refresh itself.
 ## Refreshing
 
 ```
-bin/console app:zones:download
+bin/console app:import:zones --download
 git diff resources/geo/
 git add resources/geo/ && git commit
 ```
 
-Then re-run `bin/console app:zones:import` to apply the changes to the
-database (idempotent upsert; communes and urban units the source no longer
-lists are removed).
+`--download` refreshes the vendored files, then imports them: the database
+gets the changes in the same run (idempotent upsert; communes and urban units
+the source no longer lists are removed). Without the option, the command only
+imports what is already vendored.
 
 ## Dev flow
 
@@ -86,14 +87,13 @@ automatically: schema, zones import, population import, then demo fixtures
 (`bin/reset-db`). `AppStory` (demo POI/criteria) relies on the real Vannes and
 Nantes urban units already being imported at that point.
 
-To re-run only the import (e.g. after `app:zones:download`), without a
-full reset:
+To re-run only the import, without a full reset:
 
 ```
-bin/console app:zones:import                                 # idempotent upsert, never duplicates
+bin/console app:import:zones                                 # idempotent upsert, never duplicates
 bin/console foundry:load-fixtures --no-interaction --append  # --append: does not reset the database
 ```
 
 `--append` is required here: without it, `foundry:load-fixtures` would
 reset the database and wipe the zones just imported (which is why
-`bin/reset-db` also uses it internally, after running `app:zones:import`).
+`bin/reset-db` also uses it internally, after running `app:import:zones`).

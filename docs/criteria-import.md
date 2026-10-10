@@ -1,13 +1,14 @@
 # Criteria import
 
-Each comparison criterion is fed by a dedicated `download`/`import` command
-pair under `app:criteria:<name>:*`, following the same shape as the zones
-import (see `docs/urban-units.md`). The download side is necessarily bespoke
-per criterion (different source, different API shape), but the import side is
-not: as long as the source CSV is one row = one (commune code, period, value)
-tuple, the import command doesn't need its own importer — it describes the
+Each comparison criterion is fed by a dedicated `app:import:criteria:<name>`
+command, following the same shape as the other imports (see
+`docs/urban-units.md`): it imports the vendored CSV, and its `--download`
+option refreshes that CSV from the source first. Downloading is necessarily
+bespoke per criterion (different source, different API shape), but importing
+is not: as long as the source CSV is one row = one (commune code, period,
+value) tuple, the command doesn't need its own importer — it describes the
 criterion (code, label, value type, unit, CSV column names) and delegates to
-the shared, generic importer. `CriteriaPopulationImportCommand` is the
+the shared, generic importer. `app:import:criteria:population` is the
 reference example of adding a criterion of this shape.
 
 ## Groups
@@ -45,8 +46,8 @@ Source: INSEE's [Mélodi API](https://portail-api.insee.fr/), dataset
 `code_insee,year,population`).
 
 ```
-bin/console app:criteria:population:download   # refresh the vendored CSV
-bin/console app:criteria:population:import      # upsert into the DB, summed per urban unit
+bin/console app:import:criteria:population --download   # refresh the vendored CSV, then import
+bin/console app:import:criteria:population               # import only: upsert into the DB, summed per urban unit
 ```
 
 Because urban units are fixed at the current zoning, the historical series

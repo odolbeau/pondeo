@@ -11,7 +11,7 @@ php "$CURDIR/console" cache:clear --no-debug
 php "$CURDIR/console" doctrine:database:drop --if-exists --force
 php "$CURDIR/console" doctrine:database:create --if-not-exists
 php "$CURDIR/console" doctrine:migration:migrate -n --no-debug
-php "$CURDIR/console" app:zones:import --no-debug
-php "$CURDIR/console" app:pois:stations:import --no-debug
-php "$CURDIR/console" app:criteria:population:import --no-debug
+php "$CURDIR/console" app:import:zones --no-debug
+php "$CURDIR/console" app:import:pois:stations --no-debug
+php "$CURDIR/console" app:import:criteria:population --no-debug
 php "$CURDIR/console" foundry:load-fixtures --no-interaction --append

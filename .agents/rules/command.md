@@ -12,3 +12,8 @@ Context, rationale, caveats, usage notes — anything beyond the one-line
 `description` — goes in the attribute's `help:` (shown by `--help`), not in a
 class-level PHPDoc block. It's the same information either way; `help:` puts
 it where whoever runs the command actually sees it.
+
+Data imports live under the `app:import:*` namespace (`app:import:zones`,
+`app:import:criteria:population`, ...). A command that works from a vendored
+file takes a `--download` option to refresh that file from its source first,
+rather than having a separate `download` command.

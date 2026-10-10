@@ -14,7 +14,7 @@ use Doctrine\ORM\EntityManagerInterface;
 
 /**
  * Reads the vendored files under `resources/geo/` (see
- * ZonesDownloadCommand) and upserts them into UniteUrbaine/Commune.
+ * ZoneSourceDownloader) and upserts them into UniteUrbaine/Commune.
  * Idempotent: safe to re-run (dev resets, prod re-syncs after a data
  * refresh) — never creates duplicates, matches by natural code, and drops
  * what the source no longer lists.

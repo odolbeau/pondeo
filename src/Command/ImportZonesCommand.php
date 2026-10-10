@@ -5,28 +5,51 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Service\Import\ZoneImporter;
+use App\Service\Import\ZoneSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
+use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
 use Symfony\Component\Console\Style\SymfonyStyle;
+use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 
 #[AsCommand(
-    name: 'app:zones:import',
+    name: 'app:import:zones',
     description: 'Import the unités urbaines of France métropolitaine and their communes',
-    help: 'Idempotent upsert — safe to re-run. See <comment>app:zones:download</comment> to refresh the source files first.',
+    help: <<<'HELP'
+        Idempotent upsert — safe to re-run.
+
+        With <comment>--download</comment>, the vendored source files under resources/geo/ are refreshed first.
+        Only the communes belonging to an unité urbaine, in France métropolitaine, are kept (the sources
+        also list the ~27 000 communes outside any unité urbaine, and overseas territories).
+        HELP,
 )]
-final class ZonesImportCommand extends Command
+final class ImportZonesCommand extends Command
 {
-    public function __construct(private readonly ZoneImporter $zoneImporter)
-    {
+    public function __construct(
+        private readonly ZoneImporter $zoneImporter,
+        private readonly ZoneSourceDownloader $zoneSourceDownloader,
+    ) {
         parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
-    {
-        $io = new SymfonyStyle($input, $output);
+    public function __invoke(
+        SymfonyStyle $io,
+        #[Option(description: 'Refresh the vendored source files before importing')]
+        bool $download = false,
+    ): int {
         $dir = \dirname(__DIR__, 2).'/resources/geo';
+
+        if ($download) {
+            try {
+                $this->zoneSourceDownloader->download($dir, $io->writeln(...));
+            } catch (ExceptionInterface $e) {
+                $io->error(\sprintf('Download failed: %s', $e->getMessage()));
+
+                return Command::FAILURE;
+            }
+
+            $io->note('Reference files refreshed. Review with `git diff resources/geo/` before committing.');
+        }
 
         $io->writeln('Importing unités urbaines and their communes...');
         $counts = $this->zoneImporter->importUnitesUrbaines($dir.'/communes-unites-urbaines.csv');

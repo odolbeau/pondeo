@@ -2,29 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Command;
+namespace App\Service\Import;
 
 use App\Enum\Departement;
-use App\Service\Import\CsvReader;
-use App\Service\Import\XlsxReader;
-use Symfony\Component\Console\Attribute\AsCommand;
-use Symfony\Component\Console\Command\Command;
-use Symfony\Component\Console\Input\InputInterface;
-use Symfony\Component\Console\Output\OutputInterface;
-use Symfony\Component\Console\Style\SymfonyStyle;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
-#[AsCommand(
-    name: 'app:zones:download',
-    description: 'Refresh the vendored unité urbaine reference files (resources/geo/)',
-    help: <<<'HELP'
-        Downloads the full source files, then keeps only what is imported: the communes belonging to an
-        unité urbaine, in France métropolitaine (the source also lists the ~27 000 communes outside any
-        unité urbaine, and overseas territories). The three outputs share the same commune set.
-        HELP,
-)]
-final class ZonesDownloadCommand extends Command
+/**
+ * Refreshes the vendored unité urbaine reference files under `resources/geo/`
+ * from their public sources. Keeps only what is imported: the communes
+ * belonging to an unité urbaine, in France métropolitaine (the sources also
+ * list the ~27 000 communes outside any unité urbaine, and overseas
+ * territories). The three outputs share the same commune set.
+ */
+final readonly class ZoneSourceDownloader
 {
     // Hardcoded on purpose — a one-off refresh, not a configurable system.
     private const string COMMUNES_GEOJSON_URL = 'https://raw.githubusercontent.com/gregoiredavid/france-geojson/master/communes-version-simplifiee.geojson';
@@ -47,41 +38,31 @@ final class ZonesDownloadCommand extends Command
     private const array CSV_COLUMNS = ['code_insee', 'nom_standard', 'dep_code', 'population', 'code_unite_urbaine', 'nom_unite_urbaine'];
 
     public function __construct(
-        private readonly HttpClientInterface $httpClient,
-        private readonly CsvReader $csvReader,
-        private readonly XlsxReader $xlsxReader,
+        private HttpClientInterface $httpClient,
+        private CsvReader $csvReader,
+        private XlsxReader $xlsxReader,
     ) {
-        parent::__construct();
     }
 
-    protected function execute(InputInterface $input, OutputInterface $output): int
+    /**
+     * @param \Closure(string): void $progress called with a line per file being downloaded
+     *
+     * @throws ExceptionInterface when a download fails
+     */
+    public function download(string $targetDir, \Closure $progress): void
     {
         // The full communes GeoJSON is ~18 MB, decoded into PHP arrays.
         ini_set('memory_limit', '1G');
 
-        $io = new SymfonyStyle($input, $output);
-        $targetDir = \dirname(__DIR__, 2).'/resources/geo';
+        $progress('Downloading communes-unites-urbaines.csv...');
+        $communeCodes = $this->writeCommunesCsv($targetDir.'/communes-unites-urbaines.csv');
+        $progress(\sprintf('  %d communes in an unité urbaine', \count($communeCodes)));
 
-        try {
-            $io->writeln('Downloading <info>communes-unites-urbaines.csv</info>...');
-            $communeCodes = $this->writeCommunesCsv($targetDir.'/communes-unites-urbaines.csv');
-            $io->writeln(\sprintf('  %d communes in an unité urbaine', \count($communeCodes)));
+        $progress('Downloading communes-aires-attraction.csv...');
+        $progress(\sprintf("  %d communes with an aire d'attraction category", $this->writeAttractionAreasCsv($targetDir.'/communes-aires-attraction.csv', $communeCodes)));
 
-            $io->writeln('Downloading <info>communes-aires-attraction.csv</info>...');
-            $io->writeln(\sprintf("  %d communes with an aire d'attraction category", $this->writeAttractionAreasCsv($targetDir.'/communes-aires-attraction.csv', $communeCodes)));
-
-            $io->writeln('Downloading <info>communes.geojson</info>...');
-            $kept = $this->writeCommunesGeojson($targetDir.'/communes.geojson', $communeCodes);
-            $io->writeln(\sprintf('  %d boundaries kept', $kept));
-        } catch (ExceptionInterface $e) {
-            $io->error(\sprintf('Download failed: %s', $e->getMessage()));
-
-            return Command::FAILURE;
-        }
-
-        $io->success('Reference files refreshed. Review with `git diff resources/geo/` before committing.');
-
-        return Command::SUCCESS;
+        $progress('Downloading communes.geojson...');
+        $progress(\sprintf('  %d boundaries kept', $this->writeCommunesGeojson($targetDir.'/communes.geojson', $communeCodes)));
     }
 
     /**

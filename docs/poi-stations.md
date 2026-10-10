@@ -37,12 +37,12 @@ station for the units around it.
 ## Refreshing
 
 ```
-bin/console app:pois:stations:download
+bin/console app:import:pois:stations --download
 git diff resources/geo/
 git add resources/geo/ && git commit
-bin/console app:pois:stations:import
 ```
 
-The import is an idempotent upsert: it never duplicates, and removes the
+`--download` refreshes the vendored file, then imports it. The import is an
+idempotent upsert: it never duplicates, and removes the
 stations the source no longer lists. Import the zones first
-(`app:zones:import`); `make db-reset` does both in the right order.
+(`app:import:zones`); `make db-reset` does both in the right order.
