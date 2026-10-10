@@ -32,6 +32,9 @@ final class ZonesImportCommand extends Command
         $counts = $this->zoneImporter->importUnitesUrbaines($dir.'/communes-unites-urbaines.csv');
         $io->writeln(\sprintf('  %d unités urbaines, %d communes', $counts['unitesUrbaines'], $counts['communes']));
 
+        $io->writeln("Importing aires d'attraction...");
+        $io->writeln(\sprintf('  %d unités urbaines categorised', $this->zoneImporter->importAttractionAreas($dir.'/communes-unites-urbaines.csv', $dir.'/communes-aires-attraction.csv')));
+
         $io->writeln('Importing commune boundaries...');
         $io->writeln(\sprintf('  %d boundaries', $this->zoneImporter->importCommuneBoundaries($dir.'/communes.geojson')));
 

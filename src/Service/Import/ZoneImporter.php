@@ -6,6 +6,7 @@ namespace App\Service\Import;
 
 use App\Entity\Commune;
 use App\Entity\UniteUrbaine;
+use App\Enum\AttractionCategory;
 use App\Enum\Departement;
 use App\Repository\CommuneRepository;
 use App\Repository\UniteUrbaineRepository;
@@ -100,6 +101,54 @@ final readonly class ZoneImporter
         $this->entityManager->clear();
 
         return ['unitesUrbaines' => \count($rowsByUniteUrbaineCode), 'communes' => $communeCount];
+    }
+
+    /**
+     * Sets each unité urbaine's aire d'attraction from its most populous
+     * commune (the ville-centre). A unit whose commune the zoning doesn't
+     * list keeps no category, so it is never taken for a satellite.
+     *
+     * @return int number of unités urbaines given a category
+     */
+    public function importAttractionAreas(string $unitesUrbainesCsvPath, string $attractionAreasCsvPath): int
+    {
+        /** @var array<string, array<string, string>> $attractionByCommuneCode */
+        $attractionByCommuneCode = [];
+        foreach ($this->csvReader->read($attractionAreasCsvPath) as $row) {
+            $attractionByCommuneCode[$row['code_insee']] = $row;
+        }
+
+        /** @var array<string, array<string, string>> $mostPopulousRows */
+        $mostPopulousRows = [];
+        foreach ($this->csvReader->read($unitesUrbainesCsvPath) as $row) {
+            $code = $row['code_unite_urbaine'];
+            if (!isset($mostPopulousRows[$code]) || (int) $row['population'] > (int) $mostPopulousRows[$code]['population']) {
+                $mostPopulousRows[$code] = $row;
+            }
+        }
+
+        $count = 0;
+        foreach ($this->uniteUrbaineRepository->findAll() as $uniteUrbaine) {
+            $communeCode = ($mostPopulousRows[$uniteUrbaine->getCode()] ?? null)['code_insee'] ?? null;
+            $attraction = null === $communeCode ? null : ($attractionByCommuneCode[$communeCode] ?? null);
+            $category = null === $attraction ? null : AttractionCategory::tryFrom($attraction['categorie']);
+
+            if (null === $attraction || null === $category) {
+                $uniteUrbaine->setAttraction(null, null, null);
+
+                continue;
+            }
+
+            // "000" is INSEE's pseudo-area for communes outside any aire d'attraction.
+            $isInArea = AttractionCategory::HorsAttraction !== $category;
+            $uniteUrbaine->setAttraction($category, $isInArea ? $attraction['code_aav'] : null, $isInArea ? $attraction['nom_aav'] : null);
+            ++$count;
+        }
+
+        $this->entityManager->flush();
+        $this->entityManager->clear();
+
+        return $count;
     }
 
     /**

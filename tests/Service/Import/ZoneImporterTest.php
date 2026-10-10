@@ -100,6 +100,50 @@ final class ZoneImporterTest extends KernelTestCase
         unlink($geojsonPath);
     }
 
+    public function testAttractionAreaComesFromTheMostPopulousCommune(): void
+    {
+        $importer = $this->importer();
+        $unitesUrbainesPath = $this->writeTempFile(self::HEADER
+            // Vannes's unit: its ville-centre (56260) is the area's centre, though Saint-Avé is a couronne commune.
+            .'56206,Saint-Avé,56,12470,56501,Vannes'."\n"
+            .'56260,Vannes,56,55790,56501,Vannes'."\n"
+            .'56003,Arradon,56,5835,56202,Arradon'."\n"
+            .'56195,La Roche-Bernard,56,800,56195,La Roche-Bernard'."\n"
+            .'99999,Inconnue,56,3000,99001,Inconnue'."\n");
+        $attractionPath = $this->writeTempFile("code_insee,code_aav,nom_aav,categorie\n"
+            ."56206,057,Vannes,20\n"
+            ."56260,057,Vannes,11\n"
+            ."56003,057,Vannes,20\n"
+            ."56195,000,Commune hors attraction des villes,30\n");
+
+        $importer->importUnitesUrbaines($unitesUrbainesPath);
+
+        // 99001's commune is absent from the zoning: left without category.
+        self::assertSame(3, $importer->importAttractionAreas($unitesUrbainesPath, $attractionPath));
+
+        self::assertSame(['11', '057', 'Vannes'], $this->attraction('56501'));
+        self::assertSame(['20', '057', 'Vannes'], $this->attraction('56202'));
+        self::assertSame(['30', null, null], $this->attraction('56195'));
+        self::assertSame([null, null, null], $this->attraction('99001'));
+
+        unlink($unitesUrbainesPath);
+        unlink($attractionPath);
+    }
+
+    /**
+     * @return list<?string>
+     */
+    private function attraction(string $uniteUrbaineCode): array
+    {
+        $row = $this->connection()->fetchNumeric(
+            'SELECT attraction_category, attraction_area_code, attraction_area_name FROM unite_urbaine WHERE insee_code = :code',
+            ['code' => $uniteUrbaineCode],
+        );
+        \assert(false !== $row);
+
+        return array_map(static fn (mixed $value): ?string => \is_string($value) ? $value : null, $row);
+    }
+
     private function importer(): ZoneImporter
     {
         $importer = self::getContainer()->get(ZoneImporter::class);

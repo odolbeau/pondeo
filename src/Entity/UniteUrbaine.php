@@ -6,6 +6,7 @@ namespace App\Entity;
 
 use App\Entity\Trait\TimestampableTrait;
 use App\Entity\Trait\UuidIdTrait;
+use App\Enum\AttractionCategory;
 use App\Enum\Departement;
 use App\Repository\UniteUrbaineRepository;
 use Doctrine\Common\Collections\ArrayCollection;
@@ -44,6 +45,21 @@ class UniteUrbaine
      */
     #[ORM\Column(length: 3, nullable: true, enumType: Departement::class)]
     private ?Departement $departement = null;
+
+    /**
+     * Category, in the aires d'attraction zoning, of the most populous
+     * commune. Null when that commune is unknown to the zoning (e.g. a recent
+     * merger) — such a unit is never treated as a satellite.
+     */
+    #[ORM\Column(length: 2, nullable: true, enumType: AttractionCategory::class)]
+    private ?AttractionCategory $attractionCategory = null;
+
+    /** INSEE code and name of the aire d'attraction that commune belongs to (null when outside any). */
+    #[ORM\Column(length: 3, nullable: true)]
+    private ?string $attractionAreaCode = null;
+
+    #[ORM\Column(length: 255, nullable: true)]
+    private ?string $attractionAreaName = null;
 
     /** EWKT, union of the member communes' boundaries. */
     #[ORM\Column(type: 'geometry', nullable: true, options: ['geometry_type' => 'MULTIPOLYGON', 'srid' => 4326])]
@@ -98,6 +114,30 @@ class UniteUrbaine
     public function setDepartement(?Departement $departement): static
     {
         $this->departement = $departement;
+
+        return $this;
+    }
+
+    public function getAttractionCategory(): ?AttractionCategory
+    {
+        return $this->attractionCategory;
+    }
+
+    public function getAttractionAreaCode(): ?string
+    {
+        return $this->attractionAreaCode;
+    }
+
+    public function getAttractionAreaName(): ?string
+    {
+        return $this->attractionAreaName;
+    }
+
+    public function setAttraction(?AttractionCategory $category, ?string $areaCode, ?string $areaName): static
+    {
+        $this->attractionCategory = $category;
+        $this->attractionAreaCode = $areaCode;
+        $this->attractionAreaName = $areaName;
 
         return $this;
     }
