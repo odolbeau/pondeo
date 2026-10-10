@@ -37,6 +37,24 @@
                    data-action="input->map#onNumberInput change->map#onNumberChange"
                    class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
         </div>
+
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Aires d'attraction</h2>
+
+        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-slate-300">
+            <input type="checkbox" data-map-target="excludeCouronne" data-action="change->map#onToggleChange"
+                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-400">
+            <span>Exclure les villes de la couronne d'une autre
+                <span class="block text-xs text-slate-500">Arradon, qui dépend de Vannes, par exemple</span>
+            </span>
+        </label>
+
+        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-slate-300">
+            <input type="checkbox" data-map-target="excludePolesSecondaires" data-action="change->map#onToggleChange"
+                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-400">
+            <span>Exclure les pôles secondaires
+                <span class="block text-xs text-slate-500">Villes qui forment un pôle d'emploi dans l'aire d'une plus grande</span>
+            </span>
+        </label>
     </aside>
 
     <div class="relative flex-1" data-map-target="mapContainer"></div>

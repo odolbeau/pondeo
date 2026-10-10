@@ -12,8 +12,7 @@ use Symfony\Component\Routing\Attribute\Route;
 
 /**
  * GeoJSON FeatureCollection of unités urbaines matching the sidebar filters.
- * Population is the only filter today; a future criterion is a new query
- * param read here, not a new controller.
+ * A new filter is a new query param read here, not a new controller.
  */
 #[Route('/carte/donnees', name: 'app_map_data')]
 final class UniteUrbaineMapDataController extends AbstractController
@@ -31,7 +30,7 @@ final class UniteUrbaineMapDataController extends AbstractController
         $min = $filters->populationMin ?? $bounds['min'];
         $max = $filters->populationMax ?? $bounds['max'];
 
-        $unitesUrbaines = $this->mapDataProvider->findFeatures($period, $min, $max);
+        $unitesUrbaines = $this->mapDataProvider->findFeatures($period, $min, $max, $filters->excludedAttractionCategories());
 
         return JsonResponse::fromJsonString($this->mapDataProvider->toFeatureCollectionJson($unitesUrbaines));
     }

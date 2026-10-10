@@ -4,14 +4,16 @@ declare(strict_types=1);
 
 namespace App\Service\Map;
 
+use App\Enum\AttractionCategory;
 use App\Repository\CriterionRepository;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 
 /**
  * Raw-SQL queries backing the unité urbaine map (Doctrine can't express the
- * boundary simplification cleanly). Population is the only filter today;
- * findFeatures()'s min/max params are the extension point for more criteria
- * later, so the data endpoint doesn't need a new controller per criterion.
+ * boundary simplification cleanly). findFeatures()'s params are the extension
+ * point for more filters, so the data endpoint doesn't need a new controller
+ * per criterion.
  */
 final readonly class UniteUrbaineMapDataProvider
 {
@@ -65,11 +67,17 @@ final readonly class UniteUrbaineMapDataProvider
      * JSON payload size itself. toFeatureCollectionJson() splices it
      * straight into the response body instead.
      *
+     * A unité urbaine with no attraction category is never excluded: unknown
+     * is not the same as satellite.
+     *
+     * @param list<AttractionCategory> $excludedAttractionCategories
+     *
      * @return list<array{id: string, code: string, name: string, population: int, geometryJson: string}>
      */
-    public function findFeatures(int $period, int $populationMin, int $populationMax): array
+    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = []): array
     {
         $criterionId = $this->populationCriterionId();
+        $excludedCategoryValues = array_map(static fn (AttractionCategory $category): string => $category->value, $excludedAttractionCategories);
 
         // Simplified: at full resolution, the boundaries of thousands of
         // unités urbaines together are too large to decode/transfer for an
@@ -86,13 +94,17 @@ final readonly class UniteUrbaineMapDataProvider
                   AND cv.period = :period
                   AND cv.value_integer BETWEEN :min AND :max
                   AND uu.boundary IS NOT NULL
+                  AND (uu.attraction_category IS NULL OR uu.attraction_category NOT IN (:excludedCategories))
                 SQL,
             [
                 'criterionId' => $criterionId,
                 'period' => $period,
                 'min' => $populationMin,
                 'max' => $populationMax,
+                // An empty IN () list is invalid SQL: a value no category has keeps the clause a no-op.
+                'excludedCategories' => [] === $excludedCategoryValues ? [''] : $excludedCategoryValues,
             ],
+            ['excludedCategories' => ArrayParameterType::STRING],
         );
 
         return array_map(
