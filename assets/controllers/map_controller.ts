@@ -234,7 +234,9 @@ export default class extends Controller {
         }
 
         const query = params.toString();
-        history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
+        // Keep the current state: it carries Turbo's restoration data, without
+        // which the back button silently does nothing on this entry.
+        history.replaceState(history.state, '', query ? `?${query}` : window.location.pathname);
     }
 
     // The URL wins so a shared link shows what its author saw; otherwise the
