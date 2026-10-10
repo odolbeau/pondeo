@@ -60,6 +60,7 @@ class UniteUrbaine
 
     /** @var Collection<int, Commune> */
     #[ORM\OneToMany(targetEntity: Commune::class, mappedBy: 'uniteUrbaine')]
+    #[ORM\OrderBy(['name' => 'ASC'])]
     private Collection $communes;
 
     public function __construct(string $inseeCode, string $name)

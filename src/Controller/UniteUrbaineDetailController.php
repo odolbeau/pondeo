@@ -8,6 +8,7 @@ use App\Entity\UniteUrbaine;
 use App\Service\Detail\CriterionDetail;
 use App\Service\Detail\CriterionGroupDetail;
 use App\Service\Detail\UniteUrbaineCriteriaProvider;
+use App\Service\Detail\UniteUrbainePoiProvider;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -23,6 +24,7 @@ final class UniteUrbaineDetailController extends AbstractController
 {
     public function __construct(
         private readonly UniteUrbaineCriteriaProvider $criteriaProvider,
+        private readonly UniteUrbainePoiProvider $poiProvider,
     ) {
     }
 
@@ -36,6 +38,7 @@ final class UniteUrbaineDetailController extends AbstractController
         return $this->render('unite_urbaine/detail.html.twig', [
             'uniteUrbaine' => $uniteUrbaine,
             'groups' => $groups,
+            'poiCategories' => $this->poiProvider->findCategories($uniteUrbaine),
             'population' => $this->findPopulation($groups),
             'inFrame' => $request->headers->has('Turbo-Frame'),
         ]);

@@ -7,7 +7,10 @@ namespace App\Tests\Controller;
 use App\Entity\CriterionValue;
 use App\Enum\CriterionValueType;
 use App\Enum\Departement;
+use App\Factory\CommuneFactory;
 use App\Factory\CriterionFactory;
+use App\Factory\PoiCategoryFactory;
+use App\Factory\PoiFactory;
 use App\Factory\UniteUrbaineFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
@@ -43,6 +46,26 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('details summary', 'Démographie');
         self::assertSelectorExists('turbo-frame#unite-urbaine-detail polyline');
         self::assertSelectorNotExists('a[data-turbo-frame="_top"]');
+    }
+
+    public function testPageListsPoisByCategoryAndCommunes(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        CommuneFactory::createOne(['name' => 'Séné', 'uniteUrbaine' => $vannes]);
+        CommuneFactory::createOne(['name' => 'Plescop', 'uniteUrbaine' => $vannes]);
+        $category = PoiCategoryFactory::createOne(['code' => 'hardware_store', 'label' => 'Grande surface de bricolage']);
+        PoiFactory::createMany(12, ['category' => $category, 'uniteUrbaine' => $vannes]);
+        PoiFactory::createOne(['name' => 'Leroy Merlin Vannes', 'brand' => 'Leroy Merlin', 'category' => $category, 'uniteUrbaine' => $vannes]);
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Grande surface de bricolage (13)');
+        self::assertSelectorTextContains('body', 'et 3 autres');
+        self::assertSelectorTextContains('body', 'Communes (2)');
+        self::assertSelectorTextContains('body', 'Plescop');
     }
 
     public function testFrameRequestOffersTheFullPage(): void
