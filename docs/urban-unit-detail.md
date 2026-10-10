@@ -18,7 +18,7 @@ a full page.
 
 ## Content
 
-- **Header:** name, département and région, population with its rank.
+- **Header:** name, département and région, its category in the [aires d'attraction](urban-unit-attraction.md) (e.g. "Couronne · aire d'attraction de Vannes"), population with its rank.
 - **Criteria**, one section per [group](criteria-import.md#groups), each
   listing its criteria with the latest value, its period and, for numeric
   criteria, a sparkline of the series over the available periods. A search

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Entity\CriterionValue;
+use App\Enum\AttractionCategory;
 use App\Enum\CriterionValueType;
 use App\Enum\Departement;
 use App\Factory\CommuneFactory;
@@ -68,6 +69,18 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', 'et 3 autres');
         self::assertSelectorTextContains('body', 'Communes (2)');
         self::assertSelectorTextContains('body', 'Plescop');
+    }
+
+    public function testPageSaysWhichAireDAttractionTheUniteUrbaineDependsOn(): void
+    {
+        $client = self::createClient();
+        $arradon = UniteUrbaineFactory::createOne(['inseeCode' => '56202', 'name' => 'Arradon']);
+        $arradon->setAttraction(AttractionCategory::Couronne, '057', 'Vannes');
+
+        $client->request('GET', '/unites-urbaines/56202');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('header', "Couronne · aire d'attraction de Vannes");
     }
 
     public function testFrameRequestOffersTheFullPage(): void

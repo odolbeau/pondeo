@@ -4,6 +4,16 @@
         <p class="mt-1 text-sm text-slate-400">{{ uniteUrbaine.departement.label }} · {{ uniteUrbaine.departement.region.label }}</p>
     {% endif %}
 
+    {% if uniteUrbaine.attractionCategory %}
+        <p class="mt-1 text-sm text-slate-400">
+            {% if uniteUrbaine.attractionAreaName %}
+                {{ uniteUrbaine.attractionCategory.label }} · aire d'attraction de {{ uniteUrbaine.attractionAreaName }}
+            {% else %}
+                {{ uniteUrbaine.attractionCategory.label }}
+            {% endif %}
+        </p>
+    {% endif %}
+
     {% if population %}
         <p class="mt-4 text-3xl font-semibold text-emerald-400">
             {{ population.value|criterion_value }}<span class="ml-2 text-base font-normal text-slate-400">{{ population.unit }}</span>
