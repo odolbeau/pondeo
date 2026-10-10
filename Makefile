@@ -26,7 +26,7 @@ serve: ## Start this worktree's stack on demand (installs/seeds only what's miss
 
 .PHONY: vendors-install
 vendors-install: ## Install vendors
-	docker compose exec php composer ins
+	docker compose run --rm php composer ins
 
 .PHONY: vendors-update
 vendors-update: ## Update all vendors

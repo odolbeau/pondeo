@@ -34,6 +34,9 @@ services:
   node:
     image: node:22-alpine
     working_dir: /var/www
+    # Runs as root on a bind mount: umask 000 keeps what it creates (e.g.
+    # node_modules) deletable from the host, like the php entrypoint does.
+    entrypoint: ["sh", "-c", "umask 000 && exec docker-entrypoint.sh \"$$@\"", "--"]
     volumes:
       - .:/var/www
     environment:
