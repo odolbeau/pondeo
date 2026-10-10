@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace App\Service\Import;
 
 use App\Enum\CriterionValueType;
-use App\Enum\ZoneType;
 
 /**
- * Describes how to read a criterion's vendored CSV and upsert it via
+ * Describes how to read a criterion's vendored CSV (one row = one commune,
+ * period, value) and upsert it, summed per unité urbaine, via
  * {@see CsvCriterionImporter} — one instance per criterion, built by its
  * import command.
  */
@@ -18,9 +18,8 @@ final readonly class CriterionCsvSpec
         public string $code,
         public string $label,
         public CriterionValueType $valueType,
-        public ZoneType $zoneType,
         public ?string $unit,
-        public string $zoneCodeColumn,
+        public string $communeCodeColumn,
         public string $periodColumn,
         public string $valueColumn,
     ) {

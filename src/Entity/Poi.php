@@ -46,6 +46,15 @@ class Poi
     #[ORM\Column(length: 500, nullable: true)]
     private ?string $address = null;
 
+    /**
+     * Containing unité urbaine, resolved at write time (see
+     * PoiUniteUrbaineResolver) rather than on every read. Null for a POI
+     * outside any unité urbaine (rural), which no comparison covers.
+     */
+    #[ORM\ManyToOne(targetEntity: UniteUrbaine::class)]
+    #[ORM\JoinColumn(nullable: true, onDelete: 'SET NULL')]
+    private ?UniteUrbaine $uniteUrbaine = null;
+
     public function __construct(string $name, PoiCategory $category, string $location)
     {
         $this->id = Uuid::v7();
@@ -112,6 +121,18 @@ class Poi
     public function setAddress(?string $address): static
     {
         $this->address = $address;
+
+        return $this;
+    }
+
+    public function getUniteUrbaine(): ?UniteUrbaine
+    {
+        return $this->uniteUrbaine;
+    }
+
+    public function setUniteUrbaine(?UniteUrbaine $uniteUrbaine): static
+    {
+        $this->uniteUrbaine = $uniteUrbaine;
 
         return $this;
     }

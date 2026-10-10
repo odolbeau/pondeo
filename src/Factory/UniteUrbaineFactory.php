@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Factory;
 
-use App\Entity\Epci;
-use App\Enum\EpciType;
+use App\Entity\UniteUrbaine;
 use Zenstruck\Foundry\Persistence\PersistentObjectFactory;
 
 /**
- * @extends PersistentObjectFactory<Epci>
+ * @extends PersistentObjectFactory<UniteUrbaine>
  */
-final class EpciFactory extends PersistentObjectFactory
+final class UniteUrbaineFactory extends PersistentObjectFactory
 {
     /**
      * @see https://symfony.com/bundles/ZenstruckFoundryBundle/current/index.html#factories-as-services
@@ -25,7 +24,7 @@ final class EpciFactory extends PersistentObjectFactory
     #[\Override]
     public static function class(): string
     {
-        return Epci::class;
+        return UniteUrbaine::class;
     }
 
     /**
@@ -37,9 +36,8 @@ final class EpciFactory extends PersistentObjectFactory
     protected function defaults(): array
     {
         return [
-            'epciType' => self::faker()->randomElement(EpciType::cases()),
+            'inseeCode' => self::faker()->unique()->numerify('#####'),
             'name' => self::faker()->text(255),
-            'sirenCode' => self::faker()->text(9),
         ];
     }
 
@@ -50,7 +48,7 @@ final class EpciFactory extends PersistentObjectFactory
     protected function initialize(): static
     {
         return $this
-            // ->afterInstantiate(function(Epci $epci): void {})
+            // ->afterInstantiate(function(UniteUrbaine $uniteUrbaine): void {})
         ;
     }
 }

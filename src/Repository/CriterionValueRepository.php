@@ -4,17 +4,17 @@ declare(strict_types=1);
 
 namespace App\Repository;
 
-use App\Entity\Region;
+use App\Entity\CriterionValue;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
 /**
- * @extends ServiceEntityRepository<Region>
+ * @extends ServiceEntityRepository<CriterionValue>
  */
-class RegionRepository extends ServiceEntityRepository
+class CriterionValueRepository extends ServiceEntityRepository
 {
     public function __construct(ManagerRegistry $registry)
     {
-        parent::__construct($registry, Region::class);
+        parent::__construct($registry, CriterionValue::class);
     }
 }

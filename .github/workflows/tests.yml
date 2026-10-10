@@ -26,6 +26,9 @@ jobs:
     steps:
       - name: Check out repository code
         uses: actions/checkout@v7
+        with:
+          # resources/geo/ is tracked with Git LFS; bin/reset-db imports it.
+          lfs: true
 
       - name: Setup PHP
         uses: shivammathur/setup-php@v2

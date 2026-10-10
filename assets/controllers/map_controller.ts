@@ -2,17 +2,16 @@ import { Controller } from '@hotwired/stimulus';
 import { Map, type GeoJSONSource } from 'maplibre-gl';
 
 const DEBOUNCE_MS = 200;
-const ZONES_SOURCE_ID = 'communes';
+const ZONES_SOURCE_ID = 'unites-urbaines';
 
 // Round-number steps ("paliers") the population slider snaps to, rather
 // than letting it select an arbitrary population to the exact inhabitant —
-// unreadable and not meaningfully more useful. Density is highest at the
-// low end because that's where almost all communes are (a few tens of
-// thousands at most; Paris alone is at 2.1M). Capped at 200k: distinguishing
-// among the handful of cities above that isn't useful here, so the top step
-// is an open-ended "200 000 et plus" bucket instead of more steps up to
-// Paris's exact population.
-const POPULATION_STEPS = [0, 100, 200, 500, 1_000, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000];
+// unreadable and not meaningfully more useful. Steps below the smallest
+// unité urbaine (~2 000 inhabitants) are dropped in connect(). Capped at
+// 1M: distinguishing among the handful of agglomérations above that isn't
+// useful here, so the top step is an open-ended "1000000 et plus" bucket
+// instead of more steps up to Paris's exact population.
+const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
     static targets = ['mapContainer', 'minRange', 'maxRange', 'minLabel', 'maxLabel'];

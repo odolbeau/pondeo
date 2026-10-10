@@ -7,7 +7,6 @@ namespace App\Entity;
 use App\Entity\Trait\TimestampableTrait;
 use App\Entity\Trait\UuidIdTrait;
 use App\Enum\CriterionValueType;
-use App\Enum\ZoneType;
 use App\Repository\CriterionRepository;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
@@ -38,10 +37,6 @@ class Criterion
 
     #[ORM\Column(length: 20, enumType: CriterionValueType::class)]
     private CriterionValueType $valueType;
-
-    /** Null = applies to every zone type. */
-    #[ORM\Column(length: 20, nullable: true, enumType: ZoneType::class)]
-    private ?ZoneType $zoneType = null;
 
     public function __construct(string $code, string $label, CriterionValueType $valueType)
     {
@@ -109,18 +104,6 @@ class Criterion
     public function setValueType(CriterionValueType $valueType): static
     {
         $this->valueType = $valueType;
-
-        return $this;
-    }
-
-    public function getZoneType(): ?ZoneType
-    {
-        return $this->zoneType;
-    }
-
-    public function setZoneType(?ZoneType $zoneType): static
-    {
-        $this->zoneType = $zoneType;
 
         return $this;
     }
