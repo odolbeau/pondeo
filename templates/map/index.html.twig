@@ -23,9 +23,18 @@
                    class="pointer-events-none absolute inset-x-0 top-1/2 h-1 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-400 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-emerald-400">
         </div>
 
-        <div class="mt-4 flex justify-between text-sm text-slate-300">
-            <span data-map-target="minLabel">{{ populationMin }}</span>
-            <span data-map-target="maxLabel">{{ populationMax }}</span>
+        <div class="mt-4 flex items-center gap-2 text-sm text-slate-300">
+            <input type="number" inputmode="numeric" step="1" aria-label="Population minimale"
+                   min="{{ populationMin }}" max="{{ populationMax }}" value="{{ populationMin }}"
+                   data-map-target="minInput"
+                   data-action="input->map#onNumberInput change->map#onNumberChange"
+                   class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
+            <span aria-hidden="true">–</span>
+            <input type="number" inputmode="numeric" step="1" aria-label="Population maximale"
+                   min="{{ populationMin }}" max="{{ populationMax }}" value="{{ populationMax }}"
+                   data-map-target="maxInput"
+                   data-action="input->map#onNumberInput change->map#onNumberChange"
+                   class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
         </div>
     </aside>
 

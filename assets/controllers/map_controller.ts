@@ -6,15 +6,15 @@ const ZONES_SOURCE_ID = 'unites-urbaines';
 
 // Round-number steps ("paliers") the population slider snaps to, rather
 // than letting it select an arbitrary population to the exact inhabitant —
-// unreadable and not meaningfully more useful. Steps below the smallest
-// unité urbaine (~2 000 inhabitants) are dropped in connect(). Capped at
-// 1M: distinguishing among the handful of agglomérations above that isn't
-// useful here, so the top step is an open-ended "1000000 et plus" bucket
-// instead of more steps up to Paris's exact population.
+// unreadable and not meaningfully more useful. Exact values are typed in the
+// number inputs instead. Steps below the smallest unité urbaine (~2 000
+// inhabitants) are dropped in connect(). Capped at 1M: distinguishing among
+// the handful of agglomérations above that isn't useful on a slider, so its
+// top step stands in for everything up to populationMaxValue.
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minLabel', 'maxLabel'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput'];
     static values = {
         dataUrl: String,
         populationMin: Number,
@@ -24,31 +24,25 @@ export default class extends Controller {
     declare readonly mapContainerTarget: HTMLDivElement;
     declare readonly minRangeTarget: HTMLInputElement;
     declare readonly maxRangeTarget: HTMLInputElement;
-    declare readonly minLabelTarget: HTMLElement;
-    declare readonly maxLabelTarget: HTMLElement;
+    declare readonly minInputTarget: HTMLInputElement;
+    declare readonly maxInputTarget: HTMLInputElement;
     declare readonly dataUrlValue: string;
     declare readonly populationMinValue: number;
     declare readonly populationMaxValue: number;
 
     private map!: Map;
     private steps!: number[];
-    private topStepIsCapped!: boolean;
     private debounceHandle?: ReturnType<typeof setTimeout>;
 
     connect() {
-        this.steps = POPULATION_STEPS.filter((s) => s >= this.populationMinValue && s <= this.populationMaxValue);
-        if (0 === this.steps.length || this.steps[0] > this.populationMinValue) {
-            this.steps.unshift(this.populationMinValue);
-        }
-        // Whether the last step is a real bound or an open-ended "and
-        // above" bucket standing in for everything up to populationMaxValue.
-        this.topStepIsCapped = this.steps[this.steps.length - 1] < this.populationMaxValue;
+        this.steps = POPULATION_STEPS.filter((s) => s > this.populationMinValue && s < this.populationMaxValue);
+        this.steps.unshift(this.populationMinValue);
+        this.steps.push(this.populationMaxValue);
 
         this.minRangeTarget.max = this.maxRangeTarget.max = String(this.steps.length - 1);
-        const [initialLo, initialHi] = this.indexesFromUrl();
-        this.minRangeTarget.value = String(initialLo);
-        this.maxRangeTarget.value = String(initialHi);
-        this.updateLabels();
+        const [min, max] = this.valuesFromUrl();
+        this.writeInputs(min, max);
+        this.syncRanges(min, max);
 
         this.map = new Map({
             container: this.mapContainerTarget,
@@ -82,27 +76,45 @@ export default class extends Controller {
     }
 
     onRangeInput() {
-        this.updateLabels();
+        const a = this.steps[Number(this.minRangeTarget.value)];
+        const b = this.steps[Number(this.maxRangeTarget.value)];
+        this.writeInputs(Math.min(a, b), Math.max(a, b));
 
+        this.scheduleRefresh();
+    }
+
+    // Fires on every keystroke: the sliders follow, but the typed text is
+    // left alone so the user isn't fought while typing.
+    onNumberInput() {
+        const [min, max] = this.valuesFromInputs();
+        this.syncRanges(min, max);
+
+        this.scheduleRefresh();
+    }
+
+    // Once editing is done, the inputs are rewritten with the clamped and
+    // ordered values that are actually applied.
+    onNumberChange() {
+        const [min, max] = this.valuesFromInputs();
+        this.writeInputs(min, max);
+        this.syncRanges(min, max);
+
+        this.scheduleRefresh();
+    }
+
+    scheduleRefresh() {
         clearTimeout(this.debounceHandle);
         this.debounceHandle = setTimeout(() => this.refresh(), DEBOUNCE_MS);
     }
 
-    updateLabels() {
-        const [lo, hi] = this.sortedIndexes();
-
-        this.minLabelTarget.textContent = this.stepLabel(lo);
-        this.maxLabelTarget.textContent = this.stepLabel(hi);
-    }
-
     async refresh() {
-        const [lo, hi] = this.sortedIndexes();
+        const [min, max] = this.valuesFromInputs();
 
-        this.updateUrl(lo, hi);
+        this.updateUrl(min, max);
 
         const url = new URL(this.dataUrlValue, window.location.origin);
-        url.searchParams.set('populationMin', String(this.stepValue(lo)));
-        url.searchParams.set('populationMax', String(this.stepValue(hi)));
+        url.searchParams.set('populationMin', String(min));
+        url.searchParams.set('populationMax', String(max));
 
         const response = await fetch(url);
         const geojson: GeoJSON.FeatureCollection = await response.json();
@@ -110,23 +122,61 @@ export default class extends Controller {
         (this.map.getSource(ZONES_SOURCE_ID) as GeoJSONSource | undefined)?.setData(geojson);
     }
 
-    sortedIndexes(): [number, number] {
-        const a = Number(this.minRangeTarget.value);
-        const b = Number(this.maxRangeTarget.value);
+    // An empty or invalid field falls back to its bound; the pair is then
+    // ordered, so typing a min above the max doesn't produce an empty map.
+    valuesFromInputs(): [number, number] {
+        const min = this.clamp(this.minInputTarget.value, this.populationMinValue);
+        const max = this.clamp(this.maxInputTarget.value, this.populationMaxValue);
 
-        return a <= b ? [a, b] : [b, a];
+        return min <= max ? [min, max] : [max, min];
+    }
+
+    clamp(raw: string | null, fallback: number): number {
+        if (null === raw || '' === raw.trim()) {
+            return fallback;
+        }
+
+        const value = Math.round(Number(raw));
+        if (!Number.isFinite(value)) {
+            return fallback;
+        }
+
+        return Math.min(Math.max(value, this.populationMinValue), this.populationMaxValue);
+    }
+
+    writeInputs(min: number, max: number) {
+        this.minInputTarget.value = String(min);
+        this.maxInputTarget.value = String(max);
+    }
+
+    // The slider only shows the nearest step; the exact value lives in the
+    // inputs.
+    syncRanges(min: number, max: number) {
+        this.minRangeTarget.value = String(this.nearestStepIndex(min));
+        this.maxRangeTarget.value = String(this.nearestStepIndex(max));
+    }
+
+    nearestStepIndex(value: number): number {
+        let nearest = 0;
+        this.steps.forEach((step, i) => {
+            if (Math.abs(step - value) < Math.abs(this.steps[nearest] - value)) {
+                nearest = i;
+            }
+        });
+
+        return nearest;
     }
 
     // Makes the current filter shareable: reflected in the page URL, and
     // read back from it on load. A bound left at its default (the full
     // range) is omitted entirely, so an untouched filter keeps a clean URL.
-    updateUrl(lo: number, hi: number) {
+    updateUrl(min: number, max: number) {
         const params = new URLSearchParams();
-        if (lo !== 0) {
-            params.set('populationMin', String(this.stepValue(lo)));
+        if (min !== this.populationMinValue) {
+            params.set('populationMin', String(min));
         }
-        if (hi !== this.steps.length - 1) {
-            params.set('populationMax', String(this.stepValue(hi)));
+        if (max !== this.populationMaxValue) {
+            params.set('populationMax', String(max));
         }
 
         const query = params.toString();
@@ -134,45 +184,13 @@ export default class extends Controller {
     }
 
     // Reads populationMin/populationMax back from the page URL (see
-    // updateUrl()) to restore a shared filter on load. Falls back to the
-    // full range — including when a value doesn't match any step, e.g. a
-    // hand-edited URL — rather than guessing the closest step.
-    indexesFromUrl(): [number, number] {
+    // updateUrl()) to restore a shared filter on load.
+    valuesFromUrl(): [number, number] {
         const params = new URLSearchParams(window.location.search);
-        const lo = this.indexForUrlValue(params.get('populationMin')) ?? 0;
-        const hi = this.indexForUrlValue(params.get('populationMax')) ?? this.steps.length - 1;
+        const min = this.clamp(params.get('populationMin'), this.populationMinValue);
+        const max = this.clamp(params.get('populationMax'), this.populationMaxValue);
 
-        return lo <= hi ? [lo, hi] : [0, this.steps.length - 1];
-    }
-
-    indexForUrlValue(raw: string | null): number | null {
-        if (null === raw) {
-            return null;
-        }
-
-        const value = Number(raw);
-        const index = this.steps.findIndex((_, i) => this.stepValue(i) === value);
-
-        return -1 === index ? null : index;
-    }
-
-    // The population to actually filter on for this step: the last step is
-    // an open-ended bucket (see topStepIsCapped in connect()), so it maps to
-    // the real max rather than its own face value.
-    stepValue(index: number): number {
-        if (index === this.steps.length - 1 && this.topStepIsCapped) {
-            return this.populationMaxValue;
-        }
-
-        return this.steps[index];
-    }
-
-    stepLabel(index: number): string {
-        if (index === this.steps.length - 1 && this.topStepIsCapped) {
-            return `${this.steps[index]} et plus`;
-        }
-
-        return String(this.steps[index]);
+        return min <= max ? [min, max] : [this.populationMinValue, this.populationMaxValue];
     }
 
     emptyFeatureCollection(): GeoJSON.FeatureCollection {
