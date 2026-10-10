@@ -1,0 +1,53 @@
+<header>
+    <h1 class="text-2xl font-semibold">Unité urbaine de {{ uniteUrbaine.name }}</h1>
+    {% if uniteUrbaine.departement %}
+        <p class="mt-1 text-sm text-slate-400">{{ uniteUrbaine.departement.label }} · {{ uniteUrbaine.departement.region.label }}</p>
+    {% endif %}
+
+    {% if population %}
+        <p class="mt-4 text-3xl font-semibold text-emerald-400">
+            {{ population.value|criterion_value }}<span class="ml-2 text-base font-normal text-slate-400">{{ population.unit }}</span>
+        </p>
+        {% if population.rank %}
+            <p class="mt-1 text-sm text-slate-300">
+                {{ include('unite_urbaine/_rank.html.twig', {criterion: population}) }}
+            </p>
+        {% endif %}
+    {% endif %}
+
+    {% if inFrame %}
+        <a href="{{ path('app_unite_urbaine_detail', {code: uniteUrbaine.code}) }}" data-turbo-frame="_top"
+           class="mt-4 inline-block text-sm text-emerald-400 hover:underline">Voir la fiche complète →</a>
+    {% endif %}
+</header>
+
+{% for group in groups %}
+    <details open class="mt-8 border-t border-slate-800 pt-4">
+        <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">{{ group.label }}</summary>
+        <dl class="mt-2 divide-y divide-slate-800/60">
+            {% for criterion in group.criteria %}
+                <div class="flex items-center justify-between gap-4 py-3">
+                    <div class="min-w-0">
+                        <dt class="text-sm text-slate-300">{{ criterion.label }}</dt>
+                        <dd class="mt-1 text-xs text-slate-500">
+                            {{ criterion.period }}
+                            {% if criterion.rank %} · {{ include('unite_urbaine/_rank.html.twig', {criterion: criterion}) }}{% endif %}
+                        </dd>
+                    </div>
+                    <div class="flex shrink-0 items-center gap-3">
+                        {% set points = criterion.sparklinePoints(64, 20) %}
+                        {% if points %}
+                            <svg viewBox="-2 -2 68 24" width="68" height="24" class="text-emerald-400" role="img" aria-label="Évolution de {{ criterion.label }}">
+                                <polyline points="{{ points }}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
+                            </svg>
+                        {% endif %}
+                        <span class="text-right text-sm font-medium text-slate-100">
+                            {{ criterion.value|criterion_value }}
+                            {% if criterion.unit %}<span class="text-slate-500">{{ criterion.unit }}</span>{% endif %}
+                        </span>
+                    </div>
+                </div>
+            {% endfor %}
+        </dl>
+    </details>
+{% endfor %}

@@ -1,0 +1,67 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Tests\Controller;
+
+use App\Entity\CriterionValue;
+use App\Enum\CriterionValueType;
+use App\Enum\Departement;
+use App\Factory\CriterionFactory;
+use App\Factory\UniteUrbaineFactory;
+use Doctrine\ORM\EntityManagerInterface;
+use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Zenstruck\Foundry\Test\Factories;
+use Zenstruck\Foundry\Test\ResetDatabase;
+
+final class UniteUrbaineDetailControllerTest extends WebTestCase
+{
+    use Factories;
+    use ResetDatabase;
+
+    public function testPageShowsTheUniteUrbaineWithItsCriteria(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501', 'name' => 'Vannes', 'departement' => Departement::Morbihan]);
+        $other = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $population = CriterionFactory::createOne(['code' => 'population', 'label' => 'Population', 'unit' => 'hab.', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Démographie']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($population, $vannes, 84_176, 2023));
+        $entityManager->persist(new CriterionValue($population, $vannes, 80_000, 2022));
+        $entityManager->persist(new CriterionValue($population, $other, 500_000, 2023));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Unité urbaine de Vannes');
+        self::assertSelectorTextContains('header', "84\u{a0}176");
+        self::assertSelectorTextContains('header', '2e sur 2');
+        self::assertSelectorTextContains('details summary', 'Démographie');
+        self::assertSelectorExists('turbo-frame#unite-urbaine-detail polyline');
+        self::assertSelectorNotExists('a[data-turbo-frame="_top"]');
+    }
+
+    public function testFrameRequestOffersTheFullPage(): void
+    {
+        $client = self::createClient();
+        UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+
+        $client->request('GET', '/unites-urbaines/56501', server: ['HTTP_TURBO_FRAME' => 'unite-urbaine-detail']);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('a[data-turbo-frame="_top"][href="/unites-urbaines/56501"]');
+    }
+
+    public function testUnknownUniteUrbaineReturns404(): void
+    {
+        $client = self::createClient();
+
+        $client->request('GET', '/unites-urbaines/99999');
+
+        self::assertResponseStatusCodeSame(404);
+    }
+}

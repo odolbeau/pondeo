@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Pondeo — Unité urbaine de {{ uniteUrbaine.name }}{% endblock %}
+
+{% block body %}
+<div class="min-h-[calc(100vh-3.5rem)] bg-slate-950 px-6 py-8 text-slate-100">
+    <turbo-frame id="unite-urbaine-detail" class="mx-auto block max-w-3xl">
+        {{ include('unite_urbaine/_detail.html.twig') }}
+    </turbo-frame>
+</div>
+{% endblock %}

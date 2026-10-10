@@ -1,0 +1,1 @@
+{{ criterion.rank }}{{ 1 == criterion.rank ? 'er' : 'e' }} sur {{ criterion.total|fr_number }}{% if criterion.median is not null %} · médiane {{ criterion.median|fr_number }}{% if criterion.unit %} {{ criterion.unit }}{% endif %}{% endif %}
