@@ -6,7 +6,7 @@ const ZONES_SOURCE_ID = 'unites-urbaines';
 const SELECTED_LAYER_ID = `${ZONES_SOURCE_ID}-selected`;
 const UNITE_CODE_PATTERN = /^[0-9A-Za-z]{5}$/;
 // Query params making up the filter — in the page URL and in localStorage.
-const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires'];
+const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin'];
 const STORAGE_KEY = 'pondeo:map:population';
 
 // Round-number steps ("paliers") the population slider snaps to, rather
@@ -19,7 +19,7 @@ const STORAGE_KEY = 'pondeo:map:population';
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'panel', 'frame'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'panel', 'frame'];
     static values = {
         dataUrl: String,
         detailUrl: String,
@@ -34,6 +34,7 @@ export default class extends Controller {
     declare readonly maxInputTarget: HTMLInputElement;
     declare readonly excludeCouronneTarget: HTMLInputElement;
     declare readonly excludePolesSecondairesTarget: HTMLInputElement;
+    declare readonly commerceDensityMinTarget: HTMLInputElement;
     declare readonly panelTarget: HTMLElement;
     declare readonly frameTarget: HTMLElement & { src: string | null };
     declare readonly dataUrlValue: string;
@@ -56,6 +57,7 @@ export default class extends Controller {
         const [min, max] = this.orderedOrFull(initial.get('populationMin'), initial.get('populationMax'));
         this.excludeCouronneTarget.checked = '1' === initial.get('excludeCouronne');
         this.excludePolesSecondairesTarget.checked = '1' === initial.get('excludePolesSecondaires');
+        this.commerceDensityMinTarget.value = initial.get('commerceDensityMin') ?? '';
         this.writeInputs(min, max);
         this.syncRanges(min, max);
 
@@ -188,6 +190,22 @@ export default class extends Controller {
         (this.map.getSource(ZONES_SOURCE_ID) as GeoJSONSource | undefined)?.setData(geojson);
     }
 
+    onCommerceInput() {
+        this.scheduleRefresh();
+    }
+
+    // Null (filter off) for an empty or invalid field.
+    commerceDensityMin(): number | null {
+        const raw = this.commerceDensityMinTarget.value.trim();
+        if ('' === raw) {
+            return null;
+        }
+
+        const value = Number(raw);
+
+        return Number.isFinite(value) && value > 0 ? value : null;
+    }
+
     // An empty or invalid field falls back to its bound; the pair is then
     // ordered, so typing a min above the max doesn't produce an empty map.
     valuesFromInputs(): [number, number] {
@@ -262,6 +280,10 @@ export default class extends Controller {
         }
         if (this.excludePolesSecondairesTarget.checked) {
             params.set('excludePolesSecondaires', '1');
+        }
+        const density = this.commerceDensityMin();
+        if (null !== density) {
+            params.set('commerceDensityMin', String(density));
         }
 
         return params;

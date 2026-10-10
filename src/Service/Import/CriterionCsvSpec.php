@@ -23,6 +23,12 @@ final readonly class CriterionCsvSpec
         public string $periodColumn,
         public string $valueColumn,
         public ?string $groupLabel = null,
+        // Restricts the import to the rows where this column equals the value
+        // (e.g. one category of a CSV that carries several).
+        public ?string $filterColumn = null,
+        public ?string $filterValue = null,
+        public bool $comparable = true,
+        public ?int $position = null,
     ) {
     }
 }

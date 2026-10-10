@@ -55,6 +55,21 @@
                 <span class="block text-xs text-slate-500">Villes qui forment un pôle d'emploi dans l'aire d'une plus grande</span>
             </span>
         </label>
+
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Commerces</h2>
+
+        <label class="mt-4 block text-sm text-slate-300">
+            Au moins
+            <span class="mt-2 flex items-center gap-2">
+                <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="0"
+                       aria-label="Commerces minimum pour 1000 habitants"
+                       data-map-target="commerceDensityMin"
+                       data-action="input->map#onCommerceInput"
+                       class="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
+                <span>commerces pour 1000 hab.</span>
+            </span>
+            <span class="mt-1 block text-xs text-slate-500">Tous commerces confondus (INSEE, BPE)</span>
+        </label>
     </aside>
 
     <div class="relative flex-1" data-map-target="mapContainer"></div>

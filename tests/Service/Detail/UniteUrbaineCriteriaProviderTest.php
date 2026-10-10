@@ -56,9 +56,9 @@ final class UniteUrbaineCriteriaProviderTest extends KernelTestCase
 
         $groups = $provider->findGroups($mediumUnit);
 
-        self::assertSame(['Climat', 'Démographie', 'Autres'], array_map(static fn (\App\Service\Detail\CriterionGroupDetail $group): string => $group->label, $groups));
+        self::assertSame(['Démographie', 'Climat', 'Autres'], array_map(static fn (\App\Service\Detail\CriterionGroupDetail $group): string => $group->label, $groups));
 
-        [$climate, $demography, $others] = $groups;
+        [$demography, $climate, $others] = $groups;
 
         $rainDetail = $climate->criteria[0];
         self::assertSame(110.5, $rainDetail->value);

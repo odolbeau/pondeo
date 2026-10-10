@@ -68,13 +68,15 @@ final readonly class UniteUrbaineMapDataProvider
      * straight into the response body instead.
      *
      * A unité urbaine with no attraction category is never excluded: unknown
-     * is not the same as satellite.
+     * is not the same as satellite. Likewise, with a commerce density
+     * minimum, an unité urbaine without a density value is left out: it
+     * cannot be said to reach it.
      *
      * @param list<AttractionCategory> $excludedAttractionCategories
      *
      * @return list<array{id: string, code: string, name: string, population: int, geometryJson: string}>
      */
-    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = []): array
+    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null): array
     {
         $criterionId = $this->populationCriterionId();
         $excludedCategoryValues = array_map(static fn (AttractionCategory $category): string => $category->value, $excludedAttractionCategories);
@@ -95,12 +97,24 @@ final readonly class UniteUrbaineMapDataProvider
                   AND cv.value_integer BETWEEN :min AND :max
                   AND uu.boundary IS NOT NULL
                   AND (uu.attraction_category IS NULL OR uu.attraction_category NOT IN (:excludedCategories))
+                  AND (CAST(:densityMin AS numeric) IS NULL OR EXISTS (
+                      SELECT 1
+                      FROM criterion_value density
+                      INNER JOIN criterion dc ON dc.id = density.criterion_id
+                      WHERE dc.code = 'commerces_total_pour_1000_hab'
+                        AND density.unite_urbaine_id = uu.id
+                        AND density.period = (
+                            SELECT MAX(period) FROM criterion_value WHERE criterion_id = dc.id
+                        )
+                        AND density.value_decimal >= CAST(:densityMin AS numeric)
+                  ))
                 SQL,
             [
                 'criterionId' => $criterionId,
                 'period' => $period,
                 'min' => $populationMin,
                 'max' => $populationMax,
+                'densityMin' => $commerceDensityMin,
                 // An empty IN () list is invalid SQL: a value no category has keeps the clause a no-op.
                 'excludedCategories' => [] === $excludedCategoryValues ? [''] : $excludedCategoryValues,
             ],

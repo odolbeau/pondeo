@@ -46,6 +46,10 @@ final readonly class CsvCriterionImporter
         /** @var array<string, array<int, float>> $sums indexed by unité urbaine id, then period */
         $sums = [];
         foreach ($this->csvReader->read($csvPath) as $row) {
+            if (null !== $spec->filterColumn && $row[$spec->filterColumn] !== $spec->filterValue) {
+                continue;
+            }
+
             $uniteUrbaineId = $uniteUrbaineIdsByCommuneCode[$row[$spec->communeCodeColumn]] ?? null;
             if (null === $uniteUrbaineId) {
                 continue; // Commune outside every unité urbaine — out of scope.
@@ -83,20 +87,33 @@ final readonly class CsvCriterionImporter
 
     private function findOrCreateCriterion(CriterionCsvSpec $spec): Criterion
     {
-        $criterion = $this->criterionRepository->findOneBy(['code' => $spec->code]);
+        return $this->findOrCreate($spec->code, $spec->label, $spec->valueType, $spec->unit, $spec->groupLabel, $spec->comparable, $spec->position);
+    }
+
+    /**
+     * Also used by importers that derive a criterion rather than read it from a CSV.
+     */
+    public function findOrCreate(string $code, string $label, CriterionValueType $valueType, ?string $unit, ?string $groupLabel, bool $comparable = true, ?int $position = null): Criterion
+    {
+        $criterion = $this->criterionRepository->findOneBy(['code' => $code]);
         if (null !== $criterion) {
-            // Keeps a criterion created before groups existed in step with its spec.
-            if ($criterion->getGroupLabel() !== $spec->groupLabel) {
-                $criterion->setGroupLabel($spec->groupLabel);
+            // Keeps a criterion created before its label, group, comparability or position changed in step with its spec.
+            if ($criterion->getLabel() !== $label || $criterion->getGroupLabel() !== $groupLabel || $criterion->isComparable() !== $comparable || $criterion->getPosition() !== $position) {
+                $criterion->setLabel($label);
+                $criterion->setGroupLabel($groupLabel);
+                $criterion->setComparable($comparable);
+                $criterion->setPosition($position);
                 $this->entityManager->flush();
             }
 
             return $criterion;
         }
 
-        $criterion = new Criterion($spec->code, $spec->label, $spec->valueType);
-        $criterion->setUnit($spec->unit);
-        $criterion->setGroupLabel($spec->groupLabel);
+        $criterion = new Criterion($code, $label, $valueType);
+        $criterion->setUnit($unit);
+        $criterion->setGroupLabel($groupLabel);
+        $criterion->setComparable($comparable);
+        $criterion->setPosition($position);
 
         $this->entityManager->persist($criterion);
         $this->entityManager->flush();

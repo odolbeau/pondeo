@@ -13,11 +13,17 @@ use Doctrine\DBAL\Connection;
  * computed over all unités urbaines (a window function per criterion is
  * what Doctrine can't express).
  *
- * @phpstan-type ValueRow array{code: string, label: string, unit: ?string, group_label: ?string, period: int, value_integer: ?int, value_decimal: ?string, value_text: ?string, value_boolean: ?bool}
+ * @phpstan-type ValueRow array{code: string, label: string, unit: ?string, group_label: ?string, position: ?int, period: int, value_integer: ?int, value_decimal: ?string, value_text: ?string, value_boolean: ?bool}
  */
 final readonly class UniteUrbaineCriteriaProvider
 {
     public const string DEFAULT_GROUP_LABEL = 'Autres';
+
+    /** Groups listed first, in this order; the others follow alphabetically, then the default one. */
+    private const array GROUP_ORDER = ['Démographie', 'Commerces'];
+
+    /** Code suffix of a criterion derived from the count `<code>`: the detail page folds that count into its title. */
+    public const string DENSITY_SUFFIX = '_pour_1000_hab';
 
     public function __construct(private Connection $connection)
     {
@@ -43,6 +49,11 @@ final readonly class UniteUrbaineCriteriaProvider
         /** @var array<string, list<CriterionDetail>> $criteriaByGroup */
         $criteriaByGroup = [];
         foreach ($byCriterion as $code => ['criterion' => $criterion, 'points' => $points]) {
+            // A count that has its "per 1000" criterion is shown in that one's title, not on its own row.
+            if (isset($byCriterion[$code.self::DENSITY_SUFFIX])) {
+                continue;
+            }
+
             ksort($points);
             $period = array_key_last($points);
             if (null === $period) {
@@ -62,18 +73,53 @@ final readonly class UniteUrbaineCriteriaProvider
                 rank: $comparison['rank'] ?? null,
                 total: $comparison['total'] ?? null,
                 median: $comparison['median'] ?? null,
+                count: $this->pairedCount($code, $byCriterion),
+                position: $criterion['position'],
             );
         }
 
-        uksort($criteriaByGroup, static fn (string $a, string $b): int => self::DEFAULT_GROUP_LABEL === $a ? 1 : (self::DEFAULT_GROUP_LABEL === $b ? -1 : strcmp($a, $b)));
+        uksort($criteriaByGroup, static fn (string $a, string $b): int => self::groupRank($a) <=> self::groupRank($b) ?: strcmp($a, $b));
 
         $groups = [];
         foreach ($criteriaByGroup as $label => $criteria) {
-            usort($criteria, static fn (CriterionDetail $a, CriterionDetail $b): int => strcmp($a->label, $b->label));
+            usort($criteria, static fn (CriterionDetail $a, CriterionDetail $b): int => [$a->position ?? \PHP_INT_MAX, $a->label] <=> [$b->position ?? \PHP_INT_MAX, $b->label]);
             $groups[] = new CriterionGroupDetail($label, $criteria);
         }
 
         return $groups;
+    }
+
+    private static function groupRank(string $label): int
+    {
+        if (self::DEFAULT_GROUP_LABEL === $label) {
+            return \PHP_INT_MAX;
+        }
+
+        $index = array_search($label, self::GROUP_ORDER, true);
+
+        return false === $index ? \count(self::GROUP_ORDER) : $index;
+    }
+
+    /**
+     * Latest value of the count a density criterion (`<code>_pour_1000_hab`) is derived from.
+     *
+     * @param array<string, array{criterion: ValueRow, points: array<int, int|float|string|bool>}> $byCriterion
+     */
+    private function pairedCount(string $code, array $byCriterion): ?int
+    {
+        if (!str_ends_with($code, self::DENSITY_SUFFIX)) {
+            return null;
+        }
+
+        $points = $byCriterion[substr($code, 0, -\strlen(self::DENSITY_SUFFIX))]['points'] ?? null;
+        if (null === $points) {
+            return null;
+        }
+
+        ksort($points);
+        $count = end($points);
+
+        return \is_int($count) ? $count : null;
     }
 
     /**
@@ -84,7 +130,7 @@ final readonly class UniteUrbaineCriteriaProvider
         /** @var list<ValueRow> $rows */
         $rows = $this->connection->fetchAllAssociative(
             <<<'SQL'
-                SELECT c.code, c.label, c.unit, c.group_label, cv.period,
+                SELECT c.code, c.label, c.unit, c.group_label, c.position, cv.period,
                        cv.value_integer, cv.value_decimal, cv.value_text, cv.value_boolean
                 FROM criterion_value cv
                 INNER JOIN criterion c ON c.id = cv.criterion_id
@@ -135,7 +181,7 @@ final readonly class UniteUrbaineCriteriaProvider
                 FROM ranked r
                 INNER JOIN medians m ON m.criterion_id = r.criterion_id
                 INNER JOIN criterion c ON c.id = r.criterion_id
-                WHERE r.unite_urbaine_id = :id
+                WHERE r.unite_urbaine_id = :id AND c.comparable
                 SQL,
             ['id' => $uniteUrbaineId],
         );

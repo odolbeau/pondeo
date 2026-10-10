@@ -39,6 +39,19 @@ class Criterion
     #[ORM\Column(length: 100, nullable: true)]
     private ?string $groupLabel = null;
 
+    /**
+     * Whether the detail page ranks a unité urbaine on this criterion and
+     * shows the median. False for a raw count that only feeds a derived
+     * criterion (shops per 1000 inhabitants): the count follows the city's
+     * size, so ranking it says nothing.
+     */
+    #[ORM\Column(options: ['default' => true])]
+    private bool $comparable = true;
+
+    /** Order within its group on the detail page; criteria without one come after, alphabetically. */
+    #[ORM\Column(nullable: true)]
+    private ?int $position = null;
+
     #[ORM\Column(length: 20, enumType: CriterionValueType::class)]
     private CriterionValueType $valueType;
 
@@ -103,6 +116,30 @@ class Criterion
     public function getGroupLabel(): ?string
     {
         return $this->groupLabel;
+    }
+
+    public function getPosition(): ?int
+    {
+        return $this->position;
+    }
+
+    public function setPosition(?int $position): static
+    {
+        $this->position = $position;
+
+        return $this;
+    }
+
+    public function isComparable(): bool
+    {
+        return $this->comparable;
+    }
+
+    public function setComparable(bool $comparable): static
+    {
+        $this->comparable = $comparable;
+
+        return $this;
     }
 
     public function setGroupLabel(?string $groupLabel): static

@@ -39,16 +39,18 @@
 {% endif %}
 {% for group in groups %}
     <details open class="mt-6 border-t border-slate-800 pt-4" data-criteria-filter-target="group">
-        <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">{{ group.label }}</summary>
+        <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">{{ group.label }}{% if group.commonPeriod %} <span class="ml-1 text-xs font-normal normal-case tracking-normal text-slate-500">({{ group.commonPeriod }})</span>{% endif %}</summary>
         <dl class="mt-2 divide-y divide-slate-800/60">
             {% for criterion in group.criteria %}
                 <div class="flex items-center justify-between gap-4 py-3" data-criteria-filter-target="row" data-label="{{ criterion.label }}">
                     <div class="min-w-0">
-                        <dt class="text-sm text-slate-300">{{ criterion.label }}</dt>
-                        <dd class="mt-1 text-xs text-slate-500">
-                            {{ criterion.period }}
-                            {% if criterion.rank %} · {{ include('unite_urbaine/_rank.html.twig', {criterion: criterion}) }}{% endif %}
-                        </dd>
+                        <dt class="text-sm text-slate-300">
+                            {{ criterion.label }}{% if criterion.count is not null %} ({{ criterion.count|fr_number }}){% endif %}
+                            {% if not group.commonPeriod %}<span class="ml-1 text-xs font-normal text-slate-500">({{ criterion.period }})</span>{% endif %}
+                        </dt>
+                        {% if criterion.rank %}
+                            <dd class="mt-1 text-xs text-slate-500"><span class="text-emerald-400">{{ criterion.rank }}{{ 1 == criterion.rank ? 'er' : 'e' }}</span> sur {{ criterion.total|fr_number }}</dd>
+                        {% endif %}
                     </div>
                     <div class="flex shrink-0 items-center gap-3">
                         {% set points = criterion.sparklinePoints(64, 20) %}
@@ -57,9 +59,14 @@
                                 <polyline points="{{ points }}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
                             </svg>
                         {% endif %}
-                        <span class="text-right text-sm font-medium text-slate-100">
-                            {{ criterion.value|criterion_value }}
-                            {% if criterion.unit %}<span class="text-slate-500">{{ criterion.unit }}</span>{% endif %}
+                        <span class="text-right">
+                            <span class="block text-sm font-medium text-slate-100">
+                                {{ criterion.value|criterion_value }}
+                                {% if criterion.unit %}<span class="text-slate-500">{{ criterion.unit }}</span>{% endif %}
+                            </span>
+                            {% if criterion.median is not null %}
+                                <span class="block text-xs text-emerald-400">médiane {{ criterion.median|fr_number }}</span>
+                            {% endif %}
                         </span>
                     </div>
                 </div>

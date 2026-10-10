@@ -14,6 +14,7 @@ final readonly class CriterionDetail
     /**
      * @param array<int, int|float> $series numeric values by period, oldest first; empty for text/boolean criteria
      * @param ?int                  $rank   1 = highest value; null when the criterion isn't numeric
+     * @param ?int                  $count  the raw count a "per 1000 inhabitants" criterion is derived from, shown next to its label
      */
     public function __construct(
         public string $code,
@@ -25,6 +26,8 @@ final readonly class CriterionDetail
         public ?int $rank,
         public ?int $total,
         public ?float $median,
+        public ?int $count = null,
+        public ?int $position = null,
     ) {
     }
 
