@@ -10,7 +10,7 @@ A website to compare French areas (cities, departments, regions, ...) according 
 make install
 ```
 
-Then visit <http://pondeo.localhost>.
+Then visit <https://pondeo.localhost:8443> (<http://pondeo.localhost:8089> redirects there).
 
 ## Documentation
 
