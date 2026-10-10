@@ -54,6 +54,9 @@ Three specifics worth spelling out, because they are easy to get wrong:
 
 - Before considering a change done, run `make sanitize-and-check` (Rector,
   PHP-CS-Fixer, PHPStan, tests) and fix whatever it flags.
+- To run the app (e.g. to check a change in a browser), use `/serve`
+  (`make serve`): it starts this worktree's own stack behind the dev proxy and
+  prints its HTTPS URL. See `docs/local-environment.md`.
 - Commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
   (`feat:`, `fix:`, `chore:`, ...).
 - When something fails, read `var/log/dev.log` and the web profiler

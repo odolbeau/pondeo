@@ -1,4 +1,6 @@
-name: pondeo
+# No top-level `name`: the compose project is named after the directory, so
+# each git worktree runs its own isolated stack (containers, database,
+# volumes) and its own hostname (see docs/local-environment.md).
 
 services:
 ###> doctrine/doctrine-bundle ###
@@ -34,24 +36,39 @@ services:
     working_dir: /var/www
     volumes:
       - .:/var/www
-    ports:
-      - '5173:5173'
+    environment:
+      # The origin the browser loads assets and HMR from (see vite.config.js).
+      PONDEO_ORIGIN: https://${COMPOSE_PROJECT_NAME}.pondeo.localhost
     command: sh -c "npm install && npm run dev"
 
+  # Not published on the host: the machine-wide dev proxy (network
+  # `dev-proxy`, see docs/local-environment.md) owns ports 80/443, terminates
+  # TLS and routes this worktree's hostname here.
   nginx:
     image: nginx:latest
-    ports:
-      - '8089:80'
-      - '8443:443'
     volumes:
       - .:/var/www
       - ./.docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
-      - ./.docker/nginx/certs/:/etc/nginx/certs/
     depends_on:
       - php
       - database
       - node
+    labels:
+      - traefik.enable=true
+      - traefik.docker.network=dev-proxy
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.rule=Host(`${COMPOSE_PROJECT_NAME}.pondeo.localhost`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME}.tls=true
+      - traefik.http.services.${COMPOSE_PROJECT_NAME}.loadbalancer.server.port=80
+    networks:
+      - default
+      - dev-proxy
 ###< doctrine/doctrine-bundle ###
+
+networks:
+  # Shared with the dev proxy; created by the machine setup, not by this
+  # project.
+  dev-proxy:
+    external: true
 
 volumes:
 ###> doctrine/doctrine-bundle ###

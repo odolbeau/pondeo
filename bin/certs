@@ -1,0 +1,39 @@
+#!/bin/bash
+#
+# Drops Pondeo's dev certificate (`pondeo.localhost`, `*.pondeo.localhost`)
+# into the machine-wide dev proxy's directory, which Traefik watches: no
+# restart needed. See docs/local-environment.md.
+#
+# Signed by mkcert's local CA when mkcert is installed, so browsers trust it
+# once that CA is (`mkcert -install`, run by bin/doctor). Otherwise falls
+# back to a self-signed certificate, which browsers warn about.
+#
+# Never needs sudo, so it's safe to run non-interactively (`make serve`).
+
+set -euo pipefail
+
+DEV_PROXY_DIR="${DEV_PROXY_DIR:-$HOME/.local/share/dev-proxy}"
+CERTS_DIR="$DEV_PROXY_DIR/certs"
+CERT="$CERTS_DIR/pondeo.crt"
+KEY="$CERTS_DIR/pondeo.key"
+NAMES=(pondeo.localhost '*.pondeo.localhost')
+
+mkdir -p "$CERTS_DIR" "$DEV_PROXY_DIR/dynamic"
+
+if command -v mkcert >/dev/null 2>&1; then
+    mkcert -cert-file "$CERT" -key-file "$KEY" "${NAMES[@]}"
+else
+    SAN="$(printf 'DNS:%s,' "${NAMES[@]}")"
+    openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
+        -keyout "$KEY" -out "$CERT" \
+        -subj "/CN=pondeo.localhost" -addext "subjectAltName=${SAN%,}" 2>/dev/null
+    echo -e "\033[33mmkcert isn't installed: generated a self-signed certificate, which browsers will warn about. Run bin/doctor.\033[0m"
+fi
+
+# The paths are the ones seen from inside the proxy container.
+cat > "$DEV_PROXY_DIR/dynamic/pondeo.yaml" <<YAML
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/pondeo.crt
+      keyFile: /etc/traefik/certs/pondeo.key
+YAML

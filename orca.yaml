@@ -1,0 +1,6 @@
+# Orca worktree hooks, run from the worktree's directory.
+scripts:
+  # Tears down this worktree's stack (containers, database, volumes, images)
+  # if it was ever started; a no-op otherwise. Nothing to set up on creation:
+  # run `make serve` (or `/serve`) to start it.
+  archive: make destroy
