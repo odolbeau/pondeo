@@ -29,6 +29,8 @@ final class SncfApiClient
 
     private ?\Closure $pauseListener = null;
 
+    private ?\Closure $interruptCheck = null;
+
     private ?\DateTimeImmutable $lastRequestAt = null;
 
     private int $requestCount = 0;
@@ -51,6 +53,17 @@ final class SncfApiClient
         $this->pauseListener = $listener;
     }
 
+    /**
+     * Lets the caller cut a long pause short, e.g. on Ctrl-C: checked every
+     * second while waiting, an InterruptedException is thrown once it is true.
+     *
+     * @param \Closure(): bool $check
+     */
+    public function interruptWhen(\Closure $check): void
+    {
+        $this->interruptCheck = $check;
+    }
+
     /** Number of HTTP requests sent so far (retries after a pause included). */
     public function requestCount(): int
     {
@@ -67,6 +80,7 @@ final class SncfApiClient
      *
      * @throws UnknownStopAreaException
      * @throws DateOutOfBoundsException
+     * @throws InterruptedException
      * @throws SncfApiException
      */
     public function journeys(string $from, string $to, \DateTimeImmutable $day, ?int $maxTransfers = null, int $count = 50): array
@@ -207,7 +221,14 @@ final class SncfApiClient
             ($this->pauseListener)($seconds, $reason);
         }
 
-        $this->clock->sleep($seconds);
+        for ($waited = 0; $waited < $seconds; ++$waited) {
+            if (null !== $this->interruptCheck && ($this->interruptCheck)()) {
+                throw new InterruptedException('Interrupted while waiting for the SNCF API.');
+            }
+
+            $this->clock->sleep(1);
+        }
+
         $this->lastRequestAt = null;
     }
 
