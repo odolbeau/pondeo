@@ -8,8 +8,10 @@ use App\Enum\JourneyDestination;
 use App\Service\Sncf\DateOutOfBoundsException;
 use App\Service\Sncf\DayJourneys;
 use App\Service\Sncf\InterruptedException;
+use App\Service\Sncf\Journey;
 use App\Service\Sncf\SncfApiClient;
 use App\Service\Sncf\SncfApiException;
+use App\Service\Sncf\SncfAuthenticationException;
 use App\Service\Sncf\UnknownStopAreaException;
 
 /**
@@ -18,7 +20,8 @@ use App\Service\Sncf\UnknownStopAreaException;
  * journeys with the fewest transfers. It is a long job under an API quota, so
  * the file is its own checkpoint: pairs already computed for the same day are
  * skipped, and the file is saved regularly, before every quota pause and on
- * the way out, however the run ends.
+ * the way out, however the run ends. One download at a time: two would
+ * overwrite each other's checkpoint.
  */
 final class StationJourneySourceDownloader
 {
@@ -57,7 +60,9 @@ final class StationJourneySourceDownloader
      * @return array{computed: int, skipped: int, failed: int, requests: int, completed: bool} completed = false when stopped early
      *
      * @throws DateOutOfBoundsException
+     * @throws SncfAuthenticationException
      * @throws SncfApiException
+     * @throws \InvalidArgumentException   when --station matches no station
      */
     public function download(
         string $targetDir,
@@ -76,6 +81,9 @@ final class StationJourneySourceDownloader
         // All the stations, to keep the whole file whatever subset is processed.
         $stations = $this->loadStations($targetDir.'/gares-voyageurs.csv', null);
         $targets = null === $station ? $stations : $this->loadStations($targetDir.'/gares-voyageurs.csv', $station);
+        if ([] === $targets) {
+            throw new \InvalidArgumentException(\sprintf('No station matches "%s" (expected a UIC code or a station id).', $station));
+        }
 
         /** @var array<string, array<string, string>> $rows result rows by "id_gare|destination" */
         $rows = $this->loadRows($targetPath);
@@ -90,6 +98,7 @@ final class StationJourneySourceDownloader
         if (null !== $limit) {
             $pending = \array_slice($pending, 0, $limit);
         }
+
         $computed = 0;
         $skipped = 0;
         $failed = 0;
@@ -116,8 +125,8 @@ final class StationJourneySourceDownloader
                     }
 
                     try {
-                        $journeys = $this->findJourneys($current['code_uic'], $destination, $day);
-                    } catch (DateOutOfBoundsException|InterruptedException $e) {
+                        $journeys = $this->findJourneys($current['code_uic'], $destination, $day, static fn (string $warning) => $progress(\sprintf('%s → %s: %s', $current['name'], $destination->label(), $warning)));
+                    } catch (DateOutOfBoundsException|SncfAuthenticationException|InterruptedException $e) {
                         throw $e;
                     } catch (SncfApiException $e) {
                         // Not written: the pair stays pending and is retried on the next run.
@@ -158,35 +167,68 @@ final class StationJourneySourceDownloader
      * The journeys with the fewest transfers over the day, or null when the
      * destination is out of reach. A direct train settles it in one request;
      * otherwise the fewest transfers are found first, then all the journeys
-     * at that level are fetched, since the first answer mixes levels.
+     * at that level are fetched, since the first answer mixes levels. A
+     * station with several UIC codes (a complex) is tried under each of them,
+     * and the best result wins.
+     *
+     * @param \Closure(string): void $warn
      */
-    private function findJourneys(string $uicCodes, JourneyDestination $destination, \DateTimeImmutable $day): ?DayJourneys
+    private function findJourneys(string $uicCodes, JourneyDestination $destination, \DateTimeImmutable $day, \Closure $warn): ?DayJourneys
     {
+        $best = null;
         foreach (explode(';', $uicCodes) as $uic) {
-            $from = 'stop_area:SNCF:'.$uic;
-
             try {
-                $direct = $this->apiClient->journeys($from, $destination->navitiaId(), $day, 0);
-                if ([] !== $direct) {
-                    return DayJourneys::fromJourneys($direct);
-                }
-
-                $any = $this->apiClient->journeys($from, $destination->navitiaId(), $day, self::MAX_TRANSFERS);
-                $fewest = DayJourneys::fromJourneys($any);
-                if (null === $fewest) {
-                    return null;
-                }
-
-                $atThatLevel = $this->apiClient->journeys($from, $destination->navitiaId(), $day, $fewest->transfers);
-
-                return DayJourneys::fromJourneys([] === $atThatLevel ? $any : $atThatLevel);
+                $found = $this->findJourneysFrom('stop_area:SNCF:'.$uic, $destination, $day, $warn);
             } catch (UnknownStopAreaException) {
                 // This UIC code isn't in the API: try the station's next one.
                 continue;
             }
+
+            if (null !== $found && (null === $best || $found->isBetterThan($best))) {
+                $best = $found;
+            }
+
+            if (0 === $best?->transfers) {
+                break;
+            }
         }
 
-        return null;
+        return $best;
+    }
+
+    /**
+     * @param \Closure(string): void $warn
+     */
+    private function findJourneysFrom(string $from, JourneyDestination $destination, \DateTimeImmutable $day, \Closure $warn): ?DayJourneys
+    {
+        $direct = $this->apiClient->journeys($from, $destination->navitiaId(), $day, 0);
+        if ([] !== $direct) {
+            $this->warnIfTruncated($direct, $warn);
+
+            return DayJourneys::fromJourneys($direct);
+        }
+
+        $any = $this->apiClient->journeys($from, $destination->navitiaId(), $day, self::MAX_TRANSFERS);
+        $fewest = DayJourneys::fromJourneys($any);
+        if (null === $fewest) {
+            return null;
+        }
+
+        $atThatLevel = $this->apiClient->journeys($from, $destination->navitiaId(), $day, $fewest->transfers);
+        $this->warnIfTruncated($atThatLevel, $warn);
+
+        return DayJourneys::fromJourneys([] === $atThatLevel ? $any : $atThatLevel);
+    }
+
+    /**
+     * @param list<Journey>          $journeys
+     * @param \Closure(string): void $warn
+     */
+    private function warnIfTruncated(array $journeys, \Closure $warn): void
+    {
+        if (\count($journeys) >= SncfApiClient::DEFAULT_COUNT) {
+            $warn(\sprintf('%d journeys returned, the most a request asks for: the day may be truncated', \count($journeys)));
+        }
     }
 
     /**
@@ -273,12 +315,20 @@ final class StationJourneySourceDownloader
         // Written aside then renamed: a kill mid-write must not truncate the checkpoint.
         $temporary = $path.'.tmp';
         $handle = fopen($temporary, 'w') ?: throw new \RuntimeException("Cannot write {$temporary}");
-        fputcsv($handle, self::CSV_COLUMNS, escape: '\\');
+        $written = false !== fputcsv($handle, self::CSV_COLUMNS, escape: '\\');
         foreach ($rows as $row) {
-            fputcsv($handle, array_map(static fn (string $column): string => $row[$column], self::CSV_COLUMNS), escape: '\\');
+            $written = $written && false !== fputcsv($handle, array_map(static fn (string $column): string => $row[$column], self::CSV_COLUMNS), escape: '\\');
         }
 
-        fclose($handle);
+        // A full disk would leave a truncated file: never let it replace the checkpoint.
+        $flushed = fflush($handle);
+        $closed = fclose($handle);
+        if (!$written || !$flushed || !$closed) {
+            @unlink($temporary);
+
+            throw new \RuntimeException("Cannot save {$path}: the disk may be full.");
+        }
+
         rename($temporary, $path);
     }
 }

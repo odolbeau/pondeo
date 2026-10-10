@@ -7,6 +7,7 @@ namespace App\Tests\Service\Sncf;
 use App\Service\Sncf\DateOutOfBoundsException;
 use App\Service\Sncf\SncfApiClient;
 use App\Service\Sncf\SncfApiException;
+use App\Service\Sncf\SncfAuthenticationException;
 use App\Service\Sncf\UnknownStopAreaException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Clock\MockClock;
@@ -65,6 +66,24 @@ final class SncfApiClientTest extends TestCase
         self::assertSame([], $this->client($http)->journeys(self::FROM, self::TO, new \DateTimeImmutable('2026-10-13'), 0));
     }
 
+    public function testNoRouteErrorsAreAnEmptyList(): void
+    {
+        foreach (['no_origin', 'no_destination', 'no_origin_nor_destination'] as $errorId) {
+            $http = new MockHttpClient(new MockResponse((string) json_encode(['error' => ['id' => $errorId, 'message' => 'x']])));
+
+            self::assertSame([], $this->client($http)->journeys(self::FROM, self::TO, new \DateTimeImmutable('2026-10-13'), 0), $errorId);
+        }
+    }
+
+    public function testAnUnexpectedApiErrorStillThrows(): void
+    {
+        $http = new MockHttpClient(new MockResponse('{"error": {"id": "bad_format", "message": "bad datetime"}}', ['http_code' => 400]));
+
+        $this->expectException(SncfApiException::class);
+
+        $this->client($http)->journeys(self::FROM, self::TO, new \DateTimeImmutable('2026-10-13'));
+    }
+
     public function testUnknownStopAreaThrows(): void
     {
         $http = new MockHttpClient(new MockResponse('{"error": {"id": "unknown_object", "message": "not valid"}}', ['http_code' => 404]));
@@ -90,7 +109,7 @@ final class SncfApiClientTest extends TestCase
         try {
             $this->client($http)->journeys(self::FROM, self::TO, new \DateTimeImmutable('2026-10-13'));
             self::fail('An exception was expected.');
-        } catch (SncfApiException $e) {
+        } catch (SncfAuthenticationException $e) {
             self::assertStringContainsString('refused the token', $e->getMessage());
         }
     }
@@ -102,7 +121,7 @@ final class SncfApiClientTest extends TestCase
         try {
             $this->client($http, token: '')->journeys(self::FROM, self::TO, new \DateTimeImmutable('2026-10-13'));
             self::fail('An exception was expected.');
-        } catch (SncfApiException $e) {
+        } catch (SncfAuthenticationException $e) {
             self::assertStringContainsString('SNCF_API_TOKEN', $e->getMessage());
         }
     }

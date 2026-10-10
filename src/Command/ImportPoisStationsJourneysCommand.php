@@ -33,7 +33,10 @@ use Symfony\Component\Console\Style\SymfonyStyle;
           <comment>--date</comment>     day to read the timetable for (YYYY-MM-DD, within the period the API serves)
           <comment>--station</comment>  only this station (UIC code or station id): a quick check
           <comment>--limit</comment>    stop after this many stations: a pilot run
-          <comment>--force</comment>    recompute pairs even if already done for the day
+          <comment>--force</comment>    recompute pairs even if already done for the day. All or nothing: an interrupted
+                        forced run cannot be resumed (re-running without --force skips what is "done")
+
+        Run one download at a time: two would overwrite each other's progress.
         HELP,
 )]
 final class ImportPoisStationsJourneysCommand extends Command
@@ -119,6 +122,10 @@ final class ImportPoisStationsJourneysCommand extends Command
             $io->error($e->getMessage().' Pick a day within the period served by the API (--date).');
 
             return Command::FAILURE;
+        } catch (\InvalidArgumentException $e) {
+            $io->error($e->getMessage());
+
+            return Command::INVALID;
         } catch (SncfApiException $e) {
             $bar?->clear();
             $io->error($e->getMessage().' Progress is saved: re-run to resume.');

@@ -7,6 +7,7 @@ namespace App\Tests\Service\Import;
 use App\Service\Import\CsvReader;
 use App\Service\Import\StationJourneySourceDownloader;
 use App\Service\Sncf\SncfApiClient;
+use App\Service\Sncf\SncfAuthenticationException;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Clock\MockClock;
 use Symfony\Component\HttpClient\MockHttpClient;
@@ -148,9 +149,8 @@ final class StationJourneySourceDownloaderTest extends TestCase
     public function testTheFileIsSavedBeforeAQuotaPauseAndTheRunResumes(): void
     {
         $this->writeStations(['s1,A,46.2,1.4,23176,87000001', 's2,B,46.3,1.5,23177,87000002']);
-        $linesSeenAtPause = null;
         $calls = 0;
-        $http = new MockHttpClient(static function (string $method, string $url) use (&$calls): MockResponse {
+        $http = new MockHttpClient(static function () use (&$calls): MockResponse {
             ++$calls;
             // The 3rd request (first of station 2) is refused once.
             if (3 === $calls) {
@@ -159,21 +159,117 @@ final class StationJourneySourceDownloaderTest extends TestCase
 
             return new MockResponse(self::DIRECT_ONLY);
         });
-        $client = new SncfApiClient($http, new MockClock('2026-10-10 10:00:00'), 'token', 0.0);
-        $downloader = new StationJourneySourceDownloader($client, new CsvReader());
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock('2026-10-10 10:00:00'), 'token', 0.0), new CsvReader());
+        $messages = [];
+        $linesWhenPausing = null;
+
+        $result = $downloader->download($this->dir, new \DateTimeImmutable('2026-10-13'), function (string $line) use (&$messages, &$linesWhenPausing): void {
+            $messages[] = $line;
+            if (str_contains($line, 'pausing')) {
+                // The pause message comes right after the save: what is on disk now is what survives a kill.
+                $linesWhenPausing = $this->resultLines();
+            }
+        }, static function (): void {
+            // The progress bar isn't under test.
+        });
+
+        self::assertSame(4, $result['computed']);
+        self::assertTrue($result['completed']);
+        self::assertCount(4, $this->resultLines());
+        self::assertSame(['s1,nantes,2026-10-13,0,0536:175;0633:178', 's1,paris,2026-10-13,0,0536:175;0633:178'], $linesWhenPausing);
+        self::assertNotEmpty(array_filter($messages, static fn (string $message): bool => str_contains($message, 'quota reached: pausing')));
+    }
+
+    public function testStopRequestedDuringAQuotaPauseEndsTheRunWithTheFileSaved(): void
+    {
+        $this->writeStations(['s1,A,46.2,1.4,23176,87000001', 's2,B,46.3,1.5,23177,87000002']);
+        $calls = 0;
+        $http = new MockHttpClient(static function () use (&$calls): MockResponse {
+            // Station 2's first request is refused for good.
+            return ++$calls >= 3 ? new MockResponse('', ['http_code' => 429]) : new MockResponse(self::DIRECT_ONLY);
+        });
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock('2026-10-10 10:00:00'), 'token', 0.0), new CsvReader());
+
+        $result = $downloader->download($this->dir, new \DateTimeImmutable('2026-10-13'), static function (string $line) use (&$downloader): void {
+            if (str_contains($line, 'pausing')) {
+                $downloader->requestStop();
+            }
+        }, static function (): void {
+        });
+
+        self::assertFalse($result['completed']);
+        self::assertCount(2, $this->resultLines());
+    }
+
+    public function testNoRouteErrorsAreAnEmptyRowNotAFailure(): void
+    {
+        $this->writeStations(['s1,A,46.2,1.4,23176,87000001']);
+
+        $result = $this->download(['87000001|paris|0' => '{"error": {"id": "no_origin", "message": "no origin point"}}', '87000001|nantes|0' => '{"error": {"id": "no_destination", "message": "x"}}']);
+
+        self::assertSame(0, $result['failed']);
+        self::assertSame(2, $result['computed']);
+        self::assertContains('s1,paris,2026-10-13,,', $this->resultLines());
+    }
+
+    public function testAFailedPairIsNotWrittenSoItIsRetriedNextRun(): void
+    {
+        $this->writeStations(['s1,A,46.2,1.4,23176,87000001']);
+        $http = new MockHttpClient(static fn (): MockResponse => new MockResponse('not json', ['http_code' => 500]));
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader());
         $messages = [];
 
         $result = $downloader->download($this->dir, new \DateTimeImmutable('2026-10-13'), static function (string $line) use (&$messages): void {
             $messages[] = $line;
         }, static function (): void {
-            // The progress bar isn't under test.
         });
-        $linesSeenAtPause = $this->resultLines();
 
-        self::assertSame(4, $result['computed']);
-        self::assertTrue($result['completed']);
-        self::assertCount(4, $linesSeenAtPause);
-        self::assertNotEmpty(array_filter($messages, static fn (string $message): bool => str_contains($message, 'quota reached: pausing')));
+        self::assertSame(2, $result['failed']);
+        self::assertSame(0, $result['computed']);
+        self::assertSame([], $this->resultLines());
+        self::assertCount(2, $messages);
+
+        $retry = $this->download(['87000001|paris|0' => self::DIRECT_ONLY, '87000001|nantes|0' => self::DIRECT_ONLY]);
+        self::assertSame(2, $retry['computed']);
+    }
+
+    public function testARefusedTokenStopsImmediately(): void
+    {
+        $this->writeStations(['s1,A,46.2,1.4,23176,87000001', 's2,B,46.3,1.5,23177,87000002']);
+        $http = new MockHttpClient(new MockResponse('', ['http_code' => 401]));
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader());
+
+        $this->expectException(SncfAuthenticationException::class);
+
+        $downloader->download($this->dir, new \DateTimeImmutable('2026-10-13'), static function (): void {
+        }, static function (): void {
+        });
+    }
+
+    public function testAStationFilterMatchingNothingIsRejected(): void
+    {
+        $this->writeStations(['s1,A,46.2,1.4,23176,87000001']);
+
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->download([], station: 'typo');
+    }
+
+    public function testComplexStationKeepsTheBestResultOverItsUicCodes(): void
+    {
+        $this->writeStations(['s1,Complex,46.2,1.4,23176,87000001;87000002']);
+        $oneChange = '{"journeys": [{"departure_date_time": "20261013T075800", "duration": 14100, "nb_transfers": 1}]}';
+
+        $this->download([
+            // First code: known, but only reaches Paris with a change.
+            '87000001|paris|0' => self::NO_SOLUTION,
+            '87000001|paris|3' => $oneChange,
+            '87000001|paris|1' => $oneChange,
+            // Second code: the real station, with direct trains.
+            '87000002|paris|0' => self::DIRECT_ONLY,
+        ]);
+
+        self::assertContains('s1,paris,2026-10-13,0,0536:175;0633:178', $this->resultLines());
     }
 
     public function testAStopRequestSavesAndReportsAnIncompleteRun(): void

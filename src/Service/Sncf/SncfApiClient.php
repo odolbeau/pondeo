@@ -27,6 +27,12 @@ final class SncfApiClient
 
     private const int MAX_PAUSE_SECONDS = 6 * 3_600;
 
+    /** Journeys asked for per request, i.e. the most a busy day can return. */
+    public const int DEFAULT_COUNT = 50;
+
+    /** API errors meaning "no route" for this pair, as opposed to a problem with the request. */
+    private const array NO_ROUTE_ERRORS = ['no_solution', 'no_origin', 'no_destination', 'no_origin_nor_destination'];
+
     private ?\Closure $pauseListener = null;
 
     private ?\Closure $interruptCheck = null;
@@ -80,10 +86,11 @@ final class SncfApiClient
      *
      * @throws UnknownStopAreaException
      * @throws DateOutOfBoundsException
+     * @throws SncfAuthenticationException
      * @throws InterruptedException
      * @throws SncfApiException
      */
-    public function journeys(string $from, string $to, \DateTimeImmutable $day, ?int $maxTransfers = null, int $count = 50): array
+    public function journeys(string $from, string $to, \DateTimeImmutable $day, ?int $maxTransfers = null, int $count = self::DEFAULT_COUNT): array
     {
         $query = http_build_query(array_filter([
             'from' => $from,
@@ -103,7 +110,7 @@ final class SncfApiClient
         $data = $this->get($url);
 
         $errorId = $data['error']['id'] ?? null;
-        if ('no_solution' === $errorId) {
+        if (null !== $errorId && \in_array($errorId, self::NO_ROUTE_ERRORS, true)) {
             return [];
         }
 
@@ -131,7 +138,7 @@ final class SncfApiClient
     private function get(string $url): array
     {
         if ('' === $this->token) {
-            throw new SncfApiException('SNCF_API_TOKEN is empty: set it in .env.local.');
+            throw new SncfAuthenticationException('SNCF_API_TOKEN is empty: set it in .env.local.');
         }
 
         $quotaRefusals = 0;
@@ -170,7 +177,7 @@ final class SncfApiClient
     private function decode(int $status, string $body): array
     {
         if (401 === $status || 403 === $status) {
-            throw new SncfApiException(\sprintf('The SNCF API refused the token (HTTP %d).', $status));
+            throw new SncfAuthenticationException(\sprintf('The SNCF API refused the token (HTTP %d).', $status));
         }
 
         try {

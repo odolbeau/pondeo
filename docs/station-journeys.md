@@ -88,7 +88,13 @@ Useful options: `--date=YYYY-MM-DD` (another day; every pair is then recomputed)
 `--limit=N` (a pilot on the first N stations), `--force` (recompute pairs
 already done for the day).
 
-Without `--download`, the command only imports the vendored file, offline.
+Run one download at a time: two would overwrite each other's progress. `--force`
+is all-or-nothing: an interrupted forced run cannot be resumed, since re-running
+without it skips the pairs already marked as done for the day.
+
+Without `--download`, the command only imports the vendored file, offline. The
+database mirrors the file: lines that are not in it, e.g. after a `--limit`
+pilot on a fresh file, are removed.
 
 ## Adding a destination
 
