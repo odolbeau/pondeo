@@ -34,6 +34,8 @@ final class UniteUrbaineMapControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('[data-controller="map"]');
+        self::assertSelectorExists('[data-map-detail-url-value="/unites-urbaines/XXXXX"]');
+        self::assertSelectorExists('aside.hidden turbo-frame#unite-urbaine-detail');
         self::assertSelectorExists('input[type="number"][data-map-target="minInput"][value="84176"]');
         self::assertSelectorExists('input[type="number"][data-map-target="maxInput"][value="84176"]');
     }

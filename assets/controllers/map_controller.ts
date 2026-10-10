@@ -3,6 +3,8 @@ import { Map, type GeoJSONSource } from 'maplibre-gl';
 
 const DEBOUNCE_MS = 200;
 const ZONES_SOURCE_ID = 'unites-urbaines';
+const SELECTED_LAYER_ID = `${ZONES_SOURCE_ID}-selected`;
+const UNITE_CODE_PATTERN = /^[0-9A-Za-z]{5}$/;
 const STORAGE_KEY = 'pondeo:map:population';
 
 // Round-number steps ("paliers") the population slider snaps to, rather
@@ -15,9 +17,10 @@ const STORAGE_KEY = 'pondeo:map:population';
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'panel', 'frame'];
     static values = {
         dataUrl: String,
+        detailUrl: String,
         populationMin: Number,
         populationMax: Number,
     };
@@ -27,12 +30,16 @@ export default class extends Controller {
     declare readonly maxRangeTarget: HTMLInputElement;
     declare readonly minInputTarget: HTMLInputElement;
     declare readonly maxInputTarget: HTMLInputElement;
+    declare readonly panelTarget: HTMLElement;
+    declare readonly frameTarget: HTMLElement & { src: string | null };
     declare readonly dataUrlValue: string;
+    declare readonly detailUrlValue: string;
     declare readonly populationMinValue: number;
     declare readonly populationMaxValue: number;
 
     private map!: Map;
     private steps!: number[];
+    private selectedCode: string | null = null;
     private debounceHandle?: ReturnType<typeof setTimeout>;
 
     connect() {
@@ -66,6 +73,28 @@ export default class extends Controller {
                 source: ZONES_SOURCE_ID,
                 paint: { 'line-color': '#34d399', 'line-width': 1 },
             });
+
+            this.map.addLayer({
+                id: SELECTED_LAYER_ID,
+                type: 'line',
+                source: ZONES_SOURCE_ID,
+                filter: ['==', ['get', 'code'], ''],
+                paint: { 'line-color': '#f8fafc', 'line-width': 3 },
+            });
+
+            this.map.on('click', `${ZONES_SOURCE_ID}-fill`, (event) => {
+                const code = event.features?.[0]?.properties?.code;
+                if (code) {
+                    this.select(String(code));
+                }
+            });
+            this.map.on('mouseenter', `${ZONES_SOURCE_ID}-fill`, () => (this.map.getCanvas().style.cursor = 'pointer'));
+            this.map.on('mouseleave', `${ZONES_SOURCE_ID}-fill`, () => (this.map.getCanvas().style.cursor = ''));
+
+            const fromUrl = new URLSearchParams(window.location.search).get('unite');
+            if (null !== fromUrl && UNITE_CODE_PATTERN.test(fromUrl)) {
+                this.select(fromUrl);
+            }
 
             this.refresh();
         });
@@ -101,6 +130,25 @@ export default class extends Controller {
         this.syncRanges(min, max);
 
         this.scheduleRefresh();
+    }
+
+    select(code: string) {
+        this.selectedCode = code;
+        this.frameTarget.src = this.detailUrlValue.replace('XXXXX', code);
+        this.panelTarget.classList.remove('hidden');
+        this.map.setFilter(SELECTED_LAYER_ID, ['==', ['get', 'code'], code]);
+
+        this.updateUrl(...this.valuesFromInputs());
+    }
+
+    closePanel() {
+        this.selectedCode = null;
+        this.panelTarget.classList.add('hidden');
+        this.frameTarget.removeAttribute('src');
+        this.frameTarget.innerHTML = '';
+        this.map.setFilter(SELECTED_LAYER_ID, ['==', ['get', 'code'], '']);
+
+        this.updateUrl(...this.valuesFromInputs());
     }
 
     scheduleRefresh() {
@@ -170,7 +218,7 @@ export default class extends Controller {
     }
 
     // Makes the current filter shareable: reflected in the page URL, and
-    // read back from it on load. A bound left at its default (the full
+    // read back from it on load (the selected unité urbaine too). A bound left at its default (the full
     // range) is omitted entirely, so an untouched filter keeps a clean URL.
     updateUrl(min: number, max: number) {
         const params = new URLSearchParams();
@@ -179,6 +227,10 @@ export default class extends Controller {
         }
         if (max !== this.populationMaxValue) {
             params.set('populationMax', String(max));
+        }
+
+        if (null !== this.selectedCode) {
+            params.set('unite', this.selectedCode);
         }
 
         const query = params.toString();

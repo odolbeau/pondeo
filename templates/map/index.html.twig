@@ -6,6 +6,7 @@
 <div class="flex h-[calc(100vh-3.5rem)] bg-slate-950 text-slate-100"
      data-controller="map"
      data-map-data-url-value="{{ dataUrl }}"
+     data-map-detail-url-value="{{ path('app_unite_urbaine_detail', {code: 'XXXXX'}) }}"
      data-map-population-min-value="{{ populationMin }}"
      data-map-population-max-value="{{ populationMax }}"
 >
@@ -39,5 +40,11 @@
     </aside>
 
     <div class="relative flex-1" data-map-target="mapContainer"></div>
+
+    <aside class="relative hidden w-[26rem] shrink-0 overflow-y-auto border-l border-slate-800 bg-slate-950 p-6" data-map-target="panel">
+        <button type="button" data-action="map#closePanel" aria-label="Fermer le détail"
+                class="absolute right-4 top-4 text-slate-400 hover:text-slate-100">✕</button>
+        <turbo-frame id="unite-urbaine-detail" class="block transition-opacity aria-busy:opacity-50" data-map-target="frame"></turbo-frame>
+    </aside>
 </div>
 {% endblock %}
