@@ -13,6 +13,7 @@ use Symfony\Component\Validator\Constraints as Assert;
 
 #[ORM\Entity(repositoryClass: PoiRepository::class)]
 #[ORM\Index(name: 'poi_location_gist', fields: ['location'], flags: ['spatial'])]
+#[ORM\UniqueConstraint(name: 'uniq_poi_category_external_id', columns: ['category_id', 'external_id'])]
 class Poi
 {
     use TimestampableTrait;
@@ -45,6 +46,14 @@ class Poi
 
     #[ORM\Column(length: 500, nullable: true)]
     private ?string $address = null;
+
+    /**
+     * The POI's identifier in the source it was imported from (e.g. a UIC
+     * code for a railway station), unique within its category: what makes a
+     * re-import an update instead of a duplicate. Null for hand-entered POIs.
+     */
+    #[ORM\Column(length: 100, nullable: true)]
+    private ?string $externalId = null;
 
     /**
      * Containing unité urbaine, resolved at write time (see
@@ -121,6 +130,18 @@ class Poi
     public function setAddress(?string $address): static
     {
         $this->address = $address;
+
+        return $this;
+    }
+
+    public function getExternalId(): ?string
+    {
+        return $this->externalId;
+    }
+
+    public function setExternalId(?string $externalId): static
+    {
+        $this->externalId = $externalId;
 
         return $this;
     }
