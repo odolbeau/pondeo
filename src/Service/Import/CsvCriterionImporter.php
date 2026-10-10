@@ -6,60 +6,77 @@ namespace App\Service\Import;
 
 use App\Entity\Criterion;
 use App\Enum\CriterionValueType;
-use App\Enum\ZoneType;
 use App\Repository\CriterionRepository;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Generic CSV → ZoneCriterionValue importer, driven by a {@see CriterionCsvSpec}.
- * Covers any criterion shaped as one CSV row = one (zone code, period,
- * value) tuple — which is every criterion so far. Delegates the actual
- * upsert to {@see ZoneCriterionValueWriter}.
+ * Generic CSV → CriterionValue importer, driven by a {@see CriterionCsvSpec}.
+ * Covers any additive criterion shaped as one CSV row = one (commune code,
+ * period, value) tuple: values are summed per unité urbaine, the only level
+ * stored. Communes outside every unité urbaine are skipped. Delegates the
+ * actual upsert to {@see CriterionValueWriter}.
  */
 final readonly class CsvCriterionImporter
 {
     public function __construct(
         private EntityManagerInterface $entityManager,
+        private Connection $connection,
         private CriterionRepository $criterionRepository,
         private CsvReader $csvReader,
-        private ZoneCriterionValueWriter $zoneCriterionValueWriter,
+        private CriterionValueWriter $criterionValueWriter,
     ) {
     }
 
+    /**
+     * @return int number of (unité urbaine, period) values upserted
+     */
     public function import(CriterionCsvSpec $spec, string $csvPath): int
     {
+        // A non-additive criterion (an average, a label...) needs its own
+        // aggregation rule — decide it when the first one shows up.
+        if (!$spec->valueType->isSummable()) {
+            throw new \LogicException(\sprintf('Cannot import criterion "%s": values are summed per unité urbaine, which does not apply to %s.', $spec->code, $spec->valueType->value));
+        }
+
         $criterionId = $this->findOrCreateCriterion($spec)->getId();
-        $zoneIdsByCode = $this->loadZoneIdsByCode($spec->zoneType);
+        $uniteUrbaineIdsByCommuneCode = $this->loadUniteUrbaineIdsByCommuneCode();
 
-        $zoneType = $spec->zoneType;
-        $fkColumn = $zoneType->foreignKeyColumn();
+        /** @var array<string, array<int, float>> $sums indexed by unité urbaine id, then period */
+        $sums = [];
+        foreach ($this->csvReader->read($csvPath) as $row) {
+            $uniteUrbaineId = $uniteUrbaineIdsByCommuneCode[$row[$spec->communeCodeColumn]] ?? null;
+            if (null === $uniteUrbaineId) {
+                continue; // Commune outside every unité urbaine — out of scope.
+            }
+
+            $period = (int) $row[$spec->periodColumn];
+            $sums[$uniteUrbaineId][$period] = ($sums[$uniteUrbaineId][$period] ?? 0.0) + (float) $row[$spec->valueColumn];
+        }
+
         $valueColumn = $spec->valueType->valueColumn();
-
         $count = 0;
         $batch = [];
 
-        foreach ($this->csvReader->read($csvPath) as $row) {
-            $zoneId = $zoneIdsByCode[$row[$spec->zoneCodeColumn]] ?? null;
-            if (null === $zoneId) {
-                continue; // Zone not in scope (or genuinely unmapped) — skip.
-            }
+        foreach ($sums as $uniteUrbaineId => $sumsByPeriod) {
+            foreach ($sumsByPeriod as $period => $sum) {
+                $batch[] = [
+                    'id' => Uuid::v7(),
+                    'uniteUrbaineId' => Uuid::fromString($uniteUrbaineId),
+                    'period' => $period,
+                    'value' => $this->castSum($spec->valueType, $sum),
+                ];
+                ++$count;
 
-            $batch[] = [
-                'id' => Uuid::v7(),
-                'zoneId' => $zoneId,
-                'period' => (int) $row[$spec->periodColumn],
-                'value' => $this->castValue($spec->valueType, $row[$spec->valueColumn]),
-            ];
-            ++$count;
-
-            if (\count($batch) >= ZoneCriterionValueWriter::BATCH_SIZE) {
-                $this->zoneCriterionValueWriter->upsertBatch($criterionId, $zoneType, $fkColumn, $valueColumn, $batch);
-                $batch = [];
+                if (\count($batch) >= CriterionValueWriter::BATCH_SIZE) {
+                    $this->criterionValueWriter->upsertBatch($criterionId, $valueColumn, $batch);
+                    $batch = [];
+                }
             }
         }
 
-        $this->zoneCriterionValueWriter->upsertBatch($criterionId, $zoneType, $fkColumn, $valueColumn, $batch);
+        $this->criterionValueWriter->upsertBatch($criterionId, $valueColumn, $batch);
 
         return $count;
     }
@@ -73,7 +90,6 @@ final readonly class CsvCriterionImporter
 
         $criterion = new Criterion($spec->code, $spec->label, $spec->valueType);
         $criterion->setUnit($spec->unit);
-        $criterion->setZoneType($spec->zoneType);
 
         $this->entityManager->persist($criterion);
         $this->entityManager->flush();
@@ -82,30 +98,22 @@ final readonly class CsvCriterionImporter
     }
 
     /**
-     * @return array<string, Uuid> zone id indexed by natural code
+     * @return array<string, string> unité urbaine id indexed by commune INSEE code
      */
-    private function loadZoneIdsByCode(ZoneType $zoneType): array
+    private function loadUniteUrbaineIdsByCommuneCode(): array
     {
-        $zoneClass = $zoneType->entityClass();
+        /** @var array<string, string> $ids */
+        $ids = $this->connection->fetchAllKeyValue('SELECT insee_code, unite_urbaine_id FROM commune');
 
-        /** @var array<string, Uuid> $idsByCode */
-        $idsByCode = [];
-        foreach ($this->entityManager->getRepository($zoneClass)->findAll() as $zone) {
-            $idsByCode[$zone->getCode()] = $zone->getId();
-        }
-
-        $this->entityManager->clear();
-
-        return $idsByCode;
+        return $ids;
     }
 
-    private function castValue(CriterionValueType $valueType, string $raw): int|string|bool
+    private function castSum(CriterionValueType $valueType, float $sum): int|string
     {
         return match ($valueType) {
-            CriterionValueType::Integer => (int) $raw,
-            CriterionValueType::Decimal => (string) (float) $raw,
-            CriterionValueType::Text => $raw,
-            CriterionValueType::Boolean => \in_array(strtolower($raw), ['1', 'true', 'yes'], true),
+            CriterionValueType::Integer => (int) round($sum),
+            CriterionValueType::Decimal => (string) $sum,
+            default => throw new \LogicException('Unreachable — guarded in import().'),
         };
     }
 }

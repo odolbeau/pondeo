@@ -5,20 +5,18 @@ declare(strict_types=1);
 namespace App\Service;
 
 use App\Entity\PoiCategory;
-use App\Enum\ZoneType;
+use App\Entity\UniteUrbaine;
 use Doctrine\DBAL\Connection;
-use Symfony\Component\Uid\Uuid;
 
 /**
- * Pattern B: "zones whose distance to the nearest POI of category X is
- * greater than N km" — distance is measured zone centroid → POI point
- * (see plan §2.10 for why: a boundary→point distance would be near-zero
- * for any zone whose territory reaches close to the POI).
+ * Pattern B: "unités urbaines whose distance to the nearest POI of category
+ * X is greater than N km" — distance is measured from the unité urbaine's
+ * centroid to the POI point (a boundary→point distance would be near-zero
+ * for any unité urbaine whose territory reaches close to the POI).
  *
  * The nearest-neighbor lookup uses Postgres' native KNN `<->` operator,
  * which isn't expressible in DQL, so this runs as native SQL rather than
- * through the ORM (see plan §5). $zoneType selects the target table from a
- * fixed allowlist — never interpolated from external input.
+ * through the ORM.
  */
 final readonly class NearestPoiDistanceFinder
 {
@@ -27,29 +25,27 @@ final readonly class NearestPoiDistanceFinder
     }
 
     /**
-     * Distance in meters from the zone's centroid to the nearest POI of
-     * the given category, or null if that category has no POI at all.
+     * Distance in meters from the unité urbaine's centroid to the nearest
+     * POI of the given category, or null if that category has no POI at all.
      */
-    public function distanceToNearestPoi(ZoneType $zoneType, Uuid $zoneId, PoiCategory $category): ?float
+    public function distanceToNearestPoi(UniteUrbaine $uniteUrbaine, PoiCategory $category): ?float
     {
-        $table = $zoneType->tableName();
-
         $result = $this->connection->fetchOne(
-            <<<SQL
-                SELECT ST_Distance(zone.centroid, nearest_poi.location) AS distance
-                FROM {$table} AS zone
+            <<<'SQL'
+                SELECT ST_Distance(uu.centroid, nearest_poi.location) AS distance
+                FROM unite_urbaine AS uu
                 CROSS JOIN LATERAL (
                     SELECT location
                     FROM poi
                     WHERE category_id = :categoryId
-                    ORDER BY location <-> zone.centroid
+                    ORDER BY location <-> uu.centroid
                     LIMIT 1
                 ) AS nearest_poi
-                WHERE zone.id = :zoneId
+                WHERE uu.id = :uniteUrbaineId
                 SQL,
             [
                 'categoryId' => $category->getId()->toRfc4122(),
-                'zoneId' => $zoneId->toRfc4122(),
+                'uniteUrbaineId' => $uniteUrbaine->getId()->toRfc4122(),
             ],
         );
 

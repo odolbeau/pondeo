@@ -1,24 +1,32 @@
 # Criteria import
 
-Each comparison criterion (`Criterion` + `ZoneCriterionValue`, see
-`src/Entity/`) is fed by a dedicated `download`/`import` command pair under
-`app:criteria:<name>:*`, following the same shape as the zones import (see
-`docs/administrative-zones.md`). The download side is necessarily
-bespoke per criterion (different source, different API shape), but the
-import side is not: as long as the source CSV is one row = one (zone
-code, period, value) tuple, the import command doesn't need its own
-importer service — it describes the criterion (code, label, value type,
-zone type, unit, CSV column names) and delegates to a shared, generic
-importer. See `CriteriaPopulationImportCommand` for the reference example
-of adding a criterion of this shape.
+Each comparison criterion is fed by a dedicated `download`/`import` command
+pair under `app:criteria:<name>:*`, following the same shape as the zones
+import (see `docs/urban-units.md`). The download side is necessarily bespoke
+per criterion (different source, different API shape), but the import side is
+not: as long as the source CSV is one row = one (commune code, period, value)
+tuple, the import command doesn't need its own importer — it describes the
+criterion (code, label, value type, unit, CSV column names) and delegates to
+the shared, generic importer. `CriteriaPopulationImportCommand` is the
+reference example of adding a criterion of this shape.
 
-`ZoneCriterionValue` rows are versioned by `period` (a reference year, e.g.
-an INSEE census year) — a zone can have several values for the same
-criterion over time, never overwritten. Idempotent by construction: 4
-partial unique indexes (`criterion_id, <zone_fk>_id, period`, one per zone
-type, added by hand in a migration — see `ZoneCriterionValue`'s docblock)
-let the shared importer upsert in batches rather than querying once per
-row.
+## Stored per urban unit
+
+Values are stored at the **urban unit** level only, never per commune. The
+source data is keyed by commune, so the importer sums the communes of each
+urban unit; communes outside every urban unit are skipped. This only makes
+sense for additive criteria (population is a straight sum): the importer
+rejects a non-additive criterion (an average temperature, a text label) rather
+than silently summing it. The first such criterion will need its own
+aggregation rule, decided then.
+
+## Versioning and idempotency
+
+Values are versioned by `period` (a reference year, e.g. an INSEE census
+year): an urban unit can have several values for the same criterion over time,
+never overwritten. There is one value per (criterion, urban unit, period), and
+the import is an idempotent upsert — re-running it updates values in place and
+never duplicates.
 
 ## Population
 
@@ -30,16 +38,8 @@ Source: INSEE's [Mélodi API](https://portail-api.insee.fr/), dataset
 
 ```
 bin/console app:criteria:population:download   # refresh the vendored CSV
-bin/console app:criteria:population:import      # upsert into the DB, then aggregate up to EPCI/département/région
+bin/console app:criteria:population:import      # upsert into the DB, summed per urban unit
 ```
 
-## Aggregating up from communes
-
-Some criteria are meaningfully additive across a zone's member communes (e.g.
-population is a straight sum); others aren't (e.g. an average temperature
-shouldn't be summed). For the former, a shared aggregator sums a criterion's
-commune-level values up to EPCI/département/région and upserts the result the
-same way the CSV import does — idempotent, versioned by `period`. Aggregation
-is opt-in per criterion, wired into that criterion's own import command
-(see `CriteriaPopulationImportCommand` for the reference example), not run
-automatically for every criterion.
+Because urban units are fixed at the current zoning, the historical series
+uses today's perimeters throughout, so years are comparable with each other.

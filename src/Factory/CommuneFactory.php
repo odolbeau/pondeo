@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Factory;
 
 use App\Entity\Commune;
+use App\Enum\Departement;
 use Zenstruck\Foundry\Persistence\PersistentObjectFactory;
 
 /**
@@ -36,10 +37,10 @@ final class CommuneFactory extends PersistentObjectFactory
     protected function defaults(): array
     {
         return [
-            'departement' => DepartementFactory::new(),
-            'region' => RegionFactory::new(),
-            'inseeCode' => self::faker()->text(5),
+            'departement' => self::faker()->randomElement(Departement::cases()),
+            'inseeCode' => self::faker()->unique()->numerify('#####'),
             'name' => self::faker()->text(255),
+            'uniteUrbaine' => UniteUrbaineFactory::new(),
         ];
     }
 

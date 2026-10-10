@@ -4,20 +4,19 @@ declare(strict_types=1);
 
 namespace App\Story;
 
-use App\Entity\Commune;
-use App\Entity\ZoneCriterionValue;
+use App\Entity\CriterionValue;
+use App\Entity\UniteUrbaine;
 use App\Enum\CriterionValueType;
 use App\Factory\CriterionFactory;
 use App\Factory\PoiCategoryFactory;
-use App\Factory\PoiCommuneLocationFactory;
 use App\Factory\PoiFactory;
-use App\Repository\CommuneRepository;
+use App\Repository\UniteUrbaineRepository;
 use Doctrine\ORM\EntityManagerInterface;
 use Zenstruck\Foundry\Attribute\AsFixture;
 use Zenstruck\Foundry\Story;
 
 /**
- * Demo POI/criteria on real communes — requires `app:zones:import` to
+ * Demo POI/criteria on real unités urbaines — requires `app:zones:import` to
  * have run first.
  */
 #[AsFixture(name: 'main')]
@@ -25,14 +24,14 @@ final class AppStory extends Story
 {
     public function __construct(
         private readonly EntityManagerInterface $entityManager,
-        private readonly CommuneRepository $communeRepository,
+        private readonly UniteUrbaineRepository $uniteUrbaineRepository,
     ) {
     }
 
     public function build(): void
     {
-        $massy = $this->findRealCommune('91377', 'Massy');
-        $palaiseau = $this->findRealCommune('91477', 'Palaiseau');
+        $vannes = $this->findRealUniteUrbaine('56501', 'Vannes');
+        $nantes = $this->findRealUniteUrbaine('44701', 'Nantes');
 
         $hardwareStoreCategory = PoiCategoryFactory::new()->create([
             'code' => 'hardware_store',
@@ -44,24 +43,24 @@ final class AppStory extends Story
             'label' => 'Centrale nucléaire',
         ]);
 
-        $leroyMerlinMassy = PoiFactory::new()->create([
-            'name' => 'Leroy Merlin Massy',
+        PoiFactory::new()->create([
+            'name' => 'Leroy Merlin Vannes',
             'category' => $hardwareStoreCategory,
             'brand' => 'Leroy Merlin',
-            'location' => 'SRID=4326;POINT(2.28 48.73)',
+            'location' => 'SRID=4326;POINT(-2.73 47.64)',
+            'uniteUrbaine' => $vannes,
         ]);
-        PoiCommuneLocationFactory::new()->create(['poi' => $leroyMerlinMassy, 'commune' => $massy]);
 
-        $powerPlant = PoiFactory::new()->create([
+        PoiFactory::new()->create([
             'name' => 'Centrale nucléaire (exemple)',
             'category' => $powerPlantCategory,
             'brand' => null,
-            'location' => 'SRID=4326;POINT(2.25 48.71)',
+            'location' => 'SRID=4326;POINT(-1.55 47.22)',
+            'uniteUrbaine' => $nantes,
         ]);
-        PoiCommuneLocationFactory::new()->create(['poi' => $powerPlant, 'commune' => $palaiseau]);
 
         // No fictional "population" criterion here: `app:criteria:population:import`
-        // already gives Massy/Palaiseau real values, and Foundry's create()
+        // already gives these unités urbaines real values, and Foundry's create()
         // would collide on the "population" code (it inserts, it doesn't
         // find-or-create).
         $rainyDays = CriterionFactory::new()->create([
@@ -71,20 +70,19 @@ final class AppStory extends Story
             'valueType' => CriterionValueType::Decimal,
         ]);
 
-        // ZoneCriterionValue has no persistence factory (its constructor is
-        // private — see plan §2.6/§3): built via its own named constructor
-        // and persisted directly.
-        $this->entityManager->persist(ZoneCriterionValue::forZone($rainyDays, $massy, 111.5, 2023));
+        // CriterionValue has no persistence factory: built directly and
+        // persisted through the entity manager.
+        $this->entityManager->persist(new CriterionValue($rainyDays, $vannes, 111.5, 2023));
         $this->entityManager->flush();
     }
 
-    private function findRealCommune(string $inseeCode, string $name): Commune
+    private function findRealUniteUrbaine(string $inseeCode, string $name): UniteUrbaine
     {
-        $commune = $this->communeRepository->findOneBy(['inseeCode' => $inseeCode]);
-        if (null === $commune) {
-            throw new \LogicException(\sprintf('%s (%s) not found — run `bin/console app:zones:import` before loading fixtures.', $name, $inseeCode));
+        $uniteUrbaine = $this->uniteUrbaineRepository->findOneBy(['inseeCode' => $inseeCode]);
+        if (null === $uniteUrbaine) {
+            throw new \LogicException(\sprintf('Unité urbaine %s (%s) not found — run `bin/console app:zones:import` before loading fixtures.', $name, $inseeCode));
         }
 
-        return $commune;
+        return $uniteUrbaine;
     }
 }
