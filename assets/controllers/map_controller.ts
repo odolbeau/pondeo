@@ -3,6 +3,7 @@ import { Map, type GeoJSONSource } from 'maplibre-gl';
 
 const DEBOUNCE_MS = 200;
 const ZONES_SOURCE_ID = 'unites-urbaines';
+const STORAGE_KEY = 'pondeo:map:population';
 
 // Round-number steps ("paliers") the population slider snaps to, rather
 // than letting it select an arbitrary population to the exact inhabitant —
@@ -40,7 +41,7 @@ export default class extends Controller {
         this.steps.push(this.populationMaxValue);
 
         this.minRangeTarget.max = this.maxRangeTarget.max = String(this.steps.length - 1);
-        const [min, max] = this.valuesFromUrl();
+        const [min, max] = this.initialValues();
         this.writeInputs(min, max);
         this.syncRanges(min, max);
 
@@ -111,6 +112,7 @@ export default class extends Controller {
         const [min, max] = this.valuesFromInputs();
 
         this.updateUrl(min, max);
+        this.saveFilter(min, max);
 
         const url = new URL(this.dataUrlValue, window.location.origin);
         url.searchParams.set('populationMin', String(min));
@@ -183,14 +185,49 @@ export default class extends Controller {
         history.replaceState(null, '', query ? `?${query}` : window.location.pathname);
     }
 
-    // Reads populationMin/populationMax back from the page URL (see
-    // updateUrl()) to restore a shared filter on load.
-    valuesFromUrl(): [number, number] {
+    // The URL wins so a shared link shows what its author saw; otherwise the
+    // last filter from this browser is restored, then the full range.
+    initialValues(): [number, number] {
         const params = new URLSearchParams(window.location.search);
-        const min = this.clamp(params.get('populationMin'), this.populationMinValue);
-        const max = this.clamp(params.get('populationMax'), this.populationMaxValue);
+        if (params.has('populationMin') || params.has('populationMax')) {
+            return this.orderedOrFull(params.get('populationMin'), params.get('populationMax'));
+        }
+
+        const saved = this.loadFilter();
+
+        return this.orderedOrFull(saved?.populationMin ?? null, saved?.populationMax ?? null);
+    }
+
+    orderedOrFull(rawMin: string | null, rawMax: string | null): [number, number] {
+        const min = this.clamp(rawMin, this.populationMinValue);
+        const max = this.clamp(rawMax, this.populationMaxValue);
 
         return min <= max ? [min, max] : [this.populationMinValue, this.populationMaxValue];
+    }
+
+    // localStorage can throw (private mode, blocked site data) or hold
+    // garbage, and the filter must work without it.
+    saveFilter(min: number, max: number) {
+        try {
+            if (min === this.populationMinValue && max === this.populationMaxValue) {
+                localStorage.removeItem(STORAGE_KEY);
+
+                return;
+            }
+            localStorage.setItem(STORAGE_KEY, JSON.stringify({ populationMin: String(min), populationMax: String(max) }));
+        } catch {
+            // Not persisting is an acceptable degradation.
+        }
+    }
+
+    loadFilter(): { populationMin?: string; populationMax?: string } | null {
+        try {
+            const raw = localStorage.getItem(STORAGE_KEY);
+
+            return null === raw ? null : JSON.parse(raw);
+        } catch {
+            return null;
+        }
     }
 
     emptyFeatureCollection(): GeoJSON.FeatureCollection {
