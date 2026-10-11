@@ -14,6 +14,13 @@
             {{ criterion.label }}{% if criterion.unit %} ({{ criterion.unit }}){% endif %}{% if period %}, données {{ period }}{% endif %}.
         </p>
 
+        <section class="mt-6 space-y-3 rounded-xl border border-stone-200 bg-white/70 p-5 text-sm leading-relaxed text-stone-700">
+            {% for paragraph in ranking.note.paragraphs %}
+                <p>{{ paragraph }}</p>
+            {% endfor %}
+            <p class="border-t border-stone-200 pt-3 text-xs text-stone-500">Source : {{ ranking.note.source }}.</p>
+        </section>
+
         <div class="mt-6 flex flex-wrap items-center gap-3 text-sm">
             <span class="text-stone-600">{{ total|fr_number }} unités urbaines</span>
             <a href="{{ path('app_ranking', {code: ranking.code, ordre: reversed ? 'defaut' : 'inverse'}) }}"
