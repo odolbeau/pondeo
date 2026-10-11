@@ -14,6 +14,11 @@ export default defineConfig({
         // port isn't published and would be cross-origin/mixed-content.
         host: true,
         origin: process.env.PONDEO_ORIGIN,
+        // Nothing under these is front-end source; watching vendor/ alone
+        // exhausts the host's inotify limit (ENOSPC) across worktrees.
+        watch: {
+            ignored: ['**/vendor/**', '**/var/**', '**/.git/**'],
+        },
     },
     optimizeDeps: {
         // maplibre-gl spawns its own worker via a relative import.meta.url,
