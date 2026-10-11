@@ -1,6 +1,12 @@
+import { fileURLToPath } from 'node:url';
 import { defineConfig } from 'vite';
 import Symfony from '@symfony/reprise/vite';
 import tailwindcss from '@tailwindcss/vite';
+
+// Absolute, with a trailing slash: the patterns below are matched against full
+// paths, and the dev container's own is /var/www, which a bare `**/var/**`
+// would match, ignoring every file of the project.
+const root = fileURLToPath(new URL('.', import.meta.url));
 
 export default defineConfig({
     input: {
@@ -17,7 +23,7 @@ export default defineConfig({
         // Nothing under these is front-end source; watching vendor/ alone
         // exhausts the host's inotify limit (ENOSPC) across worktrees.
         watch: {
-            ignored: ['**/vendor/**', '**/var/**', '**/.git/**'],
+            ignored: [`${root}vendor/**`, `${root}var/**`, `${root}.git/**`],
         },
     },
     optimizeDeps: {
