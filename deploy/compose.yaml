@@ -1,0 +1,40 @@
+# Production stack, deployed on every merge to `main` (see
+# docs/deployment.md). Configuration comes from a `.env` file next to this
+# one; server-specific settings (reverse proxy, data directory, images tag)
+# go in a `compose.override.yaml`, read automatically by docker compose.
+
+services:
+  database:
+    image: postgis/postgis:16-3.5
+    env_file: .env
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d \"$${POSTGRES_DB}\" -U \"$${POSTGRES_USER}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 30s
+    volumes:
+      - database_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  php:
+    image: ghcr.io/odolbeau/pondeo-php:${PONDEO_IMAGE_TAG:-latest}
+    env_file: .env
+    depends_on:
+      database:
+        condition: service_healthy
+    restart: unless-stopped
+
+  web:
+    image: ghcr.io/odolbeau/pondeo-web:${PONDEO_IMAGE_TAG:-latest}
+    depends_on:
+      - php
+    healthcheck:
+      test: ["CMD", "wget", "-qO", "/dev/null", "http://127.0.0.1/"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+volumes:
+  database_data:

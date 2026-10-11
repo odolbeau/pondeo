@@ -18,4 +18,8 @@ php "$CURDIR/console" app:import:criteria:population --no-debug
 php "$CURDIR/console" app:import:criteria:commerces --no-debug
 php "$CURDIR/console" app:import:criteria:real-estate-prices --no-debug
 php "$CURDIR/console" app:import:station-access --no-debug
-php "$CURDIR/console" foundry:load-fixtures --no-interaction --append
+
+# Demo fixtures (Foundry) are dev/test only: the prod image doesn't ship them.
+if [ "${APP_ENV:-dev}" != prod ]; then
+    php "$CURDIR/console" foundry:load-fixtures --no-interaction --append
+fi
