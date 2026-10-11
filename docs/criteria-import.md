@@ -53,6 +53,9 @@ bin/console app:import:criteria:population               # import only: upsert i
 Because urban units are fixed at the current zoning, the historical series
 uses today's perimeters throughout, so years are comparable with each other.
 
+The same command also derives growth and density from the stored population:
+see [criteria-population.md](criteria-population.md).
+
 ## Shops
 
 See [criteria-commerces.md](criteria-commerces.md): same shape, with a derived density per 1000 inhabitants.
