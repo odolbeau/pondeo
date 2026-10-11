@@ -29,11 +29,9 @@ final class ClimateSourceDownloaderTest extends KernelTestCase
         $dir = sys_get_temp_dir().'/'.uniqid('climate-downloader-test-', true);
         mkdir($dir);
 
-        $requests = [];
-        $calls = 0;
-        $httpClient = new MockHttpClient(static function (string $method, string $url) use (&$requests, &$calls): MockResponse {
-            $requests[] = $url;
-            ++$calls;
+        $requests = new \ArrayObject();
+        $httpClient = new MockHttpClient(static function (string $method, string $url) use ($requests): MockResponse {
+            $requests->append($url);
             parse_str((string) parse_url($url, \PHP_URL_QUERY), $query);
             $count = substr_count(\is_string($query['latitude'] ?? null) ? $query['latitude'] : '', ',') + 1;
             $day = ['time' => ['2020-01-10'], ...array_fill_keys(ClimateNormalsCalculator::DAILY_VARIABLES, [10.0])];
@@ -43,22 +41,39 @@ final class ClimateSourceDownloaderTest extends KernelTestCase
 
         $connection = self::getContainer()->get(Connection::class);
         \assert($connection instanceof Connection);
-        $downloader = new ClimateSourceDownloader($connection, new ClimateNormalsCalculator(), $httpClient, 4, 0);
+        $archive = $dir.'/archive';
+        $downloader = new ClimateSourceDownloader($connection, new ClimateNormalsCalculator(), $httpClient, 'secret-key', $archive, 4, 0);
 
         self::assertSame(3, $downloader->download($dir, static function (string $message): void {}));
-        self::assertSame(1, $calls);
-        // Two distinct cells, not three locations.
-        self::assertStringContainsString('latitude=43.3%2C48.4', $requests[0]);
+        self::assertCount(1, $requests);
+        // Two distinct cells, not three locations; the commercial host, with the key.
+        $url = (string) $requests->offsetGet(0);
+        self::assertStringContainsString('latitude=43.3%2C48.4', $url);
+        self::assertStringStartsWith('https://customer-archive-api.open-meteo.com/', $url);
+        self::assertStringContainsString('apikey=secret-key', $url);
+
+        // One archive file per cell, and the calls are recorded.
+        self::assertCount(2, glob($archive.'/*.json.gz') ?: []);
+        self::assertEqualsWithDelta(2 * ClimateSourceDownloader::callsPerLocation(), $downloader->spentCalls(), 1.0);
 
         $csv = (string) file_get_contents($dir.'/climat-normales.csv');
         self::assertStringStartsWith("code_unite_urbaine,year,measure,value\n13701,2020,temperature_moyenne,10\n", $csv);
         self::assertStringContainsString("\n13702,2020,temperature_moyenne,10\n", $csv);
         self::assertStringContainsString("\n29701,2020,jours_plus_30,0\n", $csv);
 
-        // Resuming: nothing left to do, no call.
-        self::assertSame(0, $downloader->download($dir, static function (string $message): void {}));
+        // Re-running derives again from the archive, without any call.
+        unlink($dir.'/climat-normales.csv');
+        self::assertSame(3, $downloader->download($dir, static function (string $message): void {}));
+        self::assertCount(1, $requests);
         self::assertSame($csv, file_get_contents($dir.'/climat-normales.csv'));
 
+        // A budget below the projection stops before any call.
+        array_map(unlink(...), glob($archive.'/*.json.gz') ?: []);
+        $downloader->download($dir, static function (string $message): void {}, 1000);
+        self::assertCount(1, $requests);
+
+        array_map(unlink(...), glob($archive.'/*') ?: []);
+        rmdir($archive);
         unlink($dir.'/climat-normales.csv');
         rmdir($dir);
     }

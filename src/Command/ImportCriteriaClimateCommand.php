@@ -10,7 +10,6 @@ use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
 use Symfony\Component\Console\Style\SymfonyStyle;
-use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 
 #[AsCommand(
     name: 'app:import:criteria:climate',
@@ -18,11 +17,12 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
     help: <<<'HELP'
         Idempotent — safe to re-run. Import the zones first.
 
-        With <comment>--download</comment>, the vendored file is completed from the Open-Meteo
-        historical weather API. Units already in the file are skipped, so a run
-        interrupted by the API quotas (about 600 calls per minute, 5 000 per hour and
-        10 000 per day, a 30-year request weighing about 600 calls per location) is
-        simply re-run later. Delete the file to recompute everything.
+        With <comment>--download</comment>, the Open-Meteo historical weather API is called for the
+        cells not archived yet (a 30-year request weighs about 1 000 calls per location),
+        then the vendored file is rebuilt from the archive kept outside the repository
+        (OPENMETEO_ARCHIVE_DIR). Without OPENMETEO_API_KEY the free API is used, with its
+        quotas; a run stopped by them is simply re-run later. It never spends more than
+        <comment>--max-calls</comment> in total, ledger included.
         HELP,
 )]
 final class ImportCriteriaClimateCommand extends Command
@@ -38,19 +38,21 @@ final class ImportCriteriaClimateCommand extends Command
         SymfonyStyle $io,
         #[Option(description: 'Complete the vendored source file before importing')]
         bool $download = false,
+        #[Option(description: 'Call budget of the download, ledger included (0 for none)')]
+        int $maxCalls = 2_400_000,
     ): int {
         $dir = \dirname(__DIR__, 2).'/resources/geo';
 
         if ($download) {
             try {
-                $written = $this->climateSourceDownloader->download($dir, $io->writeln(...));
-            } catch (ExceptionInterface $e) {
+                $written = $this->climateSourceDownloader->download($dir, $io->writeln(...), $maxCalls);
+            } catch (\RuntimeException $e) {
                 $io->error(\sprintf('Download stopped: %s. Re-run later to resume.', $e->getMessage()));
 
                 return Command::FAILURE;
             }
 
-            $io->note(\sprintf('%d units added. Review with `git diff resources/geo/` before committing.', $written));
+            $io->note(\sprintf('%d units written. Review with `git diff resources/geo/` before committing.', $written));
         }
 
         $file = $dir.'/'.ClimateSourceDownloader::FILE;

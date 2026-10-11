@@ -26,6 +26,10 @@ services:
       context: ./.docker/php
     volumes:
       - .:/var/www
+      # Raw Open-Meteo responses, kept out of the repository (see docs/criteria-climate.md).
+      - ${OPENMETEO_ARCHIVE_DIR:-${HOME}/pondeo-data/open-meteo}:/var/open-meteo-archive
+    environment:
+      OPENMETEO_ARCHIVE_DIR: /var/open-meteo-archive
     depends_on:
       - database
 

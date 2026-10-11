@@ -66,8 +66,8 @@ Calling the API is the costly part, so every answer is kept as received, before
 any derivation: one compressed file per grid cell, period, list of models and
 list of variables, holding the daily series **of each model** (models are never
 averaged before archiving). It lives outside the repository, never committed,
-in the directory given by `OPENMETEO_ARCHIVE_DIR` (by default
-`~/pondeo-data/open-meteo/projections/`).
+in the `projections/` subdirectory of the root given by `OPENMETEO_ARCHIVE_DIR`
+(by default `~/pondeo-data/open-meteo/`).
 
 - A cell whose files exist is never requested again, which makes the download
   resumable after any interruption.

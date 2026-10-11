@@ -41,6 +41,37 @@ final class ClimateNormalsCalculatorTest extends TestCase
         self::assertEqualsWithDelta(1.0, $normals['jours_vent_fort'], 0.0001); // 1 and 1
     }
 
+    public function testRunsTrendAndSummerFigures(): void
+    {
+        // 1991: a 4-day and a 2-day hot spell; dry days 1-3 then 5; one 25 mm day.
+        // 1992: one 3-day hot spell in July; every day dry.
+        $dates = ['1991-07-01', '1991-07-02', '1991-07-03', '1991-07-04', '1991-07-05', '1991-07-06', '1991-12-01', '1992-07-01', '1992-07-02', '1992-07-03'];
+        $normals = new ClimateNormalsCalculator()->normals([
+            'time' => $dates,
+            'temperature_2m_max' => [31, 32, 33, 34, 20, 31, 5, 31, 31, 31],
+            'temperature_2m_mean' => [10, 10, 10, 10, 10, 10, 10, 12, 12, 12],
+            'precipitation_sum' => [0, 0, 0, 25, 0, 0, 0, 0, 0, 0],
+            'wet_bulb_temperature_2m_max' => [25, 20, 20, 20, 20, 20, 20, 10, 10, 10],
+            'apparent_temperature_max' => [35, 40, 36, 30, 30, 30, 5, 38, 30, 30],
+            'vapour_pressure_deficit_max' => [1.0, 2.0, 3.0, 2.0, 2.0, 2.0, 9.0, 1.0, 1.0, 1.0],
+            'soil_moisture_0_to_7cm_mean' => [0.2, 0.2, 0.2, 0.2, 0.2, 0.2, 0.5, 0.4, 0.4, 0.4],
+            'soil_moisture_7_to_28cm_mean' => [0.3, 0.3, 0.3, 0.3, 0.3, 0.3, 0.5, 0.4, 0.4, 0.4],
+        ]);
+
+        // Hot spells of at least 3 days: 1 in 1991 (the 4-day one), 1 in 1992.
+        self::assertEqualsWithDelta(1.0, $normals['vagues_chaleur'], 0.0001);
+        // Longest dry run: 3 days in 1991 (the 25 mm day cuts it, then 3 more), 3 in 1992.
+        self::assertEqualsWithDelta((3 + 3) / 2, $normals['serie_seche_max'], 0.0001);
+        self::assertEqualsWithDelta(0.5, $normals['jours_pluie_forte'], 0.0001);
+        self::assertEqualsWithDelta(0.5, $normals['jours_chaleur_humide'], 0.0001);
+        self::assertEqualsWithDelta((40 + 38) / 2, $normals['temperature_ressentie_max'], 0.0001);
+        // June to August only: the December day is left out.
+        self::assertEqualsWithDelta((2.0 + 1.0) / 2, $normals['deficit_pression_vapeur'], 0.0001);
+        self::assertEqualsWithDelta((25.0 + 40.0) / 2, $normals['humidite_sol_ete'], 0.0001);
+        // Annual means of 10 and 12 °C a year apart: 2 °C per year.
+        self::assertEqualsWithDelta(20.0, $normals['tendance_temperature'], 0.0001);
+    }
+
     public function testMissingDaysAreSkippedAndAllMissingMeansNoNormal(): void
     {
         $normals = new ClimateNormalsCalculator()->normals([

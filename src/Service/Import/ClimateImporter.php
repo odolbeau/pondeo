@@ -32,6 +32,14 @@ final readonly class ClimateImporter
         'jours_neige' => ['label' => 'Jours de neige', 'type' => CriterionValueType::Integer, 'unit' => 'j/an', 'rankFromLowest' => false, 'comparable' => false],
         'deficit_hydrique_estival' => ['label' => 'Déficit hydrique estival', 'type' => CriterionValueType::Integer, 'unit' => 'mm', 'rankFromLowest' => true, 'comparable' => true],
         'jours_vent_fort' => ['label' => 'Jours de vent fort', 'type' => CriterionValueType::Integer, 'unit' => 'j/an', 'rankFromLowest' => true, 'comparable' => true],
+        'vagues_chaleur' => ['label' => 'Vagues de chaleur', 'type' => CriterionValueType::Decimal, 'unit' => 'épisodes/an', 'rankFromLowest' => true, 'comparable' => true],
+        'serie_seche_max' => ['label' => 'Plus longue série sèche', 'type' => CriterionValueType::Integer, 'unit' => 'jours', 'rankFromLowest' => true, 'comparable' => true],
+        'jours_pluie_forte' => ['label' => 'Jours de pluie forte', 'type' => CriterionValueType::Decimal, 'unit' => 'j/an', 'rankFromLowest' => true, 'comparable' => true],
+        'tendance_temperature' => ['label' => 'Tendance de la température (1991-2020)', 'type' => CriterionValueType::Decimal, 'unit' => '°C/décennie', 'rankFromLowest' => true, 'comparable' => false],
+        'jours_chaleur_humide' => ['label' => 'Jours de chaleur humide', 'type' => CriterionValueType::Decimal, 'unit' => 'j/an', 'rankFromLowest' => true, 'comparable' => true],
+        'temperature_ressentie_max' => ['label' => 'Température ressentie maximale', 'type' => CriterionValueType::Decimal, 'unit' => '°C', 'rankFromLowest' => true, 'comparable' => true],
+        'deficit_pression_vapeur' => ['label' => 'Air sec en été (déficit de pression de vapeur)', 'type' => CriterionValueType::Decimal, 'unit' => 'kPa', 'rankFromLowest' => true, 'comparable' => true],
+        'humidite_sol_ete' => ['label' => 'Humidité du sol en été', 'type' => CriterionValueType::Decimal, 'unit' => '%', 'rankFromLowest' => false, 'comparable' => true],
     ];
 
     public function __construct(private CsvCriterionImporter $csvCriterionImporter)
