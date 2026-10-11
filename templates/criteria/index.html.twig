@@ -26,7 +26,7 @@
                 <dl class="mt-4 divide-y divide-stone-200 border-y border-stone-200">
                     {% for entry in group.criteria %}
                         {% set criterion = entry.criterion %}
-                        <div class="py-4">
+                        <div id="{{ criterion.code }}" class="scroll-mt-20 py-4">
                             <dt class="flex flex-wrap items-baseline gap-x-3 font-medium text-stone-900">
                                 {{ criterion.label }}
                                 {% if criterion.unit %}<span class="text-xs font-normal text-stone-500">{{ criterion.unit }}</span>{% endif %}

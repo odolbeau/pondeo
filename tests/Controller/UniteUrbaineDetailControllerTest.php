@@ -48,6 +48,10 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('section#population > h2', 'Population');
         self::assertAnySelectorTextContains('section#population section h2', 'Démographie');
         self::assertSelectorExists('[data-label="Population"]');
+        self::assertSelectorExists('[data-label="Population"] a[href="/criteres#population"]');
+        self::assertSelectorExists('[data-label="Population"] a[href="/classements/population"]');
+        self::assertSelectorTextContains('[data-label="Population"] [role="tooltip"]', "nombre d'habitants");
+        self::assertSelectorTextContains('[data-label="Population"] [role="tooltip"]', 'Source : INSEE');
         self::assertSelectorNotExists('a[data-turbo-frame="_top"]');
         // A criterion with a series unfolds a chart, fed by the series endpoint.
         self::assertSelectorExists('[data-controller="criterion-chart"][data-criterion-chart-url-value="/unites-urbaines/56501/criteres/population/serie"]');

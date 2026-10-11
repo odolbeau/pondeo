@@ -149,6 +149,17 @@ final readonly class CriterionGlossary
     }
 
     /**
+     * @return array{description: ?string, source: ?string}
+     */
+    public function describe(string $code, ?string $group): array
+    {
+        return [
+            'description' => self::DESCRIPTIONS[$code] ?? null,
+            'source' => self::SOURCE_OVERRIDES[$code] ?? (null === $group ? null : (self::GROUP_SOURCES[$group] ?? null)),
+        ];
+    }
+
+    /**
      * @return list<array{label: string, slug: string, criteria: list<array{criterion: Criterion, description: ?string, source: ?string, ranked: bool}>}>
      */
     public function groups(): array
@@ -158,8 +169,8 @@ final readonly class CriterionGlossary
             $group = $criterion->getGroupLabel();
             $byGroup[$group ?? self::OTHER_GROUP][] = [
                 'criterion' => $criterion,
-                'description' => self::DESCRIPTIONS[$criterion->getCode()] ?? $criterion->getDescription(),
-                'source' => self::SOURCE_OVERRIDES[$criterion->getCode()] ?? (null === $group ? null : (self::GROUP_SOURCES[$group] ?? null)),
+                'description' => $this->describe($criterion->getCode(), $group)['description'] ?? $criterion->getDescription(),
+                'source' => $this->describe($criterion->getCode(), $group)['source'],
                 'ranked' => null !== $this->rankingCatalog->find($criterion->getCode()),
             ];
         }
