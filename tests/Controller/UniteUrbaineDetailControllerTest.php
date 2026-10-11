@@ -288,6 +288,25 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorNotExists('[data-label="80 ans ou plus"]');
     }
 
+    public function testPageShowsTheRisksGroup(): void
+    {
+        $client = self::createClient();
+
+        $nice = UniteUrbaineFactory::createOne(['inseeCode' => '06701']);
+        $flood = CriterionFactory::createOne(['code' => 'part_zone_inondable', 'label' => 'Population en zone inondable', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Risques', 'rankFromLowest' => true]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($flood, $nice, '75', 2026));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/06701');
+
+        self::assertResponseIsSuccessful();
+        self::assertAnySelectorTextContains('section h2', 'Risques');
+        self::assertSelectorExists('[data-label="Population en zone inondable"]');
+    }
+
     public function testUnknownUniteUrbaineReturns404(): void
     {
         $client = self::createClient();
