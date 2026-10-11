@@ -21,17 +21,18 @@ chart.
 
 ## Aggregation
 
-Neither is additive, and a unit's true median can't be rebuilt from the
-medians of its communes. Each criterion is the **average of the communes'
-values weighted by their population** (same year): an approximation, close
-when the communes are alike and rougher for a unit mixing very different
-communes.
+INSEE publishes both figures for the urban units themselves, so they are
+stored as is: they are the true median and rate of the whole unit, not an
+average of its communes' (a median can't be rebuilt from the medians of its
+parts).
 
-- INSEE withholds the figure of communes too small to protect privacy. They
-  are left out of the average: the poverty rate, published for far fewer
-  communes than the median, therefore rests on the larger communes of a unit.
-- A unit where no commune has a figure has no value.
-- Communes outside every urban unit are skipped.
+- INSEE withholds the figure of a unit when it is too small to protect
+  privacy: a few units, mostly the smallest, have no poverty rate. A unit
+  without a figure has no value.
+- For a finer view of the incomes (brackets, mean), see
+  [criteria-tax-income.md](criteria-tax-income.md). INSEE's deciles, Gini index
+  and income breakdown only exist for the départements and above, never for a
+  commune or an urban unit.
 
 ## Refreshing
 
@@ -42,5 +43,5 @@ git add resources/geo/ && git commit
 ```
 
 Without `--download`, the vendored file is imported as is. The import is an
-idempotent upsert. It weighs communes with the vendored population series, so
-import the zones first (`make db-reset` runs everything in the right order).
+idempotent upsert. Import the zones first (`make db-reset` runs everything in
+the right order).

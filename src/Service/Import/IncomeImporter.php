@@ -10,9 +10,8 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Imports the Filosofi income figures (see `docs/criteria-income.md`): the
- * median standard of living and the poverty rate. Neither is additive, so a
- * unité urbaine's value is its communes' values averaged with their
- * population as weight, over the communes that have a figure.
+ * median standard of living and the poverty rate, which INSEE publishes for
+ * each unité urbaine itself, so they are stored as is.
  */
 final readonly class IncomeImporter
 {
@@ -37,64 +36,39 @@ final readonly class IncomeImporter
     }
 
     /**
-     * @param string $populationCsvPath commune population per year, the weights
-     *
      * @return int number of (unité urbaine, period) values upserted
      */
-    public function import(string $incomeCsvPath, string $populationCsvPath): int
+    public function import(string $csvPath): int
     {
-        /** @var array<string, string> $uniteUrbaineIdsByCommuneCode */
-        $uniteUrbaineIdsByCommuneCode = $this->connection->fetchAllKeyValue('SELECT insee_code, unite_urbaine_id FROM commune');
+        /** @var array<string, string> $uniteUrbaineIdsByCode */
+        $uniteUrbaineIdsByCode = $this->connection->fetchAllKeyValue('SELECT insee_code, id FROM unite_urbaine');
 
-        /** @var array<string, int> $populations indexed by commune code and year */
-        $populations = [];
-        foreach ($this->csvReader->read($populationCsvPath) as $row) {
-            if (!isset($uniteUrbaineIdsByCommuneCode[$row['code_insee']])) {
-                continue; // Only the communes of an unité urbaine matter: keeps the map small.
+        /** @var array<string, list<array{id: Uuid, uniteUrbaineId: Uuid, period: int, value: int|string}>> $batches indexed by measure */
+        $batches = [];
+        foreach ($this->csvReader->read($csvPath) as $row) {
+            $uniteUrbaineId = $uniteUrbaineIdsByCode[$row['code_unite_urbaine']] ?? null;
+            $criterion = self::CRITERIA[$row['measure']] ?? null;
+            if (null === $uniteUrbaineId || null === $criterion) {
+                continue; // An unité urbaine we do not have, or an unknown measure.
             }
 
-            $populations[$row['code_insee'].'|'.$row['year']] = (int) $row['population'];
-        }
-
-        /** @var array<string, array<string, array<int, array{weight: int, weighted: float}>>> $totals indexed by measure, unité urbaine id, then period */
-        $totals = [];
-        foreach ($this->csvReader->read($incomeCsvPath) as $row) {
-            $uniteUrbaineId = $uniteUrbaineIdsByCommuneCode[$row['code_insee']] ?? null;
-            $weight = $populations[$row['code_insee'].'|'.$row['year']] ?? 0;
-            if (null === $uniteUrbaineId || !isset(self::CRITERIA[$row['measure']]) || $weight <= 0) {
-                continue; // Commune outside every unité urbaine, unknown measure, or no population to weigh with.
-            }
-
-            $period = (int) $row['year'];
-            $totals[$row['measure']][$uniteUrbaineId][$period] ??= ['weight' => 0, 'weighted' => 0.0];
-            $totals[$row['measure']][$uniteUrbaineId][$period]['weight'] += $weight;
-            $totals[$row['measure']][$uniteUrbaineId][$period]['weighted'] += $weight * (float) $row['value'];
+            $batches[$row['measure']][] = [
+                'id' => Uuid::v7(),
+                'uniteUrbaineId' => Uuid::fromString($uniteUrbaineId),
+                'period' => (int) $row['year'],
+                'value' => CriterionValueType::Integer === $criterion['type'] ? (int) round((float) $row['value']) : number_format((float) $row['value'], 2, '.', ''),
+            ];
         }
 
         $count = 0;
         foreach (self::CRITERIA as $measure => ['code' => $code, 'label' => $label, 'type' => $type, 'unit' => $unit, 'position' => $position]) {
             $criterionId = $this->csvCriterionImporter->findOrCreate($code, $label, $type, $unit, self::GROUP, position: $position)->getId();
 
-            $batch = [];
-            foreach ($totals[$measure] ?? [] as $uniteUrbaineId => $totalsByPeriod) {
-                foreach ($totalsByPeriod as $period => $total) {
-                    $average = $total['weighted'] / $total['weight'];
-                    $batch[] = [
-                        'id' => Uuid::v7(),
-                        'uniteUrbaineId' => Uuid::fromString($uniteUrbaineId),
-                        'period' => $period,
-                        'value' => CriterionValueType::Integer === $type ? (int) round($average) : number_format($average, 2, '.', ''),
-                    ];
-                    ++$count;
-
-                    if (\count($batch) >= CriterionValueWriter::BATCH_SIZE) {
-                        $this->criterionValueWriter->upsertBatch($criterionId, $type->valueColumn(), $batch);
-                        $batch = [];
-                    }
-                }
+            foreach (array_chunk($batches[$measure] ?? [], CriterionValueWriter::BATCH_SIZE) as $chunk) {
+                $this->criterionValueWriter->upsertBatch($criterionId, $type->valueColumn(), $chunk);
             }
 
-            $this->criterionValueWriter->upsertBatch($criterionId, $type->valueColumn(), $batch);
+            $count += \count($batches[$measure] ?? []);
         }
 
         return $count;

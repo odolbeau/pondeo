@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Import;
 
-use App\Factory\CommuneFactory;
 use App\Factory\UniteUrbaineFactory;
 use App\Service\Import\IncomeImporter;
 use Doctrine\ORM\EntityManagerInterface;
@@ -17,46 +16,35 @@ final class IncomeImporterTest extends KernelTestCase
     use Factories;
     use ResetDatabase;
 
-    public function testImportAveragesCommunesWeightedByPopulation(): void
+    public function testImportStoresTheFiguresOfEachUniteUrbaine(): void
     {
-        $unit = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
-        CommuneFactory::createOne(['inseeCode' => '56260', 'uniteUrbaine' => $unit]);
-        CommuneFactory::createOne(['inseeCode' => '56206', 'uniteUrbaine' => $unit]);
-        $unitWithoutFigure = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
-        CommuneFactory::createOne(['inseeCode' => '44109', 'uniteUrbaine' => $unitWithoutFigure]);
+        UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
 
-        $populationPath = $this->writeCsv(<<<'CSV'
-            code_insee,year,population
-            56260,2023,3000
-            56206,2023,1000
-            44109,2023,500
-            CSV);
-        // 56206 has no poverty rate (statistical secrecy): the unit's rate rests on 56260 alone.
-        // 99999 is a commune outside every unité urbaine: skipped.
-        $incomePath = $this->writeCsv(<<<'CSV'
-            code_insee,year,measure,value
-            56260,2023,median,24000
-            56206,2023,median,28000
-            56260,2023,poverty,10.5
+        // 99999 is not one of ours, and 44701 has no poverty rate (statistical secrecy).
+        $csvPath = $this->writeCsv(<<<'CSV'
+            code_unite_urbaine,year,measure,value
+            56501,2023,median,25099.6
+            56501,2023,poverty,10.5
+            44701,2023,median,22000
             99999,2023,median,99000
             CSV);
 
         $importer = self::getContainer()->get(IncomeImporter::class);
         \assert($importer instanceof IncomeImporter);
 
-        $importer->import($incomePath, $populationPath);
+        self::assertSame(3, $importer->import($csvPath));
 
-        // (3000 * 24000 + 1000 * 28000) / 4000
-        self::assertSame(25000, $this->integer('56501', 'niveau_vie_median'));
+        self::assertSame(25100, $this->integer('56501', 'niveau_vie_median'));
         self::assertSame(10.5, $this->decimal('56501', 'taux_pauvrete'));
-        self::assertNull($this->integer('44701', 'niveau_vie_median'));
+        self::assertSame(22000, $this->integer('44701', 'niveau_vie_median'));
+        self::assertNull($this->decimal('44701', 'taux_pauvrete'));
 
         // Idempotent: a second run updates in place.
-        $importer->import($incomePath, $populationPath);
-        self::assertSame(25000, $this->integer('56501', 'niveau_vie_median'));
+        $importer->import($csvPath);
+        self::assertSame(25100, $this->integer('56501', 'niveau_vie_median'));
 
-        unlink($incomePath);
-        unlink($populationPath);
+        unlink($csvPath);
     }
 
     private function writeCsv(string $content): string

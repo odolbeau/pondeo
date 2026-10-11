@@ -9,8 +9,9 @@ use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Refreshes `resources/geo/revenus-filosofi.csv` from INSEE's Mélodi API:
- * the median standard of living and the poverty rate of each commune
- * (Filosofi, a single year).
+ * the median standard of living and the poverty rate of each unité urbaine
+ * (Filosofi, a single year). INSEE publishes them for the unités urbaines
+ * themselves, which is exact where averaging those of the communes is not.
  */
 final readonly class IncomeSourceDownloader
 {
@@ -20,6 +21,9 @@ final readonly class IncomeSourceDownloader
 
     /** Value of the API's measure dimension, indexed by the measure written in the CSV. */
     private const array MEASURES = ['median' => 'MED_SL', 'poverty' => 'PR_MD60'];
+
+    // Smaller pages than the API default (10 000), as for the other Mélodi downloads.
+    private const int PAGE_SIZE = 5000;
 
     private const int THROTTLE_MICROSECONDS = 2_100_000;
 
@@ -37,11 +41,11 @@ final readonly class IncomeSourceDownloader
         $targetPath = $targetDir.'/revenus-filosofi.csv';
 
         $handle = fopen($targetPath, 'w') ?: throw new \RuntimeException("Cannot write {$targetPath}");
-        fputcsv($handle, ['code_insee', 'year', 'measure', 'value'], escape: '\\');
+        fputcsv($handle, ['code_unite_urbaine', 'year', 'measure', 'value'], escape: '\\');
 
         foreach (self::MEASURES as $measure => $apiMeasure) {
             $progress(\sprintf('Downloading %s...', $measure));
-            $progress(\sprintf('  %d communes', $this->downloadMeasure($measure, $apiMeasure, $handle)));
+            $progress(\sprintf('  %d unités urbaines', $this->downloadMeasure($measure, $apiMeasure, $handle)));
         }
 
         fclose($handle);
@@ -57,15 +61,15 @@ final readonly class IncomeSourceDownloader
 
         do {
             $response = $this->httpClient->request('GET', self::API_URL, [
-                'query' => ['FILOSOFI_MEASURE' => $apiMeasure, 'TIME_PERIOD' => self::YEAR, 'page' => $page],
+                'query' => ['FILOSOFI_MEASURE' => $apiMeasure, 'TIME_PERIOD' => self::YEAR, 'maxResult' => self::PAGE_SIZE, 'page' => $page],
             ]);
             /** @var array{observations: list<array{dimensions: array{GEO: string}, measures: array{OBS_VALUE_NIVEAU: array{value?: float}}}>, paging: array{isLast?: bool}} $data */
             $data = $response->toArray();
 
             foreach ($data['observations'] as $observation) {
                 $value = $observation['measures']['OBS_VALUE_NIVEAU']['value'] ?? null;
-                if (null === $value || 1 !== preg_match('/^\d{4}-COM-(\w+)$/', $observation['dimensions']['GEO'], $matches)) {
-                    continue; // Not a commune, or no figure (statistical secrecy).
+                if (null === $value || 1 !== preg_match('/^\d{4}-UU2020-(\w+)$/', $observation['dimensions']['GEO'], $matches)) {
+                    continue; // Not an unité urbaine, or no figure (statistical secrecy).
                 }
 
                 fputcsv($handle, [$matches[1], self::YEAR, $measure, $value], escape: '\\');

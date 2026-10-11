@@ -14,12 +14,12 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 
 #[AsCommand(
     name: 'app:import:criteria:income',
-    description: 'Import the median standard of living and the poverty rate from resources/geo/revenus-filosofi.csv, averaged per unité urbaine',
+    description: 'Import the median standard of living and the poverty rate from resources/geo/revenus-filosofi.csv, per unité urbaine',
     help: <<<'HELP'
         Idempotent — safe to re-run. Import the zones first.
 
         With <comment>--download</comment>, the vendored file is refreshed first from INSEE's Mélodi API
-        (a few paged requests, throttled).
+        (a few dozen paged requests, throttled).
         HELP,
 )]
 final class ImportCriteriaIncomeCommand extends Command
@@ -50,7 +50,7 @@ final class ImportCriteriaIncomeCommand extends Command
             $io->note('Income figures refreshed. Review with `git diff resources/geo/` before committing.');
         }
 
-        $count = $this->incomeImporter->import($dir.'/revenus-filosofi.csv', $dir.'/population-historique.csv');
+        $count = $this->incomeImporter->import($dir.'/revenus-filosofi.csv');
 
         $io->success(\sprintf('%d income values imported (per unité urbaine).', $count));
 

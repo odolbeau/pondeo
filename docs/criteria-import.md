@@ -70,7 +70,7 @@ See [criteria-employment.md](criteria-employment.md): counts are summed, rates d
 
 ## Income
 
-See [criteria-income.md](criteria-income.md): not additive, so averaged per urban unit with the population as weight.
+See [criteria-income.md](criteria-income.md): not additive, so taken from INSEE's own figures for each urban unit.
 
 ## Education
 
