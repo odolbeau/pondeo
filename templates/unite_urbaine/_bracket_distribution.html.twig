@@ -1,26 +1,30 @@
 {% set unit = distribution.unit ? ' ' ~ distribution.unit : '' %}
 <div class="mt-4" data-criteria-filter-target="row" data-label="{{ distribution.title }} {% for bar in distribution.bars %}{{ bar.fullLabel }} {% endfor %}">
     <p class="text-sm text-slate-300">{{ distribution.title }} <span class="ml-1 text-xs text-slate-500">({{ distribution.period }})</span></p>
-    <svg viewBox="0 0 {{ constant('App\\Service\\Detail\\BracketDistribution::WIDTH') }} {{ distribution.height }}" class="mx-auto mt-2 w-full max-w-xl" role="img"
-         aria-label="{{ distribution.title }}, comparé à la médiane des unités urbaines">
-        {% for tick in distribution.ticks %}
-            <line x1="{{ tick.grid.x1 }}" x2="{{ tick.grid.x2 }}" y1="{{ tick.grid.y1 }}" y2="{{ tick.grid.y2 }}" class="stroke-slate-800" stroke-width="1"/>
-            <text x="{{ tick.label_text.x }}" y="{{ tick.label_text.y }}" text-anchor="{{ tick.label_text.anchor }}" class="fill-slate-500 text-[11px]">{{ tick.value|fr_number }}</text>
-        {% endfor %}
-        <line x1="{{ distribution.axis.x1 }}" x2="{{ distribution.axis.x2 }}" y1="{{ distribution.axis.y1 }}" y2="{{ distribution.axis.y2 }}" class="stroke-slate-700" stroke-width="1"/>
-        {% for bar in distribution.bars %}
-            <rect x="{{ bar.bar.x }}" y="{{ bar.bar.y }}" width="{{ bar.bar.width }}" height="{{ bar.bar.height }}" class="fill-emerald-400 hover:fill-emerald-300">
-                <title>{{ bar.fullLabel }} : {{ bar.value|fr_number }}{{ unit }}{% if bar.median is not null %} (médiane {{ bar.median|fr_number }}{{ unit }}){% endif %}{% if bar.rank %} · {{ bar.rank }}{{ 1 == bar.rank ? 'er' : 'e' }} sur {{ bar.total|fr_number }}{% endif %}</title>
-            </rect>
-            {% if bar.median_segment is not null %}
-                <line x1="{{ bar.median_segment.x1 }}" x2="{{ bar.median_segment.x2 }}" y1="{{ bar.median_segment.y1 }}" y2="{{ bar.median_segment.y2 }}" class="stroke-amber-400" stroke-width="2.5" stroke-dasharray="5 3"/>
-            {% endif %}
-            <text x="{{ bar.value_text.x }}" y="{{ bar.value_text.y }}" text-anchor="{{ bar.value_text.anchor }}" class="fill-slate-200 text-[11px]">{{ bar.value|round(1)|fr_number }}</text>
-            <text x="{{ bar.label_text.x }}" y="{{ bar.label_text.y }}" text-anchor="{{ bar.label_text.anchor }}" class="fill-slate-300 text-[11px]">{{ bar.label }}</text>
-        {% endfor %}
-    </svg>
+    <div class="relative" data-controller="chart-tooltip" data-action="pointermove->chart-tooltip#move pointerdown->chart-tooltip#move pointerleave->chart-tooltip#hide">
+        <svg viewBox="0 0 {{ constant('App\\Service\\Detail\\BracketDistribution::WIDTH') }} {{ distribution.height }}" class="mx-auto mt-2 w-full max-w-xl" role="img"
+             aria-label="{{ distribution.title }}, comparé à la médiane des unités urbaines">
+            {% for tick in distribution.ticks %}
+                <line x1="{{ tick.grid.x1 }}" x2="{{ tick.grid.x2 }}" y1="{{ tick.grid.y1 }}" y2="{{ tick.grid.y2 }}" class="stroke-slate-800" stroke-width="1"/>
+                <text x="{{ tick.label_text.x }}" y="{{ tick.label_text.y }}" text-anchor="{{ tick.label_text.anchor }}" class="fill-slate-500 text-[11px]">{{ tick.value|fr_number }}</text>
+            {% endfor %}
+            <line x1="{{ distribution.axis.x1 }}" x2="{{ distribution.axis.x2 }}" y1="{{ distribution.axis.y1 }}" y2="{{ distribution.axis.y2 }}" class="stroke-slate-700" stroke-width="1"/>
+            {% for bar in distribution.bars %}
+                <rect x="{{ bar.bar.x }}" y="{{ bar.bar.y }}" width="{{ bar.bar.width }}" height="{{ bar.bar.height }}" class="fill-emerald-400"/>
+                {% if bar.median_segment is not null %}
+                    <line x1="{{ bar.median_segment.x1 }}" x2="{{ bar.median_segment.x2 }}" y1="{{ bar.median_segment.y1 }}" y2="{{ bar.median_segment.y2 }}" class="stroke-amber-400" stroke-width="2.5" stroke-dasharray="5 3"/>
+                {% endif %}
+                <text x="{{ bar.label_text.x }}" y="{{ bar.label_text.y }}" text-anchor="{{ bar.label_text.anchor }}" class="fill-slate-300 text-[11px]">{{ bar.label }}</text>
+                {# The whole column or row answers to the pointer, not only the bar. #}
+                <rect x="{{ bar.hit.x }}" y="{{ bar.hit.y }}" width="{{ bar.hit.width }}" height="{{ bar.hit.height }}" class="fill-transparent hover:fill-white/10"
+                      data-tooltip="{{ [bar.fullLabel, 'Cette unité urbaine : ' ~ bar.value|fr_number ~ unit ~ (bar.median is not null ? ' (médiane : ' ~ bar.median|fr_number ~ unit ~ ')' : ''), bar.rank ? 'Classement : ' ~ bar.rank ~ (1 == bar.rank ? 'er' : 'e') ~ ' sur ' ~ bar.total|fr_number : null]|filter(line => line is not null)|join('\n') }}"/>
+            {% endfor %}
+        </svg>
+        <div hidden data-chart-tooltip-target="tooltip" class="pointer-events-none absolute z-10 whitespace-nowrap rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 shadow-lg"></div>
+    </div>
     <p class="mt-1 flex flex-wrap items-center justify-center gap-x-4 text-xs text-slate-400">
         <span><span class="mr-1 inline-block h-2 w-3 rounded-sm bg-emerald-400 align-middle"></span>Cette unité urbaine{% if distribution.unit %} ({{ distribution.unit }}){% endif %}</span>
         <span><span class="mr-1 inline-block h-0.5 w-3 border-t-2 border-dashed border-amber-400 align-middle"></span>Médiane des unités urbaines</span>
+        <span class="text-slate-500">Survolez une barre pour le détail</span>
     </p>
 </div>

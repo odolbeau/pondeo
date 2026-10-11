@@ -63,8 +63,8 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('details summary', 'Pyramide des âges');
-        self::assertAnySelectorTextContains('svg[role="img"] title', '0-4 ans : 40 hommes');
-        self::assertAnySelectorTextContains('svg[role="img"] title', '10 et + ans : 10 femmes');
+        self::assertSelectorExists('svg [data-tooltip*="0-4 ans"][data-tooltip*="40 hommes"][data-tooltip*="30 femmes"]');
+        self::assertSelectorExists('svg [data-tooltip*="10 et + ans"][data-tooltip*="10 femmes"]');
         // The last bracket is open-ended, and the shares of each sex are given.
         self::assertSelectorTextContains('svg[role="img"]', '10 et +');
         self::assertSelectorExists('svg[role="img"][aria-label*="110 habitants"]');
@@ -79,7 +79,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorExists('[data-controller="age-pyramid"] button[aria-pressed="false"][data-age-pyramid-width-param="10"]');
         self::assertSelectorExists('[data-age-pyramid-target="panel"][data-width="5"]:not([hidden])');
         self::assertSelectorExists('[data-age-pyramid-target="panel"][data-width="10"][hidden]');
-        self::assertAnySelectorTextContains('svg[role="img"] title', '0-9 ans : 50 hommes');
+        self::assertSelectorExists('svg [data-tooltip*="0-9 ans"][data-tooltip*="50 hommes"]');
 
         $client->request('GET', '/unites-urbaines/44701');
         self::assertSelectorNotExists('[role="img"]');
@@ -94,9 +94,9 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         $client->request('GET', '/unites-urbaines/56501', server: ['HTTP_TURBO_FRAME' => 'unite-urbaine-detail']);
 
         self::assertResponseIsSuccessful();
-        self::assertAnySelectorTextContains('svg[role="img"] title', '0-9 ans : 50 hommes');
-        self::assertAnySelectorTextContains('svg[role="img"] title', '10 et + ans : 10 femmes');
-        self::assertSelectorNotExists('svg[role="img"] title:contains("0-4 ans")');
+        self::assertSelectorExists('svg [data-tooltip*="0-9 ans"][data-tooltip*="50 hommes"]');
+        self::assertSelectorExists('svg [data-tooltip*="10 et + ans"][data-tooltip*="10 femmes"]');
+        self::assertSelectorNotExists('svg [data-tooltip*="0-4 ans"]');
         self::assertSelectorNotExists('[data-age-pyramid-width-param]');
     }
 
@@ -126,7 +126,10 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="Revenu fiscal moyen par foyer"]');
         self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="Foyers à moins de 15 000 €"]');
         self::assertSelectorExists('svg[role="img"][aria-label^="Foyers fiscaux par tranche de revenu fiscal"]');
-        self::assertAnySelectorTextContains('svg title', 'Foyers à moins de 15 000 € : 24 % (médiane 27 %)');
+        self::assertSelectorExists('svg [data-tooltip*="Foyers à moins de 15 000 €"][data-tooltip*="Cette unité urbaine : 24 % (médiane : 27 %)"]');
+        // The tooltip is ours, instant, not the browser's delayed one.
+        self::assertSelectorExists('[data-controller="chart-tooltip"] [data-chart-tooltip-target="tooltip"][hidden]');
+        self::assertSelectorNotExists('svg title');
         self::assertAnySelectorTextContains('svg text', '< 15 k€');
         self::assertAnySelectorTextContains('svg text', '> 100 k€');
         // The chart is found by the label of its brackets.
@@ -182,7 +185,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="Retraités"]');
         self::assertSelectorExists('svg[role="img"][aria-label^="Population de 15 ans ou plus par catégorie socioprofessionnelle"]');
-        self::assertAnySelectorTextContains('svg title', 'Retraités : 31 % (médiane 28 %)');
+        self::assertSelectorExists('svg [data-tooltip*="Retraités"][data-tooltip*="Cette unité urbaine : 31 % (médiane : 28 %)"]');
         // A row per category, labelled on the left of its bar.
         self::assertAnySelectorTextContains('svg text', 'Cadres');
         self::assertAnySelectorTextContains('svg text', 'Retraités');

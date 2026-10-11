@@ -36,6 +36,15 @@ a full page.
 - **Points of interest**, by category: the count, plus a sample of each.
 - **Communes** making up the unit.
 
+## Chart tooltips
+
+The charts drawn as SVG (the pyramid, the income brackets, the
+socio-professional categories) show their figures in a tooltip that follows the
+pointer and appears at once, over the whole column, row or age bracket and not
+only over its bar, rather than in the browser's own tooltip, which only shows
+after a delay. Each chart says under it that it can be hovered; a tap shows the
+tooltip on a touch screen. The pyramid also has its numbers in a table.
+
 ## Rank and median
 
 For a numeric criterion (integer or decimal), the unit is compared with every

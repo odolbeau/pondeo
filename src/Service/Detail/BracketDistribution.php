@@ -23,12 +23,12 @@ final readonly class BracketDistribution
 
     private const int TARGET_TICKS = 4;
 
-    // Columns: a bracket per column, its label under the plot, the values above the bars.
+    // Columns: a bracket per column, its label under the plot.
     private const int COLUMN_LEFT = 34;
 
     private const int COLUMN_RIGHT = 8;
 
-    private const int COLUMN_TOP = 22;
+    private const int COLUMN_TOP = 8;
 
     private const int COLUMN_PLOT_HEIGHT = 150;
 
@@ -36,10 +36,10 @@ final readonly class BracketDistribution
 
     private const int COLUMN_MEDIAN_MARGIN = 6;
 
-    // Rows: a bracket per row, its label to the left of the plot, the value after the bar.
+    // Rows: a bracket per row, its label to the left of the plot.
     private const int ROW_LABEL_WIDTH = 140;
 
-    private const int ROW_RIGHT = 44;
+    private const int ROW_RIGHT = 12;
 
     private const int ROW_TOP = 4;
 
@@ -48,9 +48,9 @@ final readonly class BracketDistribution
     private const int ROW_BAR_HEIGHT = 14;
 
     /**
-     * @param list<array{label: string, fullLabel: string, value: float, median: ?float, rank: ?int, total: ?int, bar: array{x: float, y: float, width: float, height: float}, median_segment: ?Segment, label_text: Text, value_text: Text}> $bars
-     * @param list<array{value: int, grid: Segment, label_text: Text}>                                                                                                                                                                        $ticks from the first graduation after zero
-     * @param Segment                                                                                                                                                                                                                         $axis
+     * @param list<array{label: string, fullLabel: string, value: float, median: ?float, rank: ?int, total: ?int, bar: array{x: float, y: float, width: float, height: float}, median_segment: ?Segment, label_text: Text, hit: array{x: float, y: float, width: float, height: float}}> $bars
+     * @param list<array{value: int, grid: Segment, label_text: Text}>                                                                                                                                                                                                                   $ticks from the first graduation after zero
+     * @param Segment                                                                                                                                                                                                                                                                    $axis
      */
     private function __construct(
         public string $title,
@@ -110,7 +110,7 @@ final readonly class BracketDistribution
                 ['x' => round($slotX + ($slot - $barWidth) / 2, 1), 'y' => $barY, 'width' => round($barWidth, 1), 'height' => round($plotBottom - $barY, 1)],
                 null === $medianY ? null : ['x1' => round($slotX + self::COLUMN_MEDIAN_MARGIN, 1), 'y1' => $medianY, 'x2' => round($slotX + $slot - self::COLUMN_MEDIAN_MARGIN, 1), 'y2' => $medianY],
                 ['x' => $center, 'y' => (float) ($plotBottom + 15), 'anchor' => 'middle'],
-                ['x' => $center, 'y' => min($barY, $medianY ?? $barY) - 4, 'anchor' => 'middle'],
+                ['x' => round($slotX, 1), 'y' => (float) self::COLUMN_TOP, 'width' => round($slot, 1), 'height' => (float) (self::COLUMN_PLOT_HEIGHT + self::AXIS_LABEL_SIZE)],
             );
         }
 
@@ -147,7 +147,7 @@ final readonly class BracketDistribution
                 ['x' => (float) $plotLeft, 'y' => (float) ($rowTop + (self::ROW_HEIGHT - self::ROW_BAR_HEIGHT) / 2), 'width' => round($barEnd - $plotLeft, 1), 'height' => (float) self::ROW_BAR_HEIGHT],
                 null === $medianX ? null : ['x1' => $medianX, 'y1' => (float) ($rowTop + 2), 'x2' => $medianX, 'y2' => (float) ($rowTop + self::ROW_HEIGHT - 2)],
                 ['x' => (float) self::ROW_LABEL_WIDTH, 'y' => $middle, 'anchor' => 'end'],
-                ['x' => max($barEnd, $medianX ?? $barEnd) + 5, 'y' => $middle, 'anchor' => 'start'],
+                ['x' => 0.0, 'y' => (float) $rowTop, 'width' => (float) self::WIDTH, 'height' => (float) self::ROW_HEIGHT],
             );
         }
 
@@ -164,11 +164,11 @@ final readonly class BracketDistribution
      * @param array{x: float, y: float, width: float, height: float} $rect
      * @param Segment|null                                           $median
      * @param Text                                                   $labelText
-     * @param Text                                                   $valueText
+     * @param array{x: float, y: float, width: float, height: float} $hit       the area that answers to the pointer
      *
-     * @return array{label: string, fullLabel: string, value: float, median: ?float, rank: ?int, total: ?int, bar: array{x: float, y: float, width: float, height: float}, median_segment: ?Segment, label_text: Text, value_text: Text}
+     * @return array{label: string, fullLabel: string, value: float, median: ?float, rank: ?int, total: ?int, bar: array{x: float, y: float, width: float, height: float}, median_segment: ?Segment, label_text: Text, hit: array{x: float, y: float, width: float, height: float}}
      */
-    private static function bar(string $shortLabel, CriterionDetail $criterion, array $rect, ?array $median, array $labelText, array $valueText): array
+    private static function bar(string $shortLabel, CriterionDetail $criterion, array $rect, ?array $median, array $labelText, array $hit): array
     {
         return [
             'label' => $shortLabel,
@@ -180,7 +180,7 @@ final readonly class BracketDistribution
             'bar' => $rect,
             'median_segment' => $median,
             'label_text' => $labelText,
-            'value_text' => $valueText,
+            'hit' => $hit,
         ];
     }
 }
