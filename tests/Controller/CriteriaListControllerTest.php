@@ -27,6 +27,9 @@ final class CriteriaListControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorCount(3, 'section');
+        self::assertSelectorCount(3, 'nav[aria-label="Sommaire"] a');
+        self::assertSelectorExists('nav[aria-label="Sommaire"] a[href="#demographie"]');
+        self::assertSelectorExists('section#demographie');
         self::assertSelectorTextSame('section:nth-of-type(1) h2', 'Démographie');
         self::assertSelectorTextSame('section:nth-of-type(2) h2', 'Immobilier');
         self::assertSelectorTextSame('section:nth-of-type(3) h2', 'Autres');
