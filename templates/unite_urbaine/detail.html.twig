@@ -2,6 +2,8 @@
 
 {% block title %}Pondeo — Unité urbaine de {{ uniteUrbaine.name }}{% endblock %}
 
+{% block meta_description %}Unité urbaine de {{ uniteUrbaine.name }}{% if uniteUrbaine.departement %} ({{ uniteUrbaine.departement.label }}){% endif %} : population, revenus, emploi, logement, commerces, climat et risques, comparés aux autres agglomérations de France.{% endblock %}
+
 {% block body %}
 <div class="min-h-[calc(100vh-3.5rem)] bg-transparent px-6 py-8 text-stone-900">
     <turbo-frame id="unite-urbaine-detail" class="block">

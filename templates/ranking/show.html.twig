@@ -2,6 +2,8 @@
 
 {% block title %}{{ ranking.title }} — Classements — Pondeo{% endblock %}
 
+{% block meta_description %}{{ ranking.title }} : {{ ranking.tagline }} Le classement de {{ total|fr_number }} agglomérations françaises, avec la médiane et la source des données.{% endblock %}
+
 {% block body %}
 <main class="min-h-[calc(100vh-3.5rem)] bg-transparent px-6 py-12 text-stone-900">
     <div class="mx-auto max-w-4xl">
