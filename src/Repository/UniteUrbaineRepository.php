@@ -81,4 +81,23 @@ class UniteUrbaineRepository extends ServiceEntityRepository
 
         return $groups;
     }
+
+    /**
+     * Name, code and département of every unité urbaine, for the search box
+     * to filter in the browser (accent-insensitive, which the database can't
+     * do without an extension).
+     *
+     * @return list<array{code: string, name: string, departement: ?Departement}>
+     */
+    public function findSearchIndex(): array
+    {
+        /** @var list<array{code: string, name: string, departement: ?Departement}> $rows */
+        $rows = $this->createQueryBuilder('uu')
+            ->select('uu.inseeCode AS code', 'uu.name', 'uu.departement')
+            ->orderBy('uu.name', 'ASC')
+            ->getQuery()
+            ->getArrayResult();
+
+        return $rows;
+    }
 }
