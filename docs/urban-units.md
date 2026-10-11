@@ -82,18 +82,12 @@ imports what is already vendored.
 
 ## Dev flow
 
-`make db-reset` (and therefore `make install`) does everything
-automatically: schema, zones import, population import, then demo fixtures
-(`bin/reset-db`). `AppStory` (demo POI/criteria) relies on the real Vannes and
-Nantes urban units already being imported at that point.
+`make db-reset` rebuilds the database from scratch: schema, then every import.
+`make db-update` keeps the existing data: it applies the pending migrations and
+re-runs every import, which are idempotent upserts that never duplicate.
 
-To re-run only the import, without a full reset:
+To re-run only the zones import:
 
 ```
-bin/console app:import:zones                                 # idempotent upsert, never duplicates
-bin/console foundry:load-fixtures --no-interaction --append  # --append: does not reset the database
+bin/console app:import:zones
 ```
-
-`--append` is required here: without it, `foundry:load-fixtures` would
-reset the database and wipe the zones just imported (which is why
-`bin/reset-db` also uses it internally, after running `app:import:zones`).

@@ -1,8 +1,8 @@
 #!/bin/bash
 #
 # Deploys the images tagged PONDEO_IMAGE_TAG (see compose.yaml): pulls them,
-# rebuilds the database from scratch (the data is imported from the image,
-# nothing is worth keeping) then (re)starts the stack. Run from the directory
+# applies the migrations and re-runs the idempotent imports (the data comes
+# from the image, nothing is dropped) then (re)starts the stack. Run from the directory
 # holding compose.yaml and its `.env` (plus any compose.override.yaml, which
 # docker compose reads on its own).
 #
@@ -20,10 +20,8 @@ trap 'docker logout ghcr.io >/dev/null' EXIT
 
 docker compose pull --quiet
 
-# No connection left on the database while it is dropped.
-docker compose stop php web
 docker compose up --detach --wait database
-docker compose run --rm php bin/reset-db
+docker compose run --rm php bin/import-data
 
 docker compose up --detach --remove-orphans --wait
 docker image prune --force
