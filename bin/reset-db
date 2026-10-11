@@ -17,4 +17,5 @@ php "$CURDIR/console" app:import:pois:nuclear-plants --no-debug
 php "$CURDIR/console" app:import:criteria:population --no-debug
 php "$CURDIR/console" app:import:criteria:commerces --no-debug
 php "$CURDIR/console" app:import:criteria:real-estate-prices --no-debug
+php "$CURDIR/console" app:import:station-access --no-debug
 php "$CURDIR/console" foundry:load-fixtures --no-interaction --append

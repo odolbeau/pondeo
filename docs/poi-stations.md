@@ -46,3 +46,9 @@ git add resources/geo/ && git commit
 idempotent upsert: it never duplicates, and removes the
 stations the source no longer lists. Import the zones first
 (`app:import:zones`); `make db-reset` does both in the right order.
+
+## Map filter
+
+"Garder les villes qui ont une gare" keeps only the urban units that contain
+at least one station. Without it, every unit is shown. See
+`docs/criteria-station-access.md` for the stations *near* a unit.
