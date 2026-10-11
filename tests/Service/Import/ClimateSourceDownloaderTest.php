@@ -53,7 +53,7 @@ final class ClimateSourceDownloaderTest extends KernelTestCase
         self::assertStringContainsString('apikey=secret-key', $url);
 
         // One archive file per cell, and the calls are recorded.
-        self::assertCount(2, glob($archive.'/*.json.gz') ?: []);
+        self::assertCount(2, glob($archive.'/normales/*.json.gz') ?: []);
         self::assertEqualsWithDelta(2 * ClimateSourceDownloader::callsPerLocation(), $downloader->spentCalls(), 1.0);
 
         $csv = (string) file_get_contents($dir.'/climat-normales.csv');
@@ -68,11 +68,12 @@ final class ClimateSourceDownloaderTest extends KernelTestCase
         self::assertSame($csv, file_get_contents($dir.'/climat-normales.csv'));
 
         // A budget below the projection stops before any call.
-        array_map(unlink(...), glob($archive.'/*.json.gz') ?: []);
+        array_map(unlink(...), glob($archive.'/normales/*.json.gz') ?: []);
         $downloader->download($dir, static function (string $message): void {}, 1000);
         self::assertCount(1, $requests);
 
-        array_map(unlink(...), glob($archive.'/*') ?: []);
+        array_map(unlink(...), glob($archive.'/normales/*') ?: []);
+        rmdir($archive.'/normales');
         rmdir($archive);
         unlink($dir.'/climat-normales.csv');
         rmdir($dir);

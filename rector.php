@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use Rector\CodeQuality\Rector\Catch_\ThrowWithPreviousExceptionRector;
 use Rector\CodeQuality\Rector\Identical\FlipTypeControlToUseExclusiveTypeRector;
 use Rector\CodingStyle\Rector\Catch_\CatchExceptionNameMatchingTypeRector;
 use Rector\Config\Level\CodeQualityLevel;
@@ -34,5 +35,8 @@ return RectorConfig::configure()
 
         // I prefer comparing to null
         FlipTypeControlToUseExclusiveTypeRector::class,
+
+        // The previous exception's message carries the URL, hence the API key
+        ThrowWithPreviousExceptionRector::class => [__DIR__.'/src/Service/Import'],
     ])
 ;
