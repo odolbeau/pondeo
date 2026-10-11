@@ -34,6 +34,17 @@ final class RankingControllerTest extends WebTestCase
         self::assertSelectorTextContains('tbody tr:last-child', 'Petite');
     }
 
+    public function testPageShowsTheMedianOfAllUnits(): void
+    {
+        $client = self::createClient();
+        $this->createValues('population', ['Petite' => 100, 'Moyenne' => 200, 'Grande' => 900]);
+
+        $client->request('GET', '/classements/population');
+
+        self::assertSelectorTextContains('main', 'médiane : 200');
+        self::assertSelectorCount(3, 'tbody [title="Médiane"]');
+    }
+
     public function testCriterionRankedFromLowestStartsWithTheLowestValue(): void
     {
         $client = self::createClient();

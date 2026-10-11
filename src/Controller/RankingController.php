@@ -37,7 +37,6 @@ final class RankingController extends AbstractController
         $data = $this->rankingProvider->findRanking($code, $rankFromLowest, self::PER_PAGE, ($input->page - 1) * self::PER_PAGE);
 
         $rows = $data['rows'];
-        $values = array_map(static fn (array $row): int|float => abs($row['value']), $rows);
         $siblings = array_values(array_filter(
             $this->catalog->byTheme()[$ranking->theme],
             static fn (\App\Service\Ranking\Ranking $sibling): bool => $sibling->code !== $code,
@@ -52,7 +51,8 @@ final class RankingController extends AbstractController
             'page' => $input->page,
             'pages' => max(1, (int) ceil($data['total'] / self::PER_PAGE)),
             'reversed' => $input->isReversed(),
-            'maxValue' => [] === $values ? 0 : max($values),
+            'median' => $data['median'],
+            'maxValue' => $data['maxValue'],
             'siblings' => $siblings,
         ]);
     }
