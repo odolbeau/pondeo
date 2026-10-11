@@ -45,12 +45,13 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('h1', 'Unité urbaine de Vannes');
         self::assertSelectorTextContains('header', "84\u{a0}176");
         self::assertSelectorTextContains('header', '2e sur 2');
-        self::assertSelectorTextContains('details summary', 'Démographie');
-        self::assertSelectorExists('[data-controller="criteria-filter"] input[type="search"]');
-        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="Population"]');
+        self::assertSelectorTextContains('section#population > h2', 'Population');
+        self::assertAnySelectorTextContains('section#population section h2', 'Démographie');
+        self::assertSelectorExists('[data-label="Population"]');
         self::assertSelectorNotExists('a[data-turbo-frame="_top"]');
         // A criterion with a series unfolds a chart, fed by the series endpoint.
         self::assertSelectorExists('[data-controller="criterion-chart"][data-criterion-chart-url-value="/unites-urbaines/56501/criteres/population/serie"]');
+        self::assertSelectorExists('[data-criterion-chart-open-value="true"]');
     }
 
     public function testPageDrawsTheAgePyramidWhenKnown(): void
@@ -63,13 +64,13 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         $client->request('GET', '/unites-urbaines/56501');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('details summary', 'Pyramide des âges');
+        self::assertSelectorTextContains('section[data-controller="age-pyramid"] h2', 'Pyramide des âges');
         self::assertSelectorExists('svg [data-tooltip*="0-4 ans"][data-tooltip*="40 hommes"][data-tooltip*="30 femmes"]');
         self::assertSelectorExists('svg [data-tooltip*="10 et + ans"][data-tooltip*="10 femmes"]');
         // The last bracket is open-ended, and the shares of each sex are given.
         self::assertSelectorTextContains('svg[role="img"]', '10 et +');
         self::assertSelectorExists('svg[role="img"][aria-label*="110 habitants"]');
-        self::assertSelectorTextContains('details', 'Hommes · 45,5 %');
+        self::assertSelectorTextContains('section[data-controller="age-pyramid"]', 'Hommes · 45,5 %');
         // The same figures as a table, youngest first, with the total.
         self::assertSelectorTextContains('table tbody tr:first-child', '0-4 ans');
         self::assertSelectorTextContains('table tbody tr:first-child', '70');
@@ -124,8 +125,8 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         // The mean keeps its row; the brackets are one chart, not one row each.
-        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="Revenu fiscal moyen par foyer"]');
-        self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="Foyers à moins de 15 000 €"]');
+        self::assertSelectorExists('[data-label="Revenu fiscal moyen par foyer"]');
+        self::assertSelectorNotExists('[data-label="Foyers à moins de 15 000 €"]');
         self::assertSelectorExists('svg[role="img"][aria-label^="Foyers fiscaux par tranche de revenu fiscal"]');
         self::assertSelectorExists('svg [data-tooltip*="Foyers à moins de 15 000 €"][data-tooltip*="Cette unité urbaine : 24 % (médiane : 27 %)"]');
         // The tooltip is ours, instant, not the browser's delayed one.
@@ -134,7 +135,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertAnySelectorTextContains('svg text', '< 15 k€');
         self::assertAnySelectorTextContains('svg text', '> 100 k€');
         // The chart is found by the label of its brackets.
-        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label*="100 000"]');
+        self::assertSelectorExists('[data-label*="100 000"]');
     }
 
     public function testCriterionRankedFromTheLowestPutsTheLowestValueFirst(): void
@@ -184,7 +185,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         $client->request('GET', '/unites-urbaines/56501');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="Retraités"]');
+        self::assertSelectorNotExists('[data-label="Retraités"]');
         self::assertSelectorExists('svg[role="img"][aria-label^="Population de 15 ans ou plus par catégorie socioprofessionnelle"]');
         self::assertSelectorExists('svg [data-tooltip*="Retraités"][data-tooltip*="Cette unité urbaine : 31 % (médiane : 28 %)"]');
         // A row per category, labelled on the left of its bar.
@@ -215,6 +216,8 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', 'Auray');
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "~25\u{a0}min · 12,3\u{a0}km");
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', 'Questembert');
+        // Stations have their own block: they are not repeated among the points of interest.
+        self::assertSelectorTextNotContains('turbo-frame#unite-urbaine-detail', "Points d'intérêt");
     }
 
     public function testPageListsPoisByCategoryAndCommunes(): void
@@ -272,10 +275,17 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         $entityManager->flush();
 
         $client->request('GET', '/unites-urbaines/56501');
-        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="80 ans ou plus"]');
+        self::assertSelectorExists('[data-label="80 ans ou plus"]');
+
+        $vannes->setAgePyramid(['year' => 2023, 'women' => [30, 20, 10], 'men' => [40, 10, 0]]);
+        $entityManager->flush();
+
+        // With a pyramid, the shares join its table instead of a card of their own.
+        $client->request('GET', '/unites-urbaines/56501');
+        self::assertSelectorExists('section[data-controller="age-pyramid"] tbody[data-label="80 ans ou plus"]');
 
         $client->request('GET', '/unites-urbaines/56501', server: ['HTTP_TURBO_FRAME' => 'unite-urbaine-detail']);
-        self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="80 ans ou plus"]');
+        self::assertSelectorNotExists('[data-label="80 ans ou plus"]');
     }
 
     public function testUnknownUniteUrbaineReturns404(): void

@@ -1,5 +1,5 @@
 {% set unit = distribution.unit ? ' ' ~ distribution.unit : '' %}
-<div class="mt-4" data-criteria-filter-target="row" data-label="{{ distribution.title }} {% for bar in distribution.bars %}{{ bar.fullLabel }} {% endfor %}">
+<div class="mt-4" data-label="{{ distribution.title }} {% for bar in distribution.bars %}{{ bar.fullLabel }} {% endfor %}">
     <p class="text-sm text-slate-300">{{ distribution.title }} <span class="ml-1 text-xs text-slate-500">({{ distribution.period }})</span></p>
     <div class="relative" data-controller="chart-tooltip" data-action="pointermove->chart-tooltip#move pointerdown->chart-tooltip#move pointerleave->chart-tooltip#hide">
         <svg viewBox="0 0 {{ constant('App\\Service\\Detail\\BracketDistribution::WIDTH') }} {{ distribution.height }}" class="mx-auto mt-2 w-full max-w-xl" role="img"
