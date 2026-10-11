@@ -1,0 +1,49 @@
+    <section class="{{ card }}">
+        <h2 class="{{ title }}">{{ group.label }}{% if group.commonPeriod %} <span class="ml-1 text-xs font-normal normal-case tracking-normal text-slate-500">({{ group.commonPeriod }})</span>{% endif %}</h2>
+        <dl class="mt-2 divide-y divide-slate-800/60">
+            {% for criterion in group.criteria %}
+                {% set expandable = criterion.series|length >= 2 %}
+                <div data-label="{{ criterion.label }}"
+                     {% if expandable %}data-controller="criterion-chart" data-criterion-chart-url-value="{{ path('app_unite_urbaine_criterion_series', {code: uniteUrbaine.code, criterion: criterion.code}) }}"{% if 'population' == criterion.code %} data-criterion-chart-open-value="true"{% endif %}{% endif %}>
+                <div class="flex items-center justify-between gap-4 py-3{% if expandable %} cursor-pointer rounded hover:bg-slate-900/60{% endif %}"
+                     {% if expandable %}role="button" tabindex="0" aria-expanded="false" aria-label="Courbe de {{ criterion.label }}" data-criterion-chart-target="header" data-action="click->criterion-chart#toggle keydown.enter->criterion-chart#toggle keydown.space->criterion-chart#toggle"{% endif %}>
+                    <div class="min-w-0">
+                        <dt class="text-sm text-slate-300">
+                            {{ criterion.label }}{% if criterion.count is not null %} ({{ criterion.count|fr_number }}){% endif %}
+                            {% if not group.commonPeriod %}<span class="ml-1 text-xs font-normal text-slate-500">({{ criterion.period }})</span>{% endif %}
+                        </dt>
+                        {% if criterion.rank %}
+                            <dd class="mt-1 text-xs text-slate-500"><span class="text-emerald-400">{{ criterion.rank }}{{ 1 == criterion.rank ? 'er' : 'e' }}</span> sur {{ criterion.total|fr_number }}</dd>
+                        {% endif %}
+                    </div>
+                    <div class="flex shrink-0 items-center gap-3">
+                        <span class="text-right">
+                            <span class="block text-sm font-medium text-slate-100">
+                                {{ criterion.value|criterion_value }}
+                                {% if criterion.unit %}<span class="text-slate-500">{{ criterion.unit }}</span>{% endif %}
+                            </span>
+                            {% if criterion.median is not null %}
+                                <span class="block text-xs text-emerald-400">médiane {{ criterion.median|fr_number }}</span>
+                            {% endif %}
+                        </span>
+                        {% if expandable %}<span aria-hidden="true" class="text-slate-500 transition-transform" data-criterion-chart-target="chevron">▾</span>{% endif %}
+                    </div>
+                </div>
+                {% if expandable %}
+                    <div hidden class="pb-4" data-criterion-chart-target="panel">
+                        <div class="mb-2 flex items-center justify-end">
+                            <button type="button" hidden aria-pressed="false" data-criterion-chart-target="indexButton" data-action="criterion-chart#toggleIndex"
+                                    title="Ramène les deux courbes à 100 à la première année commune, pour comparer les évolutions plutôt que les niveaux"
+                                    class="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-emerald-400 aria-pressed:border-emerald-400 aria-pressed:text-emerald-400">Base 100</button>
+                        </div>
+                        <div class="text-slate-300" data-criterion-chart-target="chart"></div>
+                        <p class="text-xs text-slate-500" data-criterion-chart-target="status" aria-live="polite"></p>
+                    </div>
+                {% endif %}
+                </div>
+            {% endfor %}
+        </dl>
+        {% if group.distribution %}
+            {{ include('unite_urbaine/_bracket_distribution.html.twig', {distribution: group.distribution}) }}
+        {% endif %}
+    </section>

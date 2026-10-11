@@ -1,0 +1,61 @@
+    <section class="{{ card }}" data-controller="age-pyramid">
+        <h2 class="{{ title }}">Pyramide des âges <span class="ml-1 text-xs font-normal normal-case tracking-normal text-slate-500">({{ (agePyramids|first).year }})</span></h2>
+        {% if agePyramids|length > 1 %}
+            <div class="mt-3 flex items-center justify-end gap-1 text-xs" role="group" aria-label="Largeur des tranches d'âge">
+                {% for width, pyramid in agePyramids %}
+                    <button type="button" aria-pressed="{{ loop.first ? 'true' : 'false' }}" data-age-pyramid-target="button" data-age-pyramid-width-param="{{ width }}" data-action="age-pyramid#show"
+                            class="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-emerald-400 aria-pressed:border-emerald-400 aria-pressed:text-emerald-400">{{ width }} ans</button>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% for width, pyramid in agePyramids %}
+            <div data-age-pyramid-target="panel" data-width="{{ width }}"{% if not loop.first %} hidden{% endif %}>
+                {{ include('unite_urbaine/_age_pyramid.html.twig', {pyramid: pyramid}) }}
+            </div>
+        {% endfor %}
+        {% if ageGroup %}
+            <div class="mt-6 border-t border-slate-800 pt-4">
+                <h3 class="text-sm text-slate-300">Part de chaque tranche d'âge <span class="ml-1 text-xs text-slate-500">({{ ageGroup.commonPeriod }}, tranches du recensement)</span></h3>
+                <table class="mt-2 w-full text-right text-sm tabular-nums">
+                    <thead class="text-xs text-slate-500">
+                        <tr>
+                            <th scope="col" class="py-1 text-left font-normal">Âge</th>
+                            <th scope="col" class="py-1 font-normal">Part</th>
+                            <th scope="col" class="py-1 font-normal text-emerald-400">Médiane</th>
+                            <th scope="col" class="py-1 font-normal">Rang</th>
+                            <th scope="col" class="w-6"></th>
+                        </tr>
+                    </thead>
+                    {% for criterion in ageGroup.criteria %}
+                        {% set expandable = criterion.series|length >= 2 %}
+                        <tbody class="border-t border-slate-800/60 text-slate-300" data-label="{{ criterion.label }}"
+                               {% if expandable %}data-controller="criterion-chart" data-criterion-chart-url-value="{{ path('app_unite_urbaine_criterion_series', {code: uniteUrbaine.code, criterion: criterion.code}) }}"{% endif %}>
+                            <tr{% if expandable %} class="cursor-pointer hover:bg-slate-900/60" role="button" tabindex="0" aria-expanded="false" aria-label="Courbe de {{ criterion.label }}" data-criterion-chart-target="header" data-action="click->criterion-chart#toggle keydown.enter->criterion-chart#toggle keydown.space->criterion-chart#toggle"{% endif %}>
+                                <th scope="row" class="py-2 text-left font-normal text-slate-400">{{ criterion.label }}</th>
+                                <td class="py-2 text-slate-100">{{ criterion.value|criterion_value }} {{ criterion.unit }}</td>
+                                <td class="py-2 text-emerald-400">{% if criterion.median is not null %}{{ criterion.median|fr_number }} {{ criterion.unit }}{% endif %}</td>
+                                <td class="py-2 text-slate-500">{% if criterion.rank %}{{ criterion.rank }}{{ 1 == criterion.rank ? 'er' : 'e' }}/{{ criterion.total|fr_number }}{% endif %}</td>
+                                <td class="py-2 pl-2 text-slate-500">{% if expandable %}<span aria-hidden="true" class="inline-block transition-transform" data-criterion-chart-target="chevron">▾</span>{% endif %}</td>
+                            </tr>
+                            {% if expandable %}
+                                <tr hidden data-criterion-chart-target="panel">
+                                    <td colspan="5" class="pb-4 text-left">
+                                        <div class="mb-2 flex items-center justify-end">
+                                            <button type="button" hidden aria-pressed="false" data-criterion-chart-target="indexButton" data-action="criterion-chart#toggleIndex"
+                                                    title="Ramène les deux courbes à 100 à la première année commune, pour comparer les évolutions plutôt que les niveaux"
+                                                    class="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-emerald-400 aria-pressed:border-emerald-400 aria-pressed:text-emerald-400">Base 100</button>
+                                        </div>
+                                        <div class="text-slate-300" data-criterion-chart-target="chart"></div>
+                                        <p class="text-xs text-slate-500" data-criterion-chart-target="status" aria-live="polite"></p>
+                                    </td>
+                                </tr>
+                            {% endif %}
+                        </tbody>
+                    {% endfor %}
+                </table>
+                {% if ageGroup.distribution %}
+                    {{ include('unite_urbaine/_bracket_distribution.html.twig', {distribution: ageGroup.distribution}) }}
+                {% endif %}
+            </div>
+        {% endif %}
+    </section>

@@ -1,28 +1,35 @@
-<header>
-    <h1 class="text-2xl font-semibold">Unité urbaine de {{ uniteUrbaine.name }}</h1>
-    {% if uniteUrbaine.departement %}
-        <p class="mt-1 text-sm text-slate-400">{{ uniteUrbaine.departement.label }} · {{ uniteUrbaine.departement.region.label }}</p>
-    {% endif %}
+{% set card = 'mb-6 rounded-lg border border-slate-800 bg-slate-900/40 p-5' %}
+{% set title = 'text-sm font-semibold uppercase tracking-wide text-slate-400' %}
 
-    {% if uniteUrbaine.attractionCategory %}
-        <p class="mt-1 text-sm text-slate-400">
-            {% if uniteUrbaine.attractionAreaName %}
-                {{ uniteUrbaine.attractionCategory.label }} · aire d'attraction de {{ uniteUrbaine.attractionAreaName }}
-            {% else %}
-                {{ uniteUrbaine.attractionCategory.label }}
-            {% endif %}
-        </p>
-    {% endif %}
+<header class="{{ inFrame ? '' : 'flex flex-wrap items-end justify-between gap-x-8 gap-y-4 border-b border-slate-800 pb-6' }}">
+    <div>
+        <h1 class="{{ inFrame ? 'text-2xl' : 'text-3xl' }} font-semibold">Unité urbaine de {{ uniteUrbaine.name }}</h1>
+        {% if uniteUrbaine.departement %}
+            <p class="mt-1 text-sm text-slate-400">{{ uniteUrbaine.departement.label }} · {{ uniteUrbaine.departement.region.label }}</p>
+        {% endif %}
 
-    {% if population %}
-        <p class="mt-4 text-3xl font-semibold text-emerald-400">
-            {{ population.value|criterion_value }}<span class="ml-2 text-base font-normal text-slate-400">{{ population.unit }}</span>
-        </p>
-        {% if population.rank %}
-            <p class="mt-1 text-sm text-slate-300">
-                {{ include('unite_urbaine/_rank.html.twig', {criterion: population}) }}
+        {% if uniteUrbaine.attractionCategory %}
+            <p class="mt-1 text-sm text-slate-400">
+                {% if uniteUrbaine.attractionAreaName %}
+                    {{ uniteUrbaine.attractionCategory.label }} · aire d'attraction de {{ uniteUrbaine.attractionAreaName }}
+                {% else %}
+                    {{ uniteUrbaine.attractionCategory.label }}
+                {% endif %}
             </p>
         {% endif %}
+    </div>
+
+    {% if population %}
+        <div class="{{ inFrame ? 'mt-4' : 'sm:text-right' }}">
+            <p class="text-4xl font-semibold text-emerald-400">
+                {{ population.value|criterion_value }}<span class="ml-2 text-base font-normal text-slate-400">{{ population.unit }}</span>
+            </p>
+            {% if population.rank %}
+                <p class="mt-1 text-sm text-slate-300">
+                    {{ include('unite_urbaine/_rank.html.twig', {criterion: population}) }}
+                </p>
+            {% endif %}
+        </div>
     {% endif %}
 
     {% if inFrame %}
@@ -31,126 +38,48 @@
     {% endif %}
 </header>
 
-<div data-controller="criteria-filter">
-{% if groups %}
-    <input type="search" placeholder="Filtrer les critères" aria-label="Filtrer les critères"
-           data-criteria-filter-target="input" data-action="input->criteria-filter#filter"
-           class="mt-8 w-full rounded border border-slate-700 bg-slate-950 px-3 py-2 text-sm text-slate-100 placeholder:text-slate-500 focus:border-emerald-400 focus:outline-none">
+{% if not inFrame and sections|length > 1 %}
+    <nav aria-label="Sections de la fiche" data-turbo="false" class="mt-4 flex flex-wrap gap-2 text-sm">
+        {% for entry in sections %}
+            <a href="#{{ entry.section.value }}" class="rounded-full border border-slate-700 px-3 py-1 text-slate-300 hover:border-emerald-400 hover:text-emerald-400">{{ entry.section.label }}</a>
+        {% endfor %}
+    </nav>
 {% endif %}
-{% for group in groups %}
-    <details open class="mt-6 border-t border-slate-800 pt-4" data-criteria-filter-target="group">
-        <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">{{ group.label }}{% if group.commonPeriod %} <span class="ml-1 text-xs font-normal normal-case tracking-normal text-slate-500">({{ group.commonPeriod }})</span>{% endif %}</summary>
-        <dl class="mt-2 divide-y divide-slate-800/60">
-            {% for criterion in group.criteria %}
-                {% set expandable = criterion.series|length >= 2 %}
-                <div data-criteria-filter-target="row" data-label="{{ criterion.label }}"
-                     {% if expandable %}data-controller="criterion-chart" data-criterion-chart-url-value="{{ path('app_unite_urbaine_criterion_series', {code: uniteUrbaine.code, criterion: criterion.code}) }}"{% endif %}>
-                <div class="flex items-center justify-between gap-4 py-3{% if expandable %} cursor-pointer rounded hover:bg-slate-900/60{% endif %}"
-                     {% if expandable %}role="button" tabindex="0" aria-expanded="false" aria-label="Courbe de {{ criterion.label }}" data-criterion-chart-target="header" data-action="click->criterion-chart#toggle keydown.enter->criterion-chart#toggle keydown.space->criterion-chart#toggle"{% endif %}>
-                    <div class="min-w-0">
-                        <dt class="text-sm text-slate-300">
-                            {{ criterion.label }}{% if criterion.count is not null %} ({{ criterion.count|fr_number }}){% endif %}
-                            {% if not group.commonPeriod %}<span class="ml-1 text-xs font-normal text-slate-500">({{ criterion.period }})</span>{% endif %}
-                        </dt>
-                        {% if criterion.rank %}
-                            <dd class="mt-1 text-xs text-slate-500"><span class="text-emerald-400">{{ criterion.rank }}{{ 1 == criterion.rank ? 'er' : 'e' }}</span> sur {{ criterion.total|fr_number }}</dd>
+
+{% for entry in sections %}
+    {% set section = entry.section %}
+    <section id="{{ section.value }}" class="mt-8 scroll-mt-20">
+        {% if not inFrame %}
+            <h2 class="mb-4 border-b border-slate-800 pb-2 text-xl font-semibold text-slate-100">{{ section.label }}</h2>
+        {% endif %}
+        <div class="{{ inFrame ? '' : 'grid items-start gap-6 xl:grid-cols-3' }}">
+            {% for column in entry.columns %}
+                <div class="min-w-0">
+                    {% for item in column %}
+                        {% if 'group' == item.type %}
+                            {% set group = item.group %}
+                            {{ include('unite_urbaine/_group.html.twig') }}
+                        {% elseif 'pyramid' == item.type %}
+                            {{ include('unite_urbaine/_section_pyramid.html.twig') }}
+                        {% elseif 'stations' == item.type %}
+                            {{ include('unite_urbaine/_section_stations.html.twig') }}
+                        {% elseif 'pois' == item.type %}
+                            {{ include('unite_urbaine/_section_pois.html.twig') }}
                         {% endif %}
-                    </div>
-                    <div class="flex shrink-0 items-center gap-3">
-                        <span class="text-right">
-                            <span class="block text-sm font-medium text-slate-100">
-                                {{ criterion.value|criterion_value }}
-                                {% if criterion.unit %}<span class="text-slate-500">{{ criterion.unit }}</span>{% endif %}
-                            </span>
-                            {% if criterion.median is not null %}
-                                <span class="block text-xs text-emerald-400">médiane {{ criterion.median|fr_number }}</span>
-                            {% endif %}
-                        </span>
-                        {% if expandable %}<span aria-hidden="true" class="text-slate-500 transition-transform" data-criterion-chart-target="chevron">▾</span>{% endif %}
-                    </div>
-                </div>
-                {% if expandable %}
-                    <div hidden class="pb-4" data-criterion-chart-target="panel">
-                        <div class="mb-2 flex items-center justify-end">
-                            <button type="button" hidden aria-pressed="false" data-criterion-chart-target="indexButton" data-action="criterion-chart#toggleIndex"
-                                    title="Ramène les deux courbes à 100 à la première année commune, pour comparer les évolutions plutôt que les niveaux"
-                                    class="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-emerald-400 aria-pressed:border-emerald-400 aria-pressed:text-emerald-400">Base 100</button>
-                        </div>
-                        <div class="text-slate-300" data-criterion-chart-target="chart"></div>
-                        <p class="text-xs text-slate-500" data-criterion-chart-target="status" aria-live="polite"></p>
-                    </div>
-                {% endif %}
+                    {% endfor %}
                 </div>
             {% endfor %}
-        </dl>
-        {% if group.distribution %}
-            {{ include('unite_urbaine/_bracket_distribution.html.twig', {distribution: group.distribution}) }}
-        {% endif %}
-    </details>
+        </div>
+    </section>
 {% endfor %}
-</div>
 
-{% if agePyramids %}
-    <details open class="mt-8 border-t border-slate-800 pt-4" data-controller="age-pyramid">
-        <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">Pyramide des âges <span class="ml-1 text-xs font-normal normal-case tracking-normal text-slate-500">({{ (agePyramids|first).year }})</span></summary>
-        {% if agePyramids|length > 1 %}
-            <div class="mt-3 flex items-center justify-end gap-1 text-xs" role="group" aria-label="Largeur des tranches d'âge">
-                {% for width, pyramid in agePyramids %}
-                    <button type="button" aria-pressed="{{ loop.first ? 'true' : 'false' }}" data-age-pyramid-target="button" data-age-pyramid-width-param="{{ width }}" data-action="age-pyramid#show"
-                            class="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-emerald-400 aria-pressed:border-emerald-400 aria-pressed:text-emerald-400">{{ width }} ans</button>
-                {% endfor %}
-            </div>
-        {% endif %}
-        {% for width, pyramid in agePyramids %}
-            <div data-age-pyramid-target="panel" data-width="{{ width }}"{% if not loop.first %} hidden{% endif %}>
-                {{ include('unite_urbaine/_age_pyramid.html.twig', {pyramid: pyramid}) }}
-            </div>
-        {% endfor %}
-    </details>
-{% endif %}
-
-{% if stations %}
-    <details open class="mt-8 border-t border-slate-800 pt-4">
-        <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">{{ stations|length > 1 ? 'Gares les plus proches' : 'Gare la plus proche' }}</summary>
-        <ul class="mt-2 divide-y divide-slate-800/60 text-sm">
-            {% for station in stations %}
-                <li class="flex items-baseline justify-between gap-4 py-2">
-                    <span class="text-slate-100">{{ station.name }}</span>
-                    <span class="shrink-0 text-slate-400">
-                        {% if station.inside %}dans l'agglomération{% else %}~{{ station.minutes }}&nbsp;min · {{ station.kilometers|number_format(1, ',') }}&nbsp;km{% endif %}
-                    </span>
-                </li>
-            {% endfor %}
-        </ul>
-    </details>
-{% endif %}
-
-{% if poiCategories %}
-    <details open class="mt-8 border-t border-slate-800 pt-4">
-        <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">Points d'intérêt</summary>
-        {% for category in poiCategories %}
-            <h3 class="mt-4 text-sm text-slate-300">{{ category.label }} <span class="text-slate-500">({{ category.total }})</span></h3>
-            <ul class="mt-1 divide-y divide-slate-800/60 text-sm">
-                {% for poi in category.pois %}
-                    <li class="py-2">
-                        <span class="text-slate-100">{{ poi.name }}</span>
-                        {% if poi.brand %}<span class="text-slate-500"> · {{ poi.brand }}</span>{% endif %}
-                        {% if poi.address %}<div class="text-xs text-slate-500">{{ poi.address }}</div>{% endif %}
-                    </li>
-                {% endfor %}
-            </ul>
-            {% if category.total > category.pois|length %}
-                <p class="mt-1 text-xs text-slate-500">et {{ category.total - category.pois|length }} autres</p>
-            {% endif %}
-        {% endfor %}
-    </details>
-{% endif %}
-
-<details class="mt-8 border-t border-slate-800 pt-4">
-    <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">Communes ({{ uniteUrbaine.communes|length }})</summary>
-    <ul class="mt-2 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300">
+<div class="mt-2">
+<details class="{{ card }}">
+    <summary class="cursor-pointer {{ title }}">Communes ({{ uniteUrbaine.communes|length }})</summary>
+    <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300{{ inFrame ? '' : ' md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6' }}">
         {% for commune in uniteUrbaine.communes %}
             <li>{{ commune.name }}</li>
         {% endfor %}
     </ul>
 </details>
+</div>

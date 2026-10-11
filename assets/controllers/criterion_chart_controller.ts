@@ -23,7 +23,7 @@ const numberFormat = new Intl.NumberFormat('fr-FR', { maximumFractionDigits: 2 }
 // every unité urbaine, fetched the first time the row is opened.
 export default class extends Controller {
     static targets = ['header', 'panel', 'chart', 'status', 'indexButton', 'chevron'];
-    static values = { url: String };
+    static values = { url: String, open: Boolean };
 
     declare readonly headerTarget: HTMLElement;
     declare readonly panelTarget: HTMLElement;
@@ -32,12 +32,19 @@ export default class extends Controller {
     declare readonly indexButtonTarget: HTMLButtonElement;
     declare readonly chevronTarget: HTMLElement;
     declare readonly urlValue: string;
+    declare readonly openValue: boolean;
 
     private series?: CriterionSeries;
     private plot?: uPlot;
     private resizeObserver?: ResizeObserver;
     private indexed = false;
     private loading = false;
+
+    connect() {
+        if (this.openValue) {
+            void this.setOpen(true);
+        }
+    }
 
     disconnect() {
         this.destroyPlot();
@@ -46,7 +53,10 @@ export default class extends Controller {
     async toggle(event: Event) {
         event.preventDefault();
 
-        const open = this.panelTarget.hasAttribute('hidden');
+        await this.setOpen(this.panelTarget.hasAttribute('hidden'));
+    }
+
+    private async setOpen(open: boolean) {
         this.panelTarget.toggleAttribute('hidden', !open);
         this.headerTarget.setAttribute('aria-expanded', String(open));
         this.chevronTarget.classList.toggle('rotate-180', open);

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Detail;
 
 use App\Entity\UniteUrbaine;
+use App\Enum\DetailSection;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -18,9 +19,6 @@ use Doctrine\DBAL\Connection;
 final readonly class UniteUrbaineCriteriaProvider
 {
     public const string DEFAULT_GROUP_LABEL = 'Autres';
-
-    /** Groups listed first, in this order; the others follow alphabetically, then the default one. */
-    private const array GROUP_ORDER = ['Démographie', 'Âge', 'Immobilier', 'Commerces', 'Emploi', 'Revenus', 'Revenus fiscaux', 'Diplômes', 'Logement', 'Catégories socioprofessionnelles'];
 
     /** Code suffix of a criterion derived from the count `<code>`: the detail page folds that count into its title. */
     public const string DENSITY_SUFFIX = '_pour_1000_hab';
@@ -62,7 +60,7 @@ final readonly class UniteUrbaineCriteriaProvider
     }
 
     /**
-     * Groups are alphabetical with "Autres" last; criteria alphabetical within a group.
+     * Groups follow the order of their detail section, "Autres" last; criteria alphabetical within a group.
      *
      * @return list<CriterionGroupDetail>
      */
@@ -148,15 +146,17 @@ final readonly class UniteUrbaineCriteriaProvider
         return new CriterionGroupDetail($label, $rows, BracketDistribution::fromCriteria($distribution['title'], $brackets, $distribution['layout']));
     }
 
+    /** Sections in their display order, then the group's place in its section; unknown groups close their section. */
     private static function groupRank(string $label): int
     {
         if (self::DEFAULT_GROUP_LABEL === $label) {
             return \PHP_INT_MAX;
         }
 
-        $index = array_search($label, self::GROUP_ORDER, true);
+        $section = DetailSection::fromGroup($label);
+        $index = array_search($label, $section->groups(), true);
 
-        return false === $index ? \count(self::GROUP_ORDER) : $index;
+        return array_search($section, DetailSection::cases(), true) * 100 + (false === $index ? 99 : $index);
     }
 
     /**

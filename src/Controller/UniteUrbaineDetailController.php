@@ -5,9 +5,13 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\UniteUrbaine;
+use App\Enum\DetailSection;
 use App\Service\Detail\AgePyramid;
 use App\Service\Detail\CriterionDetail;
 use App\Service\Detail\CriterionGroupDetail;
+use App\Service\Detail\DetailCard;
+use App\Service\Detail\PoiCategoryDetail;
+use App\Service\Detail\StationAccessDetail;
 use App\Service\Detail\UniteUrbaineCriteriaProvider;
 use App\Service\Detail\UniteUrbainePoiProvider;
 use App\Service\Detail\UniteUrbaineStationAccessProvider;
@@ -25,6 +29,8 @@ use Symfony\Component\Routing\Attribute\Route;
 #[Route('/unites-urbaines/{code}', name: 'app_unite_urbaine_detail', requirements: ['code' => '[0-9A-Za-z]{5}'])]
 final class UniteUrbaineDetailController extends AbstractController
 {
+    private const int COLUMNS = 3;
+
     public function __construct(
         private readonly UniteUrbaineCriteriaProvider $criteriaProvider,
         private readonly UniteUrbainePoiProvider $poiProvider,
@@ -39,17 +45,74 @@ final class UniteUrbaineDetailController extends AbstractController
     ): Response {
         $groups = $this->criteriaProvider->findGroups($uniteUrbaine);
         $inFrame = $request->headers->has('Turbo-Frame');
+        $agePyramids = $this->findAgePyramids($uniteUrbaine, $inFrame);
+
+        // The age shares repeat the pyramid: in the narrow map panel they are dropped, on the full page they move under the pyramid.
+        $ageGroup = null;
+        $displayedGroups = [];
+        foreach ($groups as $group) {
+            if (AgeStructureImporter::GROUP !== $group->label) {
+                $displayedGroups[] = $group;
+            } elseif (!$inFrame && [] !== $agePyramids) {
+                $ageGroup = $group;
+            } elseif (!$inFrame) {
+                $displayedGroups[] = $group;
+            }
+        }
+
+        $poiCategories = $this->poiProvider->findCategories($uniteUrbaine);
+        $stations = $this->stationAccessProvider->find($uniteUrbaine);
 
         return $this->render('unite_urbaine/detail.html.twig', [
             'uniteUrbaine' => $uniteUrbaine,
-            // The age shares only repeat the pyramid in the narrow map panel; the full page keeps them, with their rank and evolution.
-            'groups' => $inFrame ? array_values(array_filter($groups, static fn (CriterionGroupDetail $group): bool => AgeStructureImporter::GROUP !== $group->label)) : $groups,
-            'poiCategories' => $this->poiProvider->findCategories($uniteUrbaine),
-            'stations' => $this->stationAccessProvider->find($uniteUrbaine),
+            'sections' => $this->toSections($displayedGroups, $ageGroup, $agePyramids, $stations, $poiCategories, $inFrame ? 1 : self::COLUMNS),
+            'ageGroup' => $ageGroup,
+            'poiCategories' => $poiCategories,
+            'stations' => $stations,
             'population' => $this->findPopulation($groups),
-            'agePyramids' => $this->findAgePyramids($uniteUrbaine, $inFrame),
+            'agePyramids' => $agePyramids,
             'inFrame' => $inFrame,
         ]);
+    }
+
+    /**
+     * @param list<CriterionGroupDetail> $groups
+     * @param array<int, AgePyramid>     $agePyramids
+     * @param list<StationAccessDetail>  $stations
+     * @param list<PoiCategoryDetail>    $poiCategories
+     *
+     * @return list<array{section: DetailSection, columns: list<list<DetailCard>>}>
+     */
+    private function toSections(array $groups, ?CriterionGroupDetail $ageGroup, array $agePyramids, array $stations, array $poiCategories, int $columnCount): array
+    {
+        $cardsBySection = [];
+        foreach ($groups as $group) {
+            $weight = 2.0 + \count($group->criteria) * 1.4 + (null === $group->distribution ? 0.0 : 8.0);
+            $cardsBySection[DetailSection::fromGroup($group->label)->value][] = new DetailCard(DetailCard::GROUP, $weight, $group);
+        }
+
+        if ([] !== $agePyramids) {
+            $weight = 14.0 + (null === $ageGroup ? 0.0 : 3.0 + \count($ageGroup->criteria) * 1.4 + (null === $ageGroup->distribution ? 0.0 : 8.0));
+            $cardsBySection[DetailSection::Population->value] = [new DetailCard(DetailCard::PYRAMID, $weight), ...($cardsBySection[DetailSection::Population->value] ?? [])];
+        }
+
+        if ([] !== $stations) {
+            $cardsBySection[DetailSection::CadreDeVie->value][] = new DetailCard(DetailCard::STATIONS, 2.0 + \count($stations) * 1.2);
+        }
+
+        if ([] !== $poiCategories) {
+            $weight = 2.0 + array_sum(array_map(static fn (PoiCategoryDetail $category): float => 2.0 + \count($category->pois) * 1.6, $poiCategories));
+            $cardsBySection[DetailSection::CadreDeVie->value][] = new DetailCard(DetailCard::POIS, $weight);
+        }
+
+        $sections = [];
+        foreach (DetailSection::cases() as $section) {
+            if (isset($cardsBySection[$section->value])) {
+                $sections[] = ['section' => $section, 'columns' => DetailCard::distribute($cardsBySection[$section->value], $columnCount)];
+            }
+        }
+
+        return $sections;
     }
 
     /**
