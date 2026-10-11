@@ -1,5 +1,10 @@
 import { Controller } from '@hotwired/stimulus';
-import { Map, Popup, type GeoJSONSource } from 'maplibre-gl';
+import { Map, Popup, setWorkerUrl, type GeoJSONSource } from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+// MapLibre finds its worker through a relative `import.meta.url`, which the
+// production build can't follow: it would never emit the worker.
+setWorkerUrl(workerUrl);
 
 const DEBOUNCE_MS = 200;
 const ZONES_SOURCE_ID = 'unites-urbaines';
