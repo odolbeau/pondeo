@@ -6,6 +6,7 @@ namespace App\Repository;
 
 use App\Entity\Poi;
 use App\Entity\UniteUrbaine;
+use App\Enum\Departement;
 use Doctrine\Bundle\DoctrineBundle\Repository\ServiceEntityRepository;
 use Doctrine\Persistence\ManagerRegistry;
 
@@ -52,5 +53,32 @@ class UniteUrbaineRepository extends ServiceEntityRepository
             ->distinct()
             ->getQuery()
             ->getResult();
+    }
+
+    /**
+     * Every unité urbaine, grouped by département code order then by name;
+     * units without a département come last under the empty key.
+     *
+     * @return array<string, array{departement: ?Departement, unites: list<UniteUrbaine>}>
+     */
+    public function findGroupedByDepartement(): array
+    {
+        /** @var list<UniteUrbaine> $unites */
+        $unites = $this->createQueryBuilder('uu')
+            ->addSelect('CASE WHEN uu.departement IS NULL THEN 1 ELSE 0 END AS HIDDEN nullLast')
+            ->orderBy('nullLast', 'ASC')
+            ->addOrderBy('uu.departement', 'ASC')
+            ->addOrderBy('uu.name', 'ASC')
+            ->getQuery()
+            ->getResult();
+
+        $groups = [];
+        foreach ($unites as $unite) {
+            $departement = $unite->getDepartement();
+            $groups[$departement->value ?? ''] ??= ['departement' => $departement, 'unites' => []];
+            $groups[$departement->value ?? '']['unites'][] = $unite;
+        }
+
+        return $groups;
     }
 }
