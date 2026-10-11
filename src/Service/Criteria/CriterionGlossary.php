@@ -7,6 +7,7 @@ namespace App\Service\Criteria;
 use App\Entity\Criterion;
 use App\Repository\CriterionRepository;
 use App\Service\Ranking\RankingCatalog;
+use Symfony\Component\String\Slugger\AsciiSlugger;
 
 /**
  * Plain-language description of every criterion, grouped as on the detail
@@ -148,7 +149,7 @@ final readonly class CriterionGlossary
     }
 
     /**
-     * @return list<array{label: string, criteria: list<array{criterion: Criterion, description: ?string, source: ?string, ranked: bool}>}>
+     * @return list<array{label: string, slug: string, criteria: list<array{criterion: Criterion, description: ?string, source: ?string, ranked: bool}>}>
      */
     public function groups(): array
     {
@@ -165,9 +166,10 @@ final readonly class CriterionGlossary
 
         uksort($byGroup, static fn (string $a, string $b): int => self::rank($a) <=> self::rank($b) ?: strcmp($a, $b));
 
+        $slugger = new AsciiSlugger('fr');
         $groups = [];
         foreach ($byGroup as $label => $criteria) {
-            $groups[] = ['label' => $label, 'criteria' => $criteria];
+            $groups[] = ['label' => $label, 'slug' => $slugger->slug($label)->lower()->toString(), 'criteria' => $criteria];
         }
 
         return $groups;
