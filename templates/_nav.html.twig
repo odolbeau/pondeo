@@ -4,4 +4,16 @@
     <a href="{{ path('app_unite_urbaine_list') }}" class="rounded-full px-3 py-1 transition hover:bg-emerald-50 hover:text-emerald-700">Unités urbaines</a>
     <a href="{{ path('app_rankings') }}" class="rounded-full px-3 py-1 transition hover:bg-emerald-50 hover:text-emerald-700">Classements</a>
     <a href="{{ path('app_criteria') }}" class="rounded-full px-3 py-1 transition hover:bg-emerald-50 hover:text-emerald-700">Critères</a>
+    <div class="relative ml-auto w-44 sm:w-64"
+         data-controller="search"
+         data-search-index-url-value="{{ path('app_search_index') }}"
+         data-search-detail-url-value="{{ path('app_unite_urbaine_detail', {code: 'XXXXX'}) }}">
+        <input type="search" placeholder="Rechercher une ville…" autocomplete="off" aria-label="Rechercher une unité urbaine"
+               role="combobox" aria-expanded="false" aria-controls="search-results"
+               data-search-target="input"
+               data-action="focus->search#load input->search#search keydown->search#keydown blur->search#blur"
+               class="w-full rounded-full border border-stone-300 bg-white px-4 py-1.5 text-sm font-normal text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none">
+        <ul id="search-results" role="listbox" hidden data-search-target="results"
+            class="absolute right-0 top-full z-40 mt-1 w-72 max-w-[calc(100vw-3rem)] overflow-hidden rounded-xl border border-stone-200 bg-white text-sm font-normal shadow-lg"></ul>
+    </div>
 </nav>
