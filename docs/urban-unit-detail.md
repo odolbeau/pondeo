@@ -21,7 +21,7 @@ a full page.
 - **Header:** name, département and région, its category in the [aires d'attraction](urban-unit-attraction.md) (e.g. "Couronne · aire d'attraction de Vannes"), population with its rank.
 - **Criteria**, one section per [group](criteria-import.md#groups), each
   listing its criteria with the latest value, its period and, for numeric
-  criteria, a sparkline of the series over the available periods. A search
+  criteria, a chart of the series (see [Criterion chart](#criterion-chart)). A search
   field filters criteria by label (accent- and case-insensitive).
 - **Points of interest**, by category: the count, plus a sample of each.
 - **Communes** making up the unit.
@@ -38,3 +38,20 @@ period for that criterion:
 - **Median:** median of the compared values, as a reference point.
 
 Text and boolean criteria have no rank or median.
+
+## Criterion chart
+
+A numeric criterion with at least two periods unfolds, on a click on its row, a
+chart of its evolution (also in the map panel). Hovering shows the value of
+each year.
+
+- **Two curves:** the unit's values, and the **median of all urban units** for
+  each year, the same reference as the "median" shown next to the latest value.
+  A criterion that is not ranked has no median curve, only the unit's.
+- **Base 100:** a button redraws both curves as an index, 100 being the first
+  year where both have a value. It compares how the two evolve rather than their
+  level, which is what matters for a count such as the population (a city of
+  80 000 inhabitants against a median of a few thousand).
+- **Loaded on demand:** the series is fetched the first time the row is
+  opened. A unit with no value for the criterion, or a text or boolean
+  criterion, has no chart.
