@@ -84,13 +84,13 @@ export default class extends Controller {
                 id: `${ZONES_SOURCE_ID}-fill`,
                 type: 'fill',
                 source: ZONES_SOURCE_ID,
-                paint: { 'fill-color': '#34d399', 'fill-opacity': 0.4 },
+                paint: { 'fill-color': '#059669', 'fill-opacity': 0.4 },
             });
             this.map.addLayer({
                 id: `${ZONES_SOURCE_ID}-outline`,
                 type: 'line',
                 source: ZONES_SOURCE_ID,
-                paint: { 'line-color': '#34d399', 'line-width': 1 },
+                paint: { 'line-color': '#059669', 'line-width': 1 },
             });
 
             this.map.addLayer({
@@ -98,7 +98,7 @@ export default class extends Controller {
                 type: 'line',
                 source: ZONES_SOURCE_ID,
                 filter: ['==', ['get', 'code'], ''],
-                paint: { 'line-color': '#f8fafc', 'line-width': 3 },
+                paint: { 'line-color': '#ffffff', 'line-width': 3 },
             });
 
             this.map.on('click', `${ZONES_SOURCE_ID}-fill`, (event) => {
@@ -314,7 +314,7 @@ export default class extends Controller {
             const details = null === reactors || undefined === reactors ? '' : ` (${reactors} réacteurs, ${powerMw} MW)`;
             const text = document.createElement('span');
             // The popup is white whatever the page theme: the page's light text would vanish on it.
-            text.className = 'text-sm text-slate-900';
+            text.className = 'text-sm text-stone-900';
             text.textContent = `${name}${details}`;
             popup.setLngLat(feature.geometry.coordinates as [number, number]).setDOMContent(text).addTo(this.map);
         });

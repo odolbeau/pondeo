@@ -9,11 +9,11 @@ interface CriterionSeries {
     medians: (number | null)[] | null;
 }
 
-// Tailwind emerald-400 / amber-400 / slate-400 / slate-800.
-const UNIT_COLOR = '#34d399';
-const MEDIAN_COLOR = '#fbbf24';
-const AXIS_COLOR = '#94a3b8';
-const GRID_COLOR = '#1e293b';
+// Tailwind emerald-600 / amber-600 / stone-500 / stone-200.
+const UNIT_COLOR = '#059669';
+const MEDIAN_COLOR = '#d97706';
+const AXIS_COLOR = '#78716c';
+const GRID_COLOR = '#e7e5e4';
 const CHART_HEIGHT = 220;
 const INDEX_BASE = 100;
 

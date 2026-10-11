@@ -1,15 +1,15 @@
-{% set card = 'mb-6 rounded-lg border border-slate-800 bg-slate-900/40 p-5' %}
-{% set title = 'text-sm font-semibold uppercase tracking-wide text-slate-400' %}
+{% set card = 'mb-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm' %}
+{% set title = 'text-sm font-semibold uppercase tracking-wide text-stone-600' %}
 
-<header class="{{ inFrame ? '' : 'flex flex-wrap items-end justify-between gap-x-8 gap-y-4 border-b border-slate-800 pb-6' }}">
+<header class="{{ inFrame ? '' : 'flex flex-wrap items-end justify-between gap-x-8 gap-y-4 border-b border-stone-200 pb-6' }}">
     <div>
         <h1 class="{{ inFrame ? 'text-2xl' : 'text-3xl' }} font-semibold">Unité urbaine de {{ uniteUrbaine.name }}</h1>
         {% if uniteUrbaine.departement %}
-            <p class="mt-1 text-sm text-slate-400">{{ uniteUrbaine.departement.label }} · {{ uniteUrbaine.departement.region.label }}</p>
+            <p class="mt-1 text-sm text-stone-600">{{ uniteUrbaine.departement.label }} · {{ uniteUrbaine.departement.region.label }}</p>
         {% endif %}
 
         {% if uniteUrbaine.attractionCategory %}
-            <p class="mt-1 text-sm text-slate-400">
+            <p class="mt-1 text-sm text-stone-600">
                 {% if uniteUrbaine.attractionAreaName %}
                     {{ uniteUrbaine.attractionCategory.label }} · aire d'attraction de {{ uniteUrbaine.attractionAreaName }}
                 {% else %}
@@ -21,12 +21,12 @@
 
     {% if population %}
         <div class="{{ inFrame ? 'mt-4' : 'sm:text-right' }}">
-            <p class="text-4xl font-semibold text-emerald-400">
-                {{ population.value|criterion_value }}<span class="ml-2 text-base font-normal text-slate-400">{{ population.unit }}</span>
+            <p class="text-4xl font-semibold text-emerald-700">
+                {{ population.value|criterion_value }}<span class="ml-2 text-base font-normal text-stone-600">{{ population.unit }}</span>
             </p>
             {% if population.rank %}
-                <p class="mt-1 text-sm text-slate-300">
-                    <a href="{{ path('app_ranking', {code: 'population'}) }}" {% if inFrame %}data-turbo-frame="_top" {% endif %}class="hover:text-emerald-400">{{ include('unite_urbaine/_rank.html.twig', {criterion: population}) }}</a>
+                <p class="mt-1 text-sm text-stone-700">
+                    <a href="{{ path('app_ranking', {code: 'population'}) }}" {% if inFrame %}data-turbo-frame="_top" {% endif %}class="hover:text-emerald-700">{{ include('unite_urbaine/_rank.html.twig', {criterion: population}) }}</a>
                 </p>
             {% endif %}
         </div>
@@ -34,14 +34,14 @@
 
     {% if inFrame %}
         <a href="{{ path('app_unite_urbaine_detail', {code: uniteUrbaine.code}) }}" data-turbo-frame="_top"
-           class="mt-4 inline-block text-sm text-emerald-400 hover:underline">Voir la fiche complète →</a>
+           class="mt-4 inline-block text-sm text-emerald-700 hover:underline">Voir la fiche complète →</a>
     {% endif %}
 </header>
 
 {% if not inFrame and sections|length > 1 %}
     <nav aria-label="Sections de la fiche" data-turbo="false" class="mt-4 flex flex-wrap gap-2 text-sm">
         {% for entry in sections %}
-            <a href="#{{ entry.section.value }}" class="rounded-full border border-slate-700 px-3 py-1 text-slate-300 hover:border-emerald-400 hover:text-emerald-400">{{ entry.section.label }}</a>
+            <a href="#{{ entry.section.value }}" class="rounded-full border border-stone-300 px-3 py-1 text-stone-700 hover:border-emerald-600 hover:text-emerald-700">{{ entry.section.label }}</a>
         {% endfor %}
     </nav>
 {% endif %}
@@ -50,7 +50,7 @@
     {% set section = entry.section %}
     <section id="{{ section.value }}" class="mt-8 scroll-mt-20">
         {% if not inFrame %}
-            <h2 class="mb-4 border-b border-slate-800 pb-2 text-xl font-semibold text-slate-100">{{ section.label }}</h2>
+            <h2 class="mb-4 border-b border-stone-200 pb-2 text-xl font-semibold text-stone-900">{{ section.label }}</h2>
         {% endif %}
         <div class="{{ inFrame ? '' : 'grid items-start gap-6 xl:grid-cols-3' }}">
             {% for column in entry.columns %}
@@ -76,7 +76,7 @@
 <div class="mt-2">
 <details class="{{ card }}">
     <summary class="cursor-pointer {{ title }}">Communes ({{ uniteUrbaine.communes|length }})</summary>
-    <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-slate-300{{ inFrame ? '' : ' md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6' }}">
+    <ul class="mt-3 grid grid-cols-2 gap-x-4 gap-y-1 text-sm text-stone-700{{ inFrame ? '' : ' md:grid-cols-3 xl:grid-cols-5 2xl:grid-cols-6' }}">
         {% for commune in uniteUrbaine.communes %}
             <li>{{ commune.name }}</li>
         {% endfor %}
