@@ -5,18 +5,20 @@ declare(strict_types=1);
 namespace App\Service\Detail;
 
 /**
- * Population of an unité urbaine by sex and five-year age bracket, laid out
- * for an SVG pyramid: men on the left of a central column of age labels,
- * women on the right, brackets from the oldest (top) to the youngest, and a
- * graduated axis in inhabitants. Coordinates are in the SVG's own units.
+ * Population of an unité urbaine by sex and age bracket, laid out for an SVG
+ * pyramid: men on the left of a central column of age labels, women on the
+ * right, brackets from the oldest (top) to the youngest, and a graduated axis
+ * in inhabitants. Coordinates are in the SVG's own units.
  */
 final readonly class AgePyramid
 {
     public const int WIDTH = 420;
 
-    public const int ROW_HEIGHT = 16;
+    /** Width of the brackets the population is stored in; the pyramid can group several of them. */
+    public const int STORED_BRACKET_YEARS = 5;
 
-    private const int BRACKET_SIZE = 5;
+    /** Height of a row of one stored bracket: wider brackets get proportionally taller rows, so the chart keeps its height. */
+    private const int ROW_HEIGHT = 16;
 
     private const int LABEL_WIDTH = 40;
 
@@ -32,12 +34,14 @@ final readonly class AgePyramid
      */
     private function __construct(
         public int $year,
+        public int $bracketYears,
         public int $total,
         public int $menTotal,
         public int $womenTotal,
         public float $menShare,
         public float $womenShare,
         public int $height,
+        public int $rowHeight,
         public int $womenStart,
         public int $labelX,
         public int $plotBottom,
@@ -48,62 +52,65 @@ final readonly class AgePyramid
 
     /**
      * @param array{year: int, women: list<int>, men: list<int>} $stored
+     * @param int                                                $bracketYears width of the brackets drawn, a multiple of the stored ones (5 or 10)
      */
-    public static function fromStored(array $stored): self
+    public static function fromStored(array $stored, int $bracketYears = self::STORED_BRACKET_YEARS): self
     {
+        $group = max(1, intdiv($bracketYears, self::STORED_BRACKET_YEARS));
+        $rowHeight = self::ROW_HEIGHT * $group;
+
+        $women = array_map(array_sum(...), array_chunk($stored['women'], $group));
+        $men = array_map(array_sum(...), array_chunk($stored['men'], $group));
+        $largest = max(1, ...$women, ...$men);
+
         $half = (self::WIDTH - self::LABEL_WIDTH) / 2.0;
-        $menBaseline = $half;
         $womenStart = $half + self::LABEL_WIDTH;
 
-        $step = self::niceStep((float) max(1, ...$stored['women'], ...$stored['men']));
-        $axisMax = $step * max(1, (int) ceil(max(1, ...$stored['women'], ...$stored['men']) / $step));
+        $step = self::niceStep((float) $largest);
+        $axisMax = $step * (int) ceil($largest / $step);
         $perUnit = $half / $axisMax;
 
-        $last = \count($stored['women']) - 1;
-        $rows = [];
-        foreach ($stored['women'] as $i => $women) {
-            $men = $stored['men'][$i] ?? 0;
-            $rows[] = [
-                'label' => $i === $last ? \sprintf('%d et +', $i * self::BRACKET_SIZE) : \sprintf('%d-%d', $i * self::BRACKET_SIZE, $i * self::BRACKET_SIZE + self::BRACKET_SIZE - 1),
-                'women' => $women,
-                'men' => $men,
-            ];
-        }
-
         $total = array_sum($stored['men']) + array_sum($stored['women']);
+        $last = \count($women) - 1;
 
         $brackets = [];
-        foreach (array_reverse($rows) as $row => $bracket) {
-            $menWidth = round($bracket['men'] * $perUnit, 1);
-            $brackets[] = $bracket + [
-                'share' => $total > 0 ? round(($bracket['men'] + $bracket['women']) / $total * 100, 1) : 0.0,
-                'y' => self::TOP + $row * self::ROW_HEIGHT,
+        foreach (array_reverse(array_keys($women)) as $row => $i) {
+            $start = $i * $group * self::STORED_BRACKET_YEARS;
+            $menWidth = round(($men[$i] ?? 0) * $perUnit, 1);
+            $brackets[] = [
+                'label' => $i === $last ? \sprintf('%d et +', $start) : \sprintf('%d-%d', $start, $start + $bracketYears - 1),
+                'women' => $women[$i],
+                'men' => $men[$i] ?? 0,
+                'share' => $total > 0 ? round(($women[$i] + ($men[$i] ?? 0)) / $total * 100, 1) : 0.0,
+                'y' => self::TOP + $row * $rowHeight,
                 'womenX' => $womenStart,
-                'womenWidth' => round($bracket['women'] * $perUnit, 1),
-                'menX' => round($menBaseline - $menWidth, 1),
+                'womenWidth' => round($women[$i] * $perUnit, 1),
+                'menX' => round($half - $menWidth, 1),
                 'menWidth' => $menWidth,
             ];
         }
 
         $ticks = [];
         for ($value = $step; $value <= $axisMax; $value += $step) {
-            $ticks[] = ['value' => $value, 'menX' => round($menBaseline - $value * $perUnit, 1), 'womenX' => round($womenStart + $value * $perUnit, 1)];
+            $ticks[] = ['value' => $value, 'menX' => round($half - $value * $perUnit, 1), 'womenX' => round($womenStart + $value * $perUnit, 1)];
         }
 
-        $men = array_sum($stored['men']);
-        $women = array_sum($stored['women']);
-        $plotBottom = self::TOP + \count($rows) * self::ROW_HEIGHT;
+        $menTotal = array_sum($stored['men']);
+        $womenTotal = array_sum($stored['women']);
+        $plotBottom = self::TOP + \count($women) * $rowHeight;
 
         return new self(
             $stored['year'],
+            $bracketYears,
             $total,
-            $men,
-            $women,
-            $total > 0 ? round($men / $total * 100, 1) : 0.0,
-            $total > 0 ? round($women / $total * 100, 1) : 0.0,
+            $menTotal,
+            $womenTotal,
+            $total > 0 ? round($menTotal / $total * 100, 1) : 0.0,
+            $total > 0 ? round($womenTotal / $total * 100, 1) : 0.0,
             $plotBottom + self::AXIS_HEIGHT,
+            $rowHeight,
             (int) $womenStart,
-            (int) ($menBaseline + self::LABEL_WIDTH / 2),
+            (int) ($half + self::LABEL_WIDTH / 2),
             $plotBottom,
             $brackets,
             $ticks,

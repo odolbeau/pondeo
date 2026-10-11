@@ -44,9 +44,26 @@ final class UniteUrbaineDetailController extends AbstractController
             'groups' => $inFrame ? array_values(array_filter($groups, static fn (CriterionGroupDetail $group): bool => AgeStructureImporter::GROUP !== $group->label)) : $groups,
             'poiCategories' => $this->poiProvider->findCategories($uniteUrbaine),
             'population' => $this->findPopulation($groups),
-            'agePyramid' => null === $uniteUrbaine->getAgePyramid() ? null : AgePyramid::fromStored($uniteUrbaine->getAgePyramid()),
+            'agePyramids' => $this->findAgePyramids($uniteUrbaine, $inFrame),
             'inFrame' => $inFrame,
         ]);
+    }
+
+    /**
+     * The pyramid by bracket width: the full page offers both, the narrow map panel only the coarser one.
+     *
+     * @return array<int, AgePyramid>
+     */
+    private function findAgePyramids(UniteUrbaine $uniteUrbaine, bool $inFrame): array
+    {
+        $stored = $uniteUrbaine->getAgePyramid();
+        if (null === $stored) {
+            return [];
+        }
+
+        $widths = $inFrame ? [10] : [5, 10];
+
+        return array_combine($widths, array_map(static fn (int $width): AgePyramid => AgePyramid::fromStored($stored, $width), $widths));
     }
 
     /**

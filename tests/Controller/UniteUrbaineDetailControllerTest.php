@@ -74,8 +74,30 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('table tbody tr:first-child', '70');
         self::assertSelectorTextContains('table tfoot', '110');
 
+        // The full page offers both bracket widths, five years first.
+        self::assertSelectorExists('[data-controller="age-pyramid"] button[aria-pressed="true"][data-age-pyramid-width-param="5"]');
+        self::assertSelectorExists('[data-controller="age-pyramid"] button[aria-pressed="false"][data-age-pyramid-width-param="10"]');
+        self::assertSelectorExists('[data-age-pyramid-target="panel"][data-width="5"]:not([hidden])');
+        self::assertSelectorExists('[data-age-pyramid-target="panel"][data-width="10"][hidden]');
+        self::assertAnySelectorTextContains('svg[role="img"] title', '0-9 ans : 50 hommes');
+
         $client->request('GET', '/unites-urbaines/44701');
         self::assertSelectorNotExists('[role="img"]');
+    }
+
+    public function testMapPanelDrawsTheAgePyramidInTenYearBracketsOnly(): void
+    {
+        $client = self::createClient();
+
+        UniteUrbaineFactory::createOne(['inseeCode' => '56501', 'agePyramid' => ['year' => 2023, 'women' => [30, 20, 10], 'men' => [40, 10, 0]]]);
+
+        $client->request('GET', '/unites-urbaines/56501', server: ['HTTP_TURBO_FRAME' => 'unite-urbaine-detail']);
+
+        self::assertResponseIsSuccessful();
+        self::assertAnySelectorTextContains('svg[role="img"] title', '0-9 ans : 50 hommes');
+        self::assertAnySelectorTextContains('svg[role="img"] title', '10 et + ans : 10 femmes');
+        self::assertSelectorNotExists('svg[role="img"] title:contains("0-4 ans")');
+        self::assertSelectorNotExists('[data-age-pyramid-width-param]');
     }
 
     public function testPageListsPoisByCategoryAndCommunes(): void
