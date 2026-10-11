@@ -10,6 +10,7 @@ use App\Service\Detail\CriterionDetail;
 use App\Service\Detail\CriterionGroupDetail;
 use App\Service\Detail\UniteUrbaineCriteriaProvider;
 use App\Service\Detail\UniteUrbainePoiProvider;
+use App\Service\Import\AgeStructureImporter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -35,14 +36,16 @@ final class UniteUrbaineDetailController extends AbstractController
         UniteUrbaine $uniteUrbaine,
     ): Response {
         $groups = $this->criteriaProvider->findGroups($uniteUrbaine);
+        $inFrame = $request->headers->has('Turbo-Frame');
 
         return $this->render('unite_urbaine/detail.html.twig', [
             'uniteUrbaine' => $uniteUrbaine,
-            'groups' => $groups,
+            // The age shares only repeat the pyramid in the narrow map panel; the full page keeps them, with their rank and evolution.
+            'groups' => $inFrame ? array_values(array_filter($groups, static fn (CriterionGroupDetail $group): bool => AgeStructureImporter::GROUP !== $group->label)) : $groups,
             'poiCategories' => $this->poiProvider->findCategories($uniteUrbaine),
             'population' => $this->findPopulation($groups),
             'agePyramid' => null === $uniteUrbaine->getAgePyramid() ? null : AgePyramid::fromStored($uniteUrbaine->getAgePyramid()),
-            'inFrame' => $request->headers->has('Turbo-Frame'),
+            'inFrame' => $inFrame,
         ]);
     }
 

@@ -94,18 +94,18 @@
             <span class="text-sky-400">Hommes · {{ agePyramid.menShare|fr_number }} %</span>
             <span class="text-pink-400">Femmes · {{ agePyramid.womenShare|fr_number }} %</span>
         </div>
-        <svg viewBox="0 0 {{ constant('App\\Service\\Detail\\AgePyramid::WIDTH') }} {{ agePyramid.height }}" class="mt-1 w-full" role="img"
+        <svg viewBox="0 0 {{ constant('App\\Service\\Detail\\AgePyramid::WIDTH') }} {{ agePyramid.height }}" class="mx-auto mt-1 w-full max-w-xl" role="img"
              aria-label="Pyramide des âges de {{ agePyramid.total|fr_number }} habitants, par tranche de 5 ans">
             {% for tick in agePyramid.ticks %}
                 <line x1="{{ tick.menX }}" x2="{{ tick.menX }}" y1="0" y2="{{ agePyramid.plotBottom }}" class="stroke-slate-800" stroke-width="1"/>
                 <line x1="{{ tick.womenX }}" x2="{{ tick.womenX }}" y1="0" y2="{{ agePyramid.plotBottom }}" class="stroke-slate-800" stroke-width="1"/>
-                <text x="{{ tick.menX }}" y="{{ agePyramid.height - 6 }}" text-anchor="middle" class="fill-slate-500 text-[10px]">{{ tick.value|fr_number }}</text>
-                <text x="{{ tick.womenX }}" y="{{ agePyramid.height - 6 }}" text-anchor="middle" class="fill-slate-500 text-[10px]">{{ tick.value|fr_number }}</text>
+                <text x="{{ tick.menX }}" y="{{ agePyramid.height - 6 }}" text-anchor="middle" class="fill-slate-500 text-[11px]">{{ tick.value|fr_number }}</text>
+                <text x="{{ tick.womenX }}" y="{{ agePyramid.height - 6 }}" text-anchor="middle" class="fill-slate-500 text-[11px]">{{ tick.value|fr_number }}</text>
             {% endfor %}
             {% for bracket in agePyramid.brackets %}
                 <rect x="{{ bracket.menX }}" y="{{ bracket.y }}" width="{{ bracket.menWidth }}" height="{{ constant('App\\Service\\Detail\\AgePyramid::ROW_HEIGHT') - 1 }}" class="fill-sky-400 hover:fill-sky-300"><title>{{ bracket.label }} ans : {{ bracket.men|fr_number }} hommes</title></rect>
                 <rect x="{{ agePyramid.womenStart }}" y="{{ bracket.y }}" width="{{ bracket.womenWidth }}" height="{{ constant('App\\Service\\Detail\\AgePyramid::ROW_HEIGHT') - 1 }}" class="fill-pink-400 hover:fill-pink-300"><title>{{ bracket.label }} ans : {{ bracket.women|fr_number }} femmes</title></rect>
-                <text x="{{ agePyramid.labelX }}" y="{{ bracket.y + 11 }}" text-anchor="middle" class="fill-slate-400 text-[10px]">{{ bracket.label }}</text>
+                <text x="{{ agePyramid.labelX }}" y="{{ bracket.y + 11 }}" text-anchor="middle" class="fill-slate-300 text-[11px]">{{ bracket.label }}</text>
             {% endfor %}
         </svg>
         <p class="text-center text-xs text-slate-500">Habitants par tranche de 5 ans</p>

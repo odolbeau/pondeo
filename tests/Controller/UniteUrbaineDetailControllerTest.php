@@ -121,6 +121,24 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorExists('a[data-turbo-frame="_top"][href="/unites-urbaines/56501"]');
     }
 
+    public function testAgeSharesAreLeftOutOfTheMapPanelOnly(): void
+    {
+        $client = self::createClient();
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $criterion = CriterionFactory::createOne(['code' => 'part_80_ans_et_plus', 'label' => '80 ans ou plus', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Âge']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($criterion, $vannes, '8.16', 2023));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/56501');
+        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="80 ans ou plus"]');
+
+        $client->request('GET', '/unites-urbaines/56501', server: ['HTTP_TURBO_FRAME' => 'unite-urbaine-detail']);
+        self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="80 ans ou plus"]');
+    }
+
     public function testUnknownUniteUrbaineReturns404(): void
     {
         $client = self::createClient();

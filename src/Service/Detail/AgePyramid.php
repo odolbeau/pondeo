@@ -12,13 +12,13 @@ namespace App\Service\Detail;
  */
 final readonly class AgePyramid
 {
-    public const int WIDTH = 600;
+    public const int WIDTH = 420;
 
     public const int ROW_HEIGHT = 16;
 
     private const int BRACKET_SIZE = 5;
 
-    private const int LABEL_WIDTH = 44;
+    private const int LABEL_WIDTH = 40;
 
     private const int TOP = 8;
 
