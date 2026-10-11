@@ -67,6 +67,10 @@ psql-test: ## Enter in Test DB container
 db-reset: ## Reset DB
 	docker compose run --rm php bin/reset-db
 
+.PHONY: db-update
+db-update: ## Apply migrations and re-run the imports, keeping existing data
+	docker compose run --rm php bin/import-data
+
 .PHONY: db-reset-test
 db-reset-test: ## Reset test DB
 	docker compose run --rm -e APP_ENV=test php bin/reset-db

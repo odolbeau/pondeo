@@ -395,8 +395,7 @@
             "ref": "9bd824886195ebe64a24438db1b6d17eb833ac56"
         },
         "files": [
-            "config/packages/zenstruck_foundry.yaml",
-            "src/Story/AppStory.php"
+            "config/packages/zenstruck_foundry.yaml"
         ]
     }
 }

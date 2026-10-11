@@ -10,22 +10,21 @@ merge to `main` deploys it (`.github/workflows/deploy.yml`).
    files), both from `.docker/prod/Dockerfile`.
 2. The `production` tag is moved to the new images, then the compose file and
    the deploy script (`deploy/`) are uploaded to the server over SSH.
-3. The deploy script pulls the images, resets the database and restarts the
-   stack.
+3. The deploy script pulls the images, updates the database in place and
+   restarts the stack.
 4. A smoke test requests the home page until it answers.
 
 `gh workflow run deploy.yml -f version=<commit sha>` redeploys (or rolls back
 to) an image already built.
 
-## The database is rebuilt on every deployment
+## Data is updated in place on every deployment
 
 The data is the heart of the project and is entirely derived from the files
-committed under `resources/geo`. Nothing is worth keeping in production: each
-deployment drops the database and rebuilds it with the same procedure as in
-development (`bin/reset-db`: migrations, then every import). The demo
-fixtures are the only difference, they are not loaded in production.
-
-The site is therefore unavailable while the imports run.
+committed under `resources/geo`. Each deployment applies the pending
+migrations, then re-runs every import (`bin/import-data`). The imports are
+idempotent upserts: existing rows are updated, missing ones added, and nothing
+is dropped. The site stays up meanwhile, still running the previous release
+on the migrated schema, so migrations must stay backward compatible.
 
 ## Server side
 
