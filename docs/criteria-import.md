@@ -105,3 +105,7 @@ See [criteria-tax-income.md](criteria-tax-income.md): counts are summed, the fig
 ## Risks
 
 See [criteria-risks.md](criteria-risks.md): flags and counts per commune, averaged with population as weight (the seismic zone: highest).
+
+## Climate projections
+
+See [criteria-climate-projections.md](criteria-climate-projections.md): computed per urban unit from the Open-Meteo Climate API, by a resumable download; stored with the reference year 2050.
