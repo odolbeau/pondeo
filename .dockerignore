@@ -1,0 +1,9 @@
+.git
+.github
+.docker/nginx
+node_modules
+vendor
+var
+public/build
+.env.local
+.env.*.local
