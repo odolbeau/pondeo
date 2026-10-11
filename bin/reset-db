@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# A failed step must fail the script: a deployment would otherwise carry on
+# with a half-built database.
+set -euo pipefail
+
 CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # The compiled container cache is keyed by env+debug; a container change
