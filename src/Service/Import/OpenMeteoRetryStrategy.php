@@ -10,17 +10,17 @@ use Symfony\Component\HttpClient\Retry\RetryStrategyInterface;
 use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 
 /**
- * Open-Meteo answers 429 for its minutely, hourly and daily quotas alike. Only
- * the minutely one is worth waiting for within a run: the others last too long,
- * so the download stops there and is resumed later.
+ * The free Open-Meteo API answers 429 for its minutely, hourly and daily
+ * quotas alike. Only the minutely one is worth waiting for within a run: the
+ * others last too long, so the download stops there and is resumed later.
  */
 final readonly class OpenMeteoRetryStrategy implements RetryStrategyInterface
 {
     private GenericRetryStrategy $inner;
 
-    public function __construct()
+    public function __construct(int $delayMs)
     {
-        $this->inner = new GenericRetryStrategy([429, 502, 503, 504], delayMs: 61_000, multiplier: 1.0);
+        $this->inner = new GenericRetryStrategy([429, 502, 503, 504], delayMs: $delayMs, multiplier: 1.0);
     }
 
     public function shouldRetry(AsyncContext $context, ?string $responseContent, ?TransportExceptionInterface $exception): ?bool
