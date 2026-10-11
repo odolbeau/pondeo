@@ -9,11 +9,23 @@
                      {% if expandable %}role="button" tabindex="0" aria-expanded="false" aria-label="Courbe de {{ criterion.label }}" data-criterion-chart-target="header" data-action="click->criterion-chart#toggle keydown.enter->criterion-chart#toggle keydown.space->criterion-chart#toggle"{% endif %}>
                     <div class="min-w-0">
                         <dt class="text-sm text-stone-700">
-                            {{ criterion.label }}{% if criterion.count is not null %} ({{ criterion.count|fr_number }}){% endif %}
+                            {% set note = glossary[criterion.code]|default(null) %}
+                            <span class="group/tip relative">
+                                <a href="{{ path('app_criteria') }}#{{ criterion.code }}" {% if inFrame %}data-turbo-frame="_top" {% endif %}{% if note and note.description %}aria-describedby="tip-{{ criterion.code }}" {% endif %}class="hover:text-emerald-700 hover:underline">{{ criterion.label }}</a>
+                                {% if note and note.description %}
+                                    <span id="tip-{{ criterion.code }}" role="tooltip" class="pointer-events-none invisible absolute left-0 top-full z-20 mt-1 block w-72 max-w-[calc(100vw-3rem)] space-y-1 rounded-lg border border-stone-200 bg-white p-3 text-xs font-normal leading-relaxed text-stone-700 shadow-lg group-hover/tip:visible group-focus-within/tip:visible">
+                                        <span class="block">{{ note.description|split('\n\n')|first }}</span>
+                                        {% if note.source %}<span class="block text-stone-500">Source : {{ note.source }}.</span>{% endif %}
+                                        <span class="block text-emerald-700">Cliquer pour tout savoir →</span>
+                                    </span>
+                                {% endif %}
+                            </span>{% if criterion.count is not null %} ({{ criterion.count|fr_number }}){% endif %}
                             {% if not group.commonPeriod %}<span class="ml-1 text-xs font-normal text-stone-500">({{ criterion.period }})</span>{% endif %}
                         </dt>
                         {% if criterion.rank %}
-                            <dd class="mt-1 text-xs text-stone-500"><span class="text-emerald-700">{{ criterion.rank }}{{ 1 == criterion.rank ? 'er' : 'e' }}</span> sur {{ criterion.total|fr_number }}</dd>
+                            <dd class="mt-1 text-xs text-stone-500">
+                                {% if criterion.code in rankingCodes %}<a href="{{ path('app_ranking', {code: criterion.code}) }}" {% if inFrame %}data-turbo-frame="_top" {% endif %}title="Voir le classement" class="hover:underline">{% endif %}<span class="text-emerald-700">{{ criterion.rank }}{{ 1 == criterion.rank ? 'er' : 'e' }}</span> sur {{ criterion.total|fr_number }}{% if criterion.code in rankingCodes %}</a>{% endif %}
+                            </dd>
                         {% endif %}
                     </div>
                     <div class="flex shrink-0 items-center gap-3">

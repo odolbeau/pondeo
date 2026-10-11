@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\UniteUrbaine;
 use App\Enum\DetailSection;
+use App\Service\Criteria\CriterionGlossary;
 use App\Service\Detail\AgePyramid;
 use App\Service\Detail\CriterionDetail;
 use App\Service\Detail\CriterionGroupDetail;
@@ -16,6 +17,7 @@ use App\Service\Detail\UniteUrbaineCriteriaProvider;
 use App\Service\Detail\UniteUrbainePoiProvider;
 use App\Service\Detail\UniteUrbaineStationAccessProvider;
 use App\Service\Import\AgeStructureImporter;
+use App\Service\Ranking\RankingCatalog;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -35,6 +37,8 @@ final class UniteUrbaineDetailController extends AbstractController
         private readonly UniteUrbaineCriteriaProvider $criteriaProvider,
         private readonly UniteUrbainePoiProvider $poiProvider,
         private readonly UniteUrbaineStationAccessProvider $stationAccessProvider,
+        private readonly RankingCatalog $rankingCatalog,
+        private readonly CriterionGlossary $glossary,
     ) {
     }
 
@@ -72,6 +76,8 @@ final class UniteUrbaineDetailController extends AbstractController
             'population' => $this->findPopulation($groups),
             'agePyramids' => $agePyramids,
             'inFrame' => $inFrame,
+            'rankingCodes' => $this->rankingCatalog->codes(),
+            'glossary' => $this->describeCriteria($groups),
         ]);
     }
 
@@ -146,5 +152,22 @@ final class UniteUrbaineDetailController extends AbstractController
         }
 
         return null;
+    }
+
+    /**
+     * @param list<CriterionGroupDetail> $groups
+     *
+     * @return array<string, array{description: ?string, source: ?string}> indexed by criterion code
+     */
+    private function describeCriteria(array $groups): array
+    {
+        $glossary = [];
+        foreach ($groups as $group) {
+            foreach ($group->criteria as $criterion) {
+                $glossary[$criterion->code] = $this->glossary->describe($criterion->code, $group->label);
+            }
+        }
+
+        return $glossary;
     }
 }

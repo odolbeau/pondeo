@@ -20,7 +20,10 @@
             {% for paragraph in ranking.note.paragraphs %}
                 <p>{{ paragraph }}</p>
             {% endfor %}
-            <p class="border-t border-stone-200 pt-3 text-xs text-stone-500">Source : {{ ranking.note.source }}.</p>
+            <p class="border-t border-stone-200 pt-3 text-xs text-stone-500">
+                Source : {{ ranking.note.source }}.
+                <a href="{{ path('app_criteria') }}#{{ criterion.code }}" class="ml-1 text-emerald-700 hover:underline">Description du critère →</a>
+            </p>
         </section>
 
         <div class="mt-6 flex flex-wrap items-center gap-3 text-sm">

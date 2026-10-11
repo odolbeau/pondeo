@@ -36,5 +36,6 @@ final class CriteriaListControllerTest extends WebTestCase
         self::assertSelectorTextContains('section:nth-of-type(1) dd', "nombre d'habitants");
         self::assertSelectorTextContains('section:nth-of-type(1) dd:last-child', 'Source : INSEE');
         self::assertSelectorExists('a[href="/classements/population"]');
+        self::assertSelectorExists('dl > div#population');
     }
 }

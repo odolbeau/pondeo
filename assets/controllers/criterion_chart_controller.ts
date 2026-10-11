@@ -51,6 +51,11 @@ export default class extends Controller {
     }
 
     async toggle(event: Event) {
+        // The header holds links (rank, criterion description): let them navigate.
+        if ((event.target as Element).closest('a')) {
+            return;
+        }
+
         event.preventDefault();
 
         await this.setOpen(this.panelTarget.hasAttribute('hidden'));
