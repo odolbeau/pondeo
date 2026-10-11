@@ -11,15 +11,13 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Derives the demographic dynamics (see `docs/criteria-population.md`) from
- * the stored population series and the unité urbaine boundaries: growth over
- * 5 years and density. These are
- * ratios, so they are computed from the stored population, never summed.
+ * the stored population series and the unité urbaine boundaries: average
+ * yearly growth since the first year, and density. These are ratios, so they
+ * are computed from the stored population, never summed.
  */
 final readonly class PopulationTrendDeriver
 {
     public const string GROUP = 'Démographie';
-
-    private const int GROWTH_WINDOW = 5;
 
     public function __construct(
         private CsvCriterionImporter $csvCriterionImporter,
@@ -39,7 +37,7 @@ final readonly class PopulationTrendDeriver
             throw new \LogicException('Criterion "population" not found: import it first.');
         }
 
-        $growth = $this->csvCriterionImporter->findOrCreate('population_croissance_5_ans', 'Évolution sur 5 ans', CriterionValueType::Decimal, '%', self::GROUP, position: 1)->getId();
+        $averageGrowth = $this->csvCriterionImporter->findOrCreate('population_croissance_annuelle_moyenne', 'Évolution annuelle moyenne depuis 2006', CriterionValueType::Decimal, '%/an', self::GROUP, position: 1)->getId();
         $density = $this->csvCriterionImporter->findOrCreate('densite', 'Densité', CriterionValueType::Decimal, 'hab./km²', self::GROUP, position: 2)->getId();
 
         /** @var list<array{unite_urbaine_id: string, period: int, population: int, area_km2: string|float|null}> $rows */
@@ -62,15 +60,20 @@ final readonly class PopulationTrendDeriver
             $units[$row['unite_urbaine_id']]['population'][(int) $row['period']] = (int) $row['population'];
         }
 
-        /** @var array{growth: list<array{id: Uuid, uniteUrbaineId: Uuid, period: int, value: string}>, density: list<array{id: Uuid, uniteUrbaineId: Uuid, period: int, value: string}>} $batches */
-        $batches = ['growth' => [], 'density' => []];
+        /** @var array{averageGrowth: list<array{id: Uuid, uniteUrbaineId: Uuid, period: int, value: string}>, density: list<array{id: Uuid, uniteUrbaineId: Uuid, period: int, value: string}>} $batches */
+        $batches = ['averageGrowth' => [], 'density' => []];
         $count = 0;
 
         foreach ($units as $uniteUrbaineId => ['area' => $area, 'population' => $series]) {
             $uuid = Uuid::fromString($uniteUrbaineId);
+            $firstPeriod = array_key_first($series);
+            if (null === $firstPeriod) {
+                continue;
+            }
+
             foreach ($series as $period => $population) {
-                if (isset($series[$period - self::GROWTH_WINDOW])) {
-                    $batches['growth'][] = $this->row($uuid, $period, ($population / $series[$period - self::GROWTH_WINDOW] - 1) * 100);
+                if ($period > $firstPeriod) {
+                    $batches['averageGrowth'][] = $this->row($uuid, $period, (($population / $series[$firstPeriod]) ** (1 / ($period - $firstPeriod)) - 1) * 100);
                 }
 
                 if ($area > 0) {
@@ -79,7 +82,7 @@ final readonly class PopulationTrendDeriver
             }
         }
 
-        foreach (['growth' => $growth, 'density' => $density] as $key => $criterionId) {
+        foreach (['averageGrowth' => $averageGrowth, 'density' => $density] as $key => $criterionId) {
             foreach (array_chunk($batches[$key], CriterionValueWriter::BATCH_SIZE) as $chunk) {
                 $this->criterionValueWriter->upsertBatch($criterionId, CriterionValueType::Decimal->valueColumn(), $chunk);
             }
