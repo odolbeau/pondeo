@@ -16,6 +16,11 @@ Each git worktree runs its own stack: `make serve` (or `/serve` in Claude
 Code) starts the current one. See [`docs/local-environment.md`](docs/local-environment.md),
 including the machine-wide dev proxy it requires.
 
+## Deployment
+
+Every merge to `main` deploys the site and rebuilds its database from scratch.
+See [`docs/deployment.md`](docs/deployment.md).
+
 ## Documentation
 
 Project documentation lives under [`docs/`](docs/), in English.

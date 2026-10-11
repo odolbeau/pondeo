@@ -1,5 +1,8 @@
 #!/bin/bash
 
+# A failed step must fail the script.
+set -euo pipefail
+
 CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
 # The compiled container cache is keyed by env+debug; a container change
@@ -9,20 +12,5 @@ CURDIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 php "$CURDIR/console" cache:clear --no-debug
 
 php "$CURDIR/console" doctrine:database:drop --if-exists --force
-php "$CURDIR/console" doctrine:database:create --if-not-exists
-php "$CURDIR/console" doctrine:migration:migrate -n --no-debug
-php "$CURDIR/console" app:import:zones --no-debug
-php "$CURDIR/console" app:import:pois:stations --no-debug
-php "$CURDIR/console" app:import:pois:nuclear-plants --no-debug
-php "$CURDIR/console" app:import:criteria:population --no-debug
-php "$CURDIR/console" app:import:criteria:commerces --no-debug
-php "$CURDIR/console" app:import:criteria:real-estate-prices --no-debug
-php "$CURDIR/console" app:import:criteria:employment --no-debug
-php "$CURDIR/console" app:import:criteria:income --no-debug
-php "$CURDIR/console" app:import:criteria:education --no-debug
-php "$CURDIR/console" app:import:criteria:housing --no-debug
-php "$CURDIR/console" app:import:criteria:age-structure --no-debug
-php "$CURDIR/console" app:import:criteria:pcs --no-debug
-php "$CURDIR/console" app:import:criteria:tax-income --no-debug
-php "$CURDIR/console" app:import:age-pyramid --no-debug
-php "$CURDIR/console" foundry:load-fixtures --no-interaction --append
+
+"$CURDIR/import-data"

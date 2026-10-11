@@ -1,12 +1,17 @@
 import { Controller } from '@hotwired/stimulus';
-import { Map, Popup, type GeoJSONSource } from 'maplibre-gl';
+import { Map, Popup, setWorkerUrl, type GeoJSONSource } from 'maplibre-gl';
+import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
+
+// MapLibre finds its worker through a relative `import.meta.url`, which the
+// production build can't follow: it would never emit the worker.
+setWorkerUrl(workerUrl);
 
 const DEBOUNCE_MS = 200;
 const ZONES_SOURCE_ID = 'unites-urbaines';
 const SELECTED_LAYER_ID = `${ZONES_SOURCE_ID}-selected`;
 const UNITE_CODE_PATTERN = /^[0-9A-Za-z]{5}$/;
 // Query params making up the filter — in the page URL and in localStorage.
-const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax'];
+const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation'];
 const PLANTS_SOURCE_ID = 'nuclear-plants';
 const PLANTS_RADIUS_SOURCE_ID = `${PLANTS_SOURCE_ID}-radius`;
 const PLANT_ICON_ID = 'nuclear-plant-icon';
@@ -23,7 +28,7 @@ const STORAGE_KEY = 'pondeo:map:population';
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'panel', 'frame'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'panel', 'frame'];
     static values = {
         dataUrl: String,
         plantsUrl: String,
@@ -42,6 +47,7 @@ export default class extends Controller {
     declare readonly commerceDensityMinTarget: HTMLInputElement;
     declare readonly priceMaxTarget: HTMLInputElement;
     declare readonly nuclearExclusionKmTarget: HTMLInputElement;
+    declare readonly withStationTarget: HTMLInputElement;
     declare readonly panelTarget: HTMLElement;
     declare readonly frameTarget: HTMLElement & { src: string | null };
     declare readonly dataUrlValue: string;
@@ -62,15 +68,8 @@ export default class extends Controller {
         this.steps.push(this.populationMaxValue);
 
         this.minRangeTarget.max = this.maxRangeTarget.max = String(this.steps.length - 1);
-        const initial = this.initialParams();
-        const [min, max] = this.orderedOrFull(initial.get('populationMin'), initial.get('populationMax'));
-        this.excludeCouronneTarget.checked = '1' === initial.get('excludeCouronne');
-        this.excludePolesSecondairesTarget.checked = '1' === initial.get('excludePolesSecondaires');
-        this.commerceDensityMinTarget.value = initial.get('commerceDensityMin') ?? '';
-        this.nuclearExclusionKmTarget.value = initial.get('nuclearExclusionKm') ?? '';
-        this.priceMaxTarget.value = initial.get('priceMax') ?? '';
-        this.writeInputs(min, max);
-        this.syncRanges(min, max);
+        this.applyParams(this.initialParams());
+        window.addEventListener('popstate', this.onPopState);
 
         this.map = new Map({
             container: this.mapContainerTarget,
@@ -113,18 +112,51 @@ export default class extends Controller {
 
             this.loadPlants();
 
-            const fromUrl = new URLSearchParams(window.location.search).get('unite');
-            if (null !== fromUrl && UNITE_CODE_PATTERN.test(fromUrl)) {
-                this.select(fromUrl);
+            const fromUrl = this.uniteFromUrl();
+            if (null !== fromUrl) {
+                this.applySelection(fromUrl);
             }
 
-            this.refresh();
+            this.refresh(false);
         });
     }
 
     disconnect() {
+        window.removeEventListener('popstate', this.onPopState);
         clearTimeout(this.debounceHandle);
         this.map?.remove();
+    }
+
+    // Back/forward: the URL is the source of truth, so the inputs, the
+    // selection and the map are rebuilt from it without pushing a new entry.
+    // Ignored until the map layers exist; the initial load reads the URL itself.
+    private onPopState = () => {
+        if (!this.map.getLayer(SELECTED_LAYER_ID)) {
+            return;
+        }
+
+        this.applyParams(new URLSearchParams(window.location.search));
+        this.drawPlantRadii();
+        this.applySelection(this.uniteFromUrl());
+        this.refresh(false);
+    };
+
+    applyParams(params: { get(name: string): string | null }) {
+        const [min, max] = this.orderedOrFull(params.get('populationMin'), params.get('populationMax'));
+        this.excludeCouronneTarget.checked = '1' === params.get('excludeCouronne');
+        this.excludePolesSecondairesTarget.checked = '1' === params.get('excludePolesSecondaires');
+        this.withStationTarget.checked = '1' === params.get('withStation');
+        this.commerceDensityMinTarget.value = params.get('commerceDensityMin') ?? '';
+        this.nuclearExclusionKmTarget.value = params.get('nuclearExclusionKm') ?? '';
+        this.priceMaxTarget.value = params.get('priceMax') ?? '';
+        this.writeInputs(min, max);
+        this.syncRanges(min, max);
+    }
+
+    uniteFromUrl(): string | null {
+        const code = new URLSearchParams(window.location.search).get('unite');
+
+        return null !== code && UNITE_CODE_PATTERN.test(code) ? code : null;
     }
 
     onRangeInput() {
@@ -155,22 +187,27 @@ export default class extends Controller {
     }
 
     select(code: string) {
-        this.selectedCode = code;
-        this.frameTarget.src = this.detailUrlValue.replace('XXXXX', code);
-        this.panelTarget.classList.remove('hidden');
-        this.map.setFilter(SELECTED_LAYER_ID, ['==', ['get', 'code'], code]);
-
-        this.updateUrl(...this.valuesFromInputs());
+        this.applySelection(code);
+        this.updateUrl(...this.valuesFromInputs(), true);
     }
 
     closePanel() {
-        this.selectedCode = null;
-        this.panelTarget.classList.add('hidden');
-        this.frameTarget.removeAttribute('src');
-        this.frameTarget.innerHTML = '';
-        this.map.setFilter(SELECTED_LAYER_ID, ['==', ['get', 'code'], '']);
+        this.applySelection(null);
+        this.updateUrl(...this.valuesFromInputs(), true);
+    }
 
-        this.updateUrl(...this.valuesFromInputs());
+    // The panel and the highlight only; the URL is the caller's concern.
+    applySelection(code: string | null) {
+        this.selectedCode = code;
+        if (null === code) {
+            this.panelTarget.classList.add('hidden');
+            this.frameTarget.removeAttribute('src');
+            this.frameTarget.innerHTML = '';
+        } else {
+            this.frameTarget.src = this.detailUrlValue.replace('XXXXX', code);
+            this.panelTarget.classList.remove('hidden');
+        }
+        this.map.setFilter(SELECTED_LAYER_ID, ['==', ['get', 'code'], code ?? '']);
     }
 
     onToggleChange() {
@@ -182,10 +219,10 @@ export default class extends Controller {
         this.debounceHandle = setTimeout(() => this.refresh(), DEBOUNCE_MS);
     }
 
-    async refresh() {
+    async refresh(pushHistory = true) {
         const [min, max] = this.valuesFromInputs();
 
-        this.updateUrl(min, max);
+        this.updateUrl(min, max, pushHistory);
         this.saveFilter(min, max);
 
         const url = new URL(this.dataUrlValue, window.location.origin);
@@ -375,16 +412,26 @@ export default class extends Controller {
     // Makes the current filter shareable: reflected in the page URL, and
     // read back from it on load (the selected unité urbaine too). A bound left at its default (the full
     // range) is omitted entirely, so an untouched filter keeps a clean URL.
-    updateUrl(min: number, max: number) {
+    updateUrl(min: number, max: number, pushHistory: boolean) {
         const params = this.filterParams(min, max);
         if (null !== this.selectedCode) {
             params.set('unite', this.selectedCode);
         }
 
         const query = params.toString();
+        const target = query ? `?${query}` : window.location.pathname;
+        if (target === window.location.search || target === window.location.pathname + window.location.search) {
+            return;
+        }
+
+        if (pushHistory) {
+            history.pushState(null, '', target);
+
+            return;
+        }
         // Keep the current state: it carries Turbo's restoration data, without
         // which the back button silently does nothing on this entry.
-        history.replaceState(history.state, '', query ? `?${query}` : window.location.pathname);
+        history.replaceState(history.state, '', target);
     }
 
     // The filter as query params, leaving out whatever is at its default.
@@ -401,6 +448,9 @@ export default class extends Controller {
         }
         if (this.excludePolesSecondairesTarget.checked) {
             params.set('excludePolesSecondaires', '1');
+        }
+        if (this.withStationTarget.checked) {
+            params.set('withStation', '1');
         }
         const density = this.commerceDensityMin();
         if (null !== density) {

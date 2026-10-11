@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Tests\Controller;
 
 use App\Entity\CriterionValue;
+use App\Entity\StationAccess;
 use App\Enum\AttractionCategory;
 use App\Enum\CriterionValueType;
 use App\Enum\Departement;
@@ -190,6 +191,30 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertAnySelectorTextContains('svg text', 'Cadres');
         self::assertAnySelectorTextContains('svg text', 'Retraités');
         self::assertSelectorExists('svg rect[x="146"]');
+    }
+
+    public function testPageListsTheClosestStationsWithTheirCarRoute(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $category = PoiCategoryFactory::createOne(['code' => 'railway_station']);
+        $auray = PoiFactory::createOne(['category' => $category, 'name' => 'Auray']);
+        $questembert = PoiFactory::createOne(['category' => $category, 'name' => 'Questembert']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new StationAccess($vannes, $auray, 1, 12_300, 1_500, 2026));
+        $entityManager->persist(new StationAccess($vannes, $questembert, 2, 20_000, 1_800, 2026));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', 'Gares les plus proches');
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', 'Auray');
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "~25\u{a0}min · 12,3\u{a0}km");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', 'Questembert');
     }
 
     public function testPageListsPoisByCategoryAndCommunes(): void

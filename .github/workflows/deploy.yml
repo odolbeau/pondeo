@@ -1,0 +1,153 @@
+on:
+  push:
+    branches: [main]
+  # Redeploy (or roll back to) an image already built by a previous run:
+  # `gh workflow run deploy.yml -f version=<commit sha>`. Without `version`,
+  # rebuilds and deploys the selected ref.
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Commit SHA of an already built image to deploy (empty = build the selected ref)
+        required: false
+        default: ''
+  # Only builds the images, to validate changes to them.
+  pull_request:
+    paths:
+      - '.docker/prod/**'
+      - '.docker/php/custom-config.ini'
+      - 'composer.lock'
+      - 'package-lock.json'
+      - 'deploy/**'
+      - '.dockerignore'
+      - '.github/workflows/deploy.yml'
+name: Deploy
+
+# Deploys run one after the other, never interrupted halfway.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event_name == 'pull_request' && github.ref || 'main' }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  PHP_IMAGE: ghcr.io/${{ github.repository_owner }}/pondeo-php
+  WEB_IMAGE: ghcr.io/${{ github.repository_owner }}/pondeo-web
+
+jobs:
+  build:
+    name: Build images
+    if: ${{ !inputs.version }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+
+    strategy:
+      matrix:
+        target: [php, web]
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          # resources/geo/ is tracked with Git LFS and imported from the php image.
+          lfs: true
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Log in to the GitHub Container Registry
+        if: ${{ github.event_name != 'pull_request' }}
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .docker/prod/Dockerfile
+          target: ${{ matrix.target }}
+          push: ${{ github.event_name != 'pull_request' }}
+          tags: ghcr.io/${{ github.repository_owner }}/pondeo-${{ matrix.target }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.target }}
+          cache-to: type=gha,scope=${{ matrix.target }},mode=max
+
+  deploy:
+    name: Deploy
+    needs: build
+    if: >-
+      ${{ always()
+      && github.event_name != 'pull_request'
+      && github.repository == 'odolbeau/pondeo'
+      && (needs.build.result == 'success' || needs.build.result == 'skipped') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    # Secrets SSH_PRIVATE_KEY and SSH_KNOWN_HOSTS, variables SSH_HOST,
+    # DEPLOY_PATH and PRODUCTION_URL live in this environment.
+    environment:
+      name: production
+      url: ${{ vars.PRODUCTION_URL }}
+
+    env:
+      VERSION: ${{ inputs.version || github.sha }}
+      SSH_TARGET: pondeo-deploy@${{ vars.SSH_HOST }}
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Log in to the GitHub Container Registry
+        uses: docker/login-action@v4
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # The `production` tag always points to what's deployed, so that a
+      # manual `docker compose` on the server uses the same images. Fails if
+      # VERSION was never built.
+      - name: Tag the images as production
+        run: |
+          docker buildx imagetools create --tag "$PHP_IMAGE:production" "$PHP_IMAGE:$VERSION"
+          docker buildx imagetools create --tag "$WEB_IMAGE:production" "$WEB_IMAGE:$VERSION"
+
+      - name: Set up SSH
+        env:
+          SSH_PRIVATE_KEY: ${{ secrets.SSH_PRIVATE_KEY }}
+          SSH_KNOWN_HOSTS: ${{ secrets.SSH_KNOWN_HOSTS }}
+        run: |
+          install -d -m 700 ~/.ssh
+          install -m 600 /dev/null ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_PRIVATE_KEY" > ~/.ssh/id_ed25519
+          printf '%s\n' "$SSH_KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf 'Host *\n  IdentitiesOnly yes\n  StrictHostKeyChecking yes\n' > ~/.ssh/config
+
+      # Only compose.yaml and deploy.sh are replaced: the server's own `.env`
+      # and compose.override.yaml are left untouched.
+      - name: Upload the compose file and deploy script
+        run: tar -C deploy -c compose.yaml deploy.sh | ssh "$SSH_TARGET" "tar -x -C '${{ vars.DEPLOY_PATH }}'"
+
+      - name: Deploy
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: printf '%s\n' "$GITHUB_TOKEN" | ssh "$SSH_TARGET" "'${{ vars.DEPLOY_PATH }}/deploy.sh' '${{ github.actor }}'"
+
+      - name: Smoke test
+        env:
+          PRODUCTION_URL: ${{ vars.PRODUCTION_URL }}
+        run: |
+          # Retries for up to 3 minutes: on a new hostname, the reverse proxy
+          # may still be getting its TLS certificate. `|| true`: a failed
+          # request (e.g. an invalid certificate meanwhile) is retried too.
+          for i in $(seq 1 36); do
+            status="$(curl -s -o /dev/null -w '%{http_code}' "$PRODUCTION_URL/" || true)"
+            if [ "$status" = 200 ]; then
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "::error::The site answered $status (expected 200)"
+          exit 1

@@ -10,6 +10,7 @@ use App\Service\Detail\CriterionDetail;
 use App\Service\Detail\CriterionGroupDetail;
 use App\Service\Detail\UniteUrbaineCriteriaProvider;
 use App\Service\Detail\UniteUrbainePoiProvider;
+use App\Service\Detail\UniteUrbaineStationAccessProvider;
 use App\Service\Import\AgeStructureImporter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -27,6 +28,7 @@ final class UniteUrbaineDetailController extends AbstractController
     public function __construct(
         private readonly UniteUrbaineCriteriaProvider $criteriaProvider,
         private readonly UniteUrbainePoiProvider $poiProvider,
+        private readonly UniteUrbaineStationAccessProvider $stationAccessProvider,
     ) {
     }
 
@@ -43,6 +45,7 @@ final class UniteUrbaineDetailController extends AbstractController
             // The age shares only repeat the pyramid in the narrow map panel; the full page keeps them, with their rank and evolution.
             'groups' => $inFrame ? array_values(array_filter($groups, static fn (CriterionGroupDetail $group): bool => AgeStructureImporter::GROUP !== $group->label)) : $groups,
             'poiCategories' => $this->poiProvider->findCategories($uniteUrbaine),
+            'stations' => $this->stationAccessProvider->find($uniteUrbaine),
             'population' => $this->findPopulation($groups),
             'agePyramids' => $this->findAgePyramids($uniteUrbaine, $inFrame),
             'inFrame' => $inFrame,
