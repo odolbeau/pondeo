@@ -1,3 +1,7 @@
-@import "tailwindcss";
+/* Scan only where classes live: an automatic scan of the whole project rebuilds the CSS (and reloads the page in dev) whenever any file changes, a rewritten data file included. */
+@import "tailwindcss" source(none);
+@source "../../assets";
+@source "../../templates";
+
 @import "maplibre-gl/dist/maplibre-gl.css";
 @import "uplot/dist/uPlot.min.css";
