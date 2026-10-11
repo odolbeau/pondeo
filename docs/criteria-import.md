@@ -22,12 +22,22 @@ group in line with its spec.
 ## Stored per urban unit
 
 Values are stored at the **urban unit** level only, never per commune. The
-source data is keyed by commune, so the importer sums the communes of each
-urban unit; communes outside every urban unit are skipped. This only makes
-sense for additive criteria (population is a straight sum): the importer
-rejects a non-additive criterion (an average temperature, a text label) rather
-than silently summing it. The first such criterion will need its own
-aggregation rule, decided then.
+source data is usually keyed by commune, so the importer combines the communes
+of each urban unit according to the criterion's aggregation; communes outside
+every urban unit are skipped.
+
+| Aggregation | Result | Example |
+|---|---|---|
+| Sum (default) | total of the communes' values | population |
+| Weighted mean | average of the communes' values weighted by a weight column; a unit whose total weight is zero gets no value | price per m², weighted by the number of sales |
+| Max | highest of the communes' values | |
+
+When the source already publishes its figures per urban unit (the CSV is keyed
+by urban unit code instead of commune code), there is nothing to combine and
+the values are stored as is.
+
+Aggregating only applies to numeric criteria: a text label or a flag is
+rejected rather than silently combined.
 
 ## Versioning and idempotency
 

@@ -13,10 +13,11 @@ use Symfony\Component\Uid\Uuid;
 
 /**
  * Generic CSV → CriterionValue importer, driven by a {@see CriterionCsvSpec}.
- * Covers any additive criterion shaped as one CSV row = one (commune code,
- * period, value) tuple: values are summed per unité urbaine, the only level
- * stored. Communes outside every unité urbaine are skipped. Delegates the
- * actual upsert to {@see CriterionValueWriter}.
+ * Covers any numeric criterion shaped as one CSV row = one (commune code,
+ * period, value) tuple: values are aggregated per unité urbaine (see
+ * {@see Aggregation}), the only level stored. A CSV already keyed by unité
+ * urbaine is stored as is. Rows outside every unité urbaine are skipped.
+ * Delegates the actual upsert to {@see CriterionValueWriter}.
  */
 final readonly class CsvCriterionImporter
 {
@@ -34,42 +35,66 @@ final readonly class CsvCriterionImporter
      */
     public function import(CriterionCsvSpec $spec, string $csvPath): int
     {
-        // A non-additive criterion (an average, a label...) needs its own
-        // aggregation rule — decide it when the first one shows up.
-        if (!$spec->valueType->isSummable()) {
-            throw new \LogicException(\sprintf('Cannot import criterion "%s": values are summed per unité urbaine, which does not apply to %s.', $spec->code, $spec->valueType->value));
+        if (!$spec->valueType->isNumeric()) {
+            throw new \LogicException(\sprintf('Cannot import criterion "%s": values are aggregated per unité urbaine, which does not apply to %s.', $spec->code, $spec->valueType->value));
+        }
+
+        if (!$spec->perUniteUrbaine && Aggregation::WeightedMean === $spec->aggregation && null === $spec->weightColumn) {
+            throw new \LogicException(\sprintf('Cannot import criterion "%s": a weighted mean needs a weight column.', $spec->code));
         }
 
         $criterionId = $this->findOrCreateCriterion($spec)->getId();
-        $uniteUrbaineIdsByCommuneCode = $this->loadUniteUrbaineIdsByCommuneCode();
+        $uniteUrbaineIds = $spec->perUniteUrbaine ? $this->loadUniteUrbaineIdsByCode() : $this->loadUniteUrbaineIdsByCommuneCode();
 
-        /** @var array<string, array<int, float>> $sums indexed by unité urbaine id, then period */
-        $sums = [];
+        /** @var array<string, array<int, array{value: float, weight: float}>> $accumulators indexed by unité urbaine id, then period */
+        $accumulators = [];
         foreach ($this->csvReader->read($csvPath) as $row) {
             if (null !== $spec->filterColumn && $row[$spec->filterColumn] !== $spec->filterValue) {
                 continue;
             }
 
-            $uniteUrbaineId = $uniteUrbaineIdsByCommuneCode[$row[$spec->communeCodeColumn]] ?? null;
+            $uniteUrbaineId = $uniteUrbaineIds[$row[$spec->communeCodeColumn]] ?? null;
             if (null === $uniteUrbaineId) {
                 continue; // Commune outside every unité urbaine — out of scope.
             }
 
             $period = (int) $row[$spec->periodColumn];
-            $sums[$uniteUrbaineId][$period] = ($sums[$uniteUrbaineId][$period] ?? 0.0) + (float) $row[$spec->valueColumn];
+            $value = (float) $row[$spec->valueColumn];
+            $previous = $accumulators[$uniteUrbaineId][$period] ?? null;
+
+            if ($spec->perUniteUrbaine) {
+                $accumulators[$uniteUrbaineId][$period] = ['value' => $value, 'weight' => 1.0];
+            } elseif (Aggregation::Sum === $spec->aggregation) {
+                $accumulators[$uniteUrbaineId][$period] = ['value' => ($previous['value'] ?? 0.0) + $value, 'weight' => 1.0];
+            } elseif (Aggregation::Max === $spec->aggregation) {
+                $accumulators[$uniteUrbaineId][$period] = ['value' => max($previous['value'] ?? $value, $value), 'weight' => 1.0];
+            } else {
+                \assert(null !== $spec->weightColumn); // Guarded above.
+                $weight = (float) $row[$spec->weightColumn];
+                $accumulators[$uniteUrbaineId][$period] = ['value' => ($previous['value'] ?? 0.0) + $weight * $value, 'weight' => ($previous['weight'] ?? 0.0) + $weight];
+            }
         }
 
         $valueColumn = $spec->valueType->valueColumn();
         $count = 0;
         $batch = [];
 
-        foreach ($sums as $uniteUrbaineId => $sumsByPeriod) {
-            foreach ($sumsByPeriod as $period => $sum) {
+        foreach ($accumulators as $uniteUrbaineId => $accumulatorsByPeriod) {
+            foreach ($accumulatorsByPeriod as $period => $accumulator) {
+                $value = $accumulator['value'];
+                if (!$spec->perUniteUrbaine && Aggregation::WeightedMean === $spec->aggregation) {
+                    if ($accumulator['weight'] <= 0) {
+                        continue; // Nothing to weight the mean with.
+                    }
+
+                    $value /= $accumulator['weight'];
+                }
+
                 $batch[] = [
                     'id' => Uuid::v7(),
                     'uniteUrbaineId' => Uuid::fromString($uniteUrbaineId),
                     'period' => $period,
-                    'value' => $this->castSum($spec->valueType, $sum),
+                    'value' => $this->cast($spec->valueType, $value, $spec->perUniteUrbaine),
                 ];
                 ++$count;
 
@@ -87,7 +112,7 @@ final readonly class CsvCriterionImporter
 
     private function findOrCreateCriterion(CriterionCsvSpec $spec): Criterion
     {
-        return $this->findOrCreate($spec->code, $spec->label, $spec->valueType, $spec->unit, $spec->groupLabel, $spec->comparable, $spec->position);
+        return $this->findOrCreate($spec->code, $spec->label, $spec->valueType, $spec->unit, $spec->groupLabel, $spec->comparable, $spec->position, $spec->rankFromLowest);
     }
 
     /**
@@ -134,11 +159,22 @@ final readonly class CsvCriterionImporter
         return $ids;
     }
 
-    private function castSum(CriterionValueType $valueType, float $sum): int|string
+    /**
+     * @return array<string, string> unité urbaine id indexed by its INSEE code
+     */
+    private function loadUniteUrbaineIdsByCode(): array
+    {
+        /** @var array<string, string> $ids */
+        $ids = $this->connection->fetchAllKeyValue('SELECT insee_code, id FROM unite_urbaine');
+
+        return $ids;
+    }
+
+    private function cast(CriterionValueType $valueType, float $value, bool $asPublished): int|string
     {
         return match ($valueType) {
-            CriterionValueType::Integer => (int) round($sum),
-            CriterionValueType::Decimal => (string) $sum,
+            CriterionValueType::Integer => (int) round($value),
+            CriterionValueType::Decimal => $asPublished ? number_format($value, 2, '.', '') : (string) $value,
             default => throw new \LogicException('Unreachable — guarded in import().'),
         };
     }
