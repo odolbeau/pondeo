@@ -21,7 +21,15 @@ final readonly class ClimateNormalsCalculator
         'sunshine_duration',
         'wind_gusts_10m_max',
         'et0_fao_evapotranspiration',
+        'apparent_temperature_max',
+        'wet_bulb_temperature_2m_max',
+        'vapour_pressure_deficit_max',
+        'soil_moisture_0_to_7cm_mean',
+        'soil_moisture_7_to_28cm_mean',
     ];
+
+    // °C of daily maximum wet-bulb temperature; see the distribution in docs/criteria-climate.md.
+    public const float WET_BULB_THRESHOLD = 22.0;
 
     /**
      * @param array<string, list<mixed>> $daily Open-Meteo `daily` block: the dates under `time`, then one list per variable
@@ -39,15 +47,116 @@ final readonly class ClimateNormalsCalculator
         }
 
         $perYear = [];
-        foreach ($years as $indexes) {
+        $annualTemperature = [];
+        foreach ($years as $year => $indexes) {
             foreach ($this->measures($daily, $dates, $indexes) as $measure => $value) {
                 if (null !== $value) {
                     $perYear[$measure][] = $value;
                 }
             }
+
+            $mean = $this->mean(array_map(static fn (int $i): mixed => $daily['temperature_2m_mean'][$i] ?? null, $indexes));
+            if (null !== $mean) {
+                $annualTemperature[$year] = $mean;
+            }
         }
 
-        return array_map(static fn (array $values): float => array_sum($values) / \count($values), $perYear);
+        $normals = array_map(static fn (array $values): float => array_sum($values) / \count($values), $perYear);
+
+        $trend = $this->decadalTrend($annualTemperature);
+        if (null !== $trend) {
+            $normals['tendance_temperature'] = $trend;
+        }
+
+        return $normals;
+    }
+
+    /**
+     * Least-squares slope of the annual values, per decade.
+     *
+     * @param array<int, float> $byYear
+     */
+    private function decadalTrend(array $byYear): ?float
+    {
+        $n = \count($byYear);
+        if ($n < 2) {
+            return null;
+        }
+
+        $meanYear = array_sum(array_keys($byYear)) / $n;
+        $meanValue = array_sum($byYear) / $n;
+        $covariance = 0.0;
+        $variance = 0.0;
+        foreach ($byYear as $year => $value) {
+            $covariance += ($year - $meanYear) * ($value - $meanValue);
+            $variance += ($year - $meanYear) ** 2;
+        }
+
+        return 10 * $covariance / $variance;
+    }
+
+    /**
+     * Mean of the daily values of June to August.
+     *
+     * @param array<string, list<mixed>> $daily
+     * @param list<string>               $dates
+     * @param list<int>                  $indexes
+     * @param list<string>               $variables averaged together when several
+     */
+    private function summerMean(array $daily, array $dates, array $indexes, array $variables): ?float
+    {
+        $values = [];
+        foreach ($indexes as $i) {
+            if (!\in_array((int) substr($dates[$i], 5, 2), [6, 7, 8], true)) {
+                continue;
+            }
+
+            $day = [];
+            foreach ($variables as $variable) {
+                $value = $daily[$variable][$i] ?? null;
+                if (!is_numeric($value)) {
+                    continue 2;
+                }
+
+                $day[] = (float) $value;
+            }
+
+            $values[] = array_sum($day) / \count($day);
+        }
+
+        return $this->mean($values);
+    }
+
+    /**
+     * Longest run of consecutive days matching the predicate, and the number
+     * of runs reaching $minimum days. A missing day ends a run.
+     *
+     * @param list<mixed>           $values
+     * @param \Closure(float): bool $predicate
+     *
+     * @return array{longest: int, episodes: int}
+     */
+    private function runs(array $values, \Closure $predicate, int $minimum): array
+    {
+        $longest = 0;
+        $episodes = 0;
+        $current = 0;
+        foreach ([...$values, null] as $value) {
+            if (is_numeric($value) && $predicate((float) $value)) {
+                ++$current;
+
+                continue;
+            }
+
+            $longest = max($longest, $current);
+            if ($current >= $minimum) {
+                ++$episodes;
+            }
+
+            $current = 0;
+        }
+
+        return ['longest' => $longest, 'episodes' => $episodes];
     }
 
     /**
@@ -65,6 +174,9 @@ final readonly class ClimateNormalsCalculator
         $tmin = $column('temperature_2m_min');
         $precipitation = $column('precipitation_sum');
         $seconds = $this->sum($column('sunshine_duration'));
+        $hasTemperature = [] !== $this->known($tmax);
+        $hasPrecipitation = [] !== $this->known($precipitation);
+        $apparent = $this->known($column('apparent_temperature_max'));
 
         return [
             'temperature_moyenne' => $this->mean($column('temperature_2m_mean')),
@@ -79,6 +191,14 @@ final readonly class ClimateNormalsCalculator
             'jours_neige' => $this->count($column('snowfall_sum'), static fn (float $v): bool => $v >= 1),
             'deficit_hydrique_estival' => $this->summerDeficit($daily, $dates, $indexes),
             'jours_vent_fort' => $this->count($column('wind_gusts_10m_max'), static fn (float $v): bool => $v >= 60),
+            'vagues_chaleur' => $hasTemperature ? (float) $this->runs($tmax, static fn (float $v): bool => $v > 30, 3)['episodes'] : null,
+            'serie_seche_max' => $hasPrecipitation ? (float) $this->runs($precipitation, static fn (float $v): bool => $v < 1, 1)['longest'] : null,
+            'jours_pluie_forte' => $this->count($precipitation, static fn (float $v): bool => $v >= 20),
+            'jours_chaleur_humide' => $this->count($column('wet_bulb_temperature_2m_max'), static fn (float $v): bool => $v > self::WET_BULB_THRESHOLD),
+            'temperature_ressentie_max' => [] === $apparent ? null : max($apparent),
+            'deficit_pression_vapeur' => $this->summerMean($daily, $dates, $indexes, ['vapour_pressure_deficit_max']),
+            // m³/m³ shown as a percentage: the stored decimals are too coarse for 0.xx values.
+            'humidite_sol_ete' => null === ($soil = $this->summerMean($daily, $dates, $indexes, ['soil_moisture_0_to_7cm_mean', 'soil_moisture_7_to_28cm_mean'])) ? null : $soil * 100,
         ];
     }
 

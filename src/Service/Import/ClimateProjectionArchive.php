@@ -20,7 +20,7 @@ final readonly class ClimateProjectionArchive
         #[Autowire(env: 'OPENMETEO_ARCHIVE_DIR')]
         string $dir,
     ) {
-        $this->dir = '' !== $dir ? $dir : (getenv('HOME') ?: sys_get_temp_dir()).'/pondeo-data/open-meteo/projections';
+        $this->dir = ('' !== $dir ? $dir : (getenv('HOME') ?: sys_get_temp_dir()).'/pondeo-data/open-meteo').'/projections';
     }
 
     public function getDir(): string
