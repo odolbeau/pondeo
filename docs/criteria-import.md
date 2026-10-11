@@ -79,3 +79,7 @@ See [criteria-education.md](criteria-education.md): counts are summed, the share
 ## Housing
 
 See [criteria-housing.md](criteria-housing.md): counts are summed, the shares derived from them; census years only.
+
+## Age structure
+
+See [criteria-age-structure.md](criteria-age-structure.md): counts are summed, the shares derived from them; census years only.

@@ -20,7 +20,7 @@ final readonly class UniteUrbaineCriteriaProvider
     public const string DEFAULT_GROUP_LABEL = 'Autres';
 
     /** Groups listed first, in this order; the others follow alphabetically, then the default one. */
-    private const array GROUP_ORDER = ['Démographie', 'Immobilier', 'Commerces', 'Emploi', 'Revenus', 'Diplômes', 'Logement'];
+    private const array GROUP_ORDER = ['Démographie', 'Âge', 'Immobilier', 'Commerces', 'Emploi', 'Revenus', 'Diplômes', 'Logement'];
 
     /** Code suffix of a criterion derived from the count `<code>`: the detail page folds that count into its title. */
     public const string DENSITY_SUFFIX = '_pour_1000_hab';
