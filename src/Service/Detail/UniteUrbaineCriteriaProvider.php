@@ -27,17 +27,32 @@ final readonly class UniteUrbaineCriteriaProvider
 
     /**
      * Criteria that are the brackets of one distribution: drawn as a single chart in their group rather than one
-     * row each. Indexed by group, then by criterion code, in display order, with the label under the column.
+     * row each. Indexed by group, then by criterion code, in display order, with its short label in the chart.
      */
     private const array DISTRIBUTIONS = [
         'Revenus fiscaux' => [
             'title' => 'Foyers fiscaux par tranche de revenu fiscal',
+            'layout' => BracketLayout::Columns,
             'brackets' => [
                 'part_foyers_moins_15000' => '< 15 k€',
                 'part_foyers_15000_30000' => '15-30 k€',
                 'part_foyers_30000_50000' => '30-50 k€',
                 'part_foyers_50000_100000' => '50-100 k€',
                 'part_foyers_plus_100000' => '> 100 k€',
+            ],
+        ],
+        'Catégories socioprofessionnelles' => [
+            'title' => 'Population de 15 ans ou plus par catégorie socioprofessionnelle',
+            'layout' => BracketLayout::Rows,
+            'brackets' => [
+                'part_agriculteurs' => 'Agriculteurs',
+                'part_artisans_commercants' => 'Artisans, commerçants',
+                'part_cadres' => 'Cadres',
+                'part_professions_intermediaires' => 'Prof. intermédiaires',
+                'part_employes' => 'Employés',
+                'part_ouvriers' => 'Ouvriers',
+                'part_retraites' => 'Retraités',
+                'part_sans_activite' => 'Sans activité pro.',
             ],
         ],
     ];
@@ -130,7 +145,7 @@ final readonly class UniteUrbaineCriteriaProvider
 
         $rows = array_values(array_filter($criteria, static fn (CriterionDetail $criterion): bool => !isset($distribution['brackets'][$criterion->code])));
 
-        return new CriterionGroupDetail($label, $rows, BracketDistribution::fromCriteria($distribution['title'], $brackets));
+        return new CriterionGroupDetail($label, $rows, BracketDistribution::fromCriteria($distribution['title'], $brackets, $distribution['layout']));
     }
 
     private static function groupRank(string $label): int

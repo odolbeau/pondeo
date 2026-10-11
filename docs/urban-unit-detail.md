@@ -26,10 +26,12 @@ a full page.
   The "Âge" group (share of each age bracket, see [criteria-age-structure.md](criteria-age-structure.md))
   is left out of the narrow map panel, where it would only repeat the pyramid:
   the full page has it.
-  A group whose criteria are the brackets of one distribution (the tax
-  households by bracket of income, see [criteria-tax-income.md](criteria-tax-income.md))
-  draws them as a single column chart against the median of all urban units,
-  instead of one row per bracket.
+  A group whose criteria are the brackets of one distribution draws them as a
+  single chart against the median of all urban units, instead of one row per
+  bracket: columns for the tax households by bracket of income (see
+  [criteria-tax-income.md](criteria-tax-income.md)), rows for the
+  socio-professional categories, whose labels are longer (see
+  [criteria-pcs.md](criteria-pcs.md)).
 - **Population pyramid**, by sex and five-year age bracket (see [population-pyramid.md](population-pyramid.md)).
 - **Points of interest**, by category: the count, plus a sample of each.
 - **Communes** making up the unit.

@@ -160,6 +160,35 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('[data-label="Niveau de vie médian"]', '2e sur 2');
     }
 
+    public function testSocioProfessionalCategoriesAreDrawnAsRows(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $other = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $cadres = CriterionFactory::createOne(['code' => 'part_cadres', 'label' => 'Cadres et professions intellectuelles supérieures', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Catégories socioprofessionnelles', 'position' => 2]);
+        $retraites = CriterionFactory::createOne(['code' => 'part_retraites', 'label' => 'Retraités', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Catégories socioprofessionnelles', 'position' => 6]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($cadres, $vannes, '12.5', 2023));
+        $entityManager->persist(new CriterionValue($cadres, $other, '8', 2023));
+        $entityManager->persist(new CriterionValue($retraites, $vannes, '31', 2023));
+        $entityManager->persist(new CriterionValue($retraites, $other, '25', 2023));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="Retraités"]');
+        self::assertSelectorExists('svg[role="img"][aria-label^="Population de 15 ans ou plus par catégorie socioprofessionnelle"]');
+        self::assertAnySelectorTextContains('svg title', 'Retraités : 31 % (médiane 28 %)');
+        // A row per category, labelled on the left of its bar.
+        self::assertAnySelectorTextContains('svg text', 'Cadres');
+        self::assertAnySelectorTextContains('svg text', 'Retraités');
+        self::assertSelectorExists('svg rect[x="146"]');
+    }
+
     public function testPageListsPoisByCategoryAndCommunes(): void
     {
         $client = self::createClient();

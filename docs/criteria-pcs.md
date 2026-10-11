@@ -29,6 +29,13 @@ do not overlap, so the shares add up to 100 %:
 | Retraités |
 | Autres sans activité professionnelle |
 
+On the detail page the categories are not listed as eight rows but drawn as one
+chart (see `docs/urban-unit-detail.md`): a horizontal bar per category gives the
+share of the unit, and a dashed vertical mark the median of all urban units, so
+the profile of the unit stands out against a typical one. The categories keep
+their order of the census, not sorted by size. Each of them still is a
+criterion, with its rank and median, shown on hovering a bar.
+
 The base is the whole population aged 15 or more, not only the working one: a
 retired or student-heavy city shows it in the first place, and the shares of
 the working categories are lower where there are more retirees. For the

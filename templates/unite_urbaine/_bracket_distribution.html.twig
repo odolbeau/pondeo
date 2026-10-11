@@ -4,19 +4,19 @@
     <svg viewBox="0 0 {{ constant('App\\Service\\Detail\\BracketDistribution::WIDTH') }} {{ distribution.height }}" class="mx-auto mt-2 w-full max-w-xl" role="img"
          aria-label="{{ distribution.title }}, comparé à la médiane des unités urbaines">
         {% for tick in distribution.ticks %}
-            <line x1="30" x2="{{ distribution.plotRight }}" y1="{{ tick.y }}" y2="{{ tick.y }}" class="stroke-slate-800" stroke-width="1"/>
-            <text x="26" y="{{ tick.y + 3 }}" text-anchor="end" class="fill-slate-500 text-[11px]">{{ tick.value|fr_number }}</text>
+            <line x1="{{ tick.grid.x1 }}" x2="{{ tick.grid.x2 }}" y1="{{ tick.grid.y1 }}" y2="{{ tick.grid.y2 }}" class="stroke-slate-800" stroke-width="1"/>
+            <text x="{{ tick.label_text.x }}" y="{{ tick.label_text.y }}" text-anchor="{{ tick.label_text.anchor }}" class="fill-slate-500 text-[11px]">{{ tick.value|fr_number }}</text>
         {% endfor %}
-        <line x1="30" x2="{{ distribution.plotRight }}" y1="{{ distribution.plotBottom }}" y2="{{ distribution.plotBottom }}" class="stroke-slate-700" stroke-width="1"/>
+        <line x1="{{ distribution.axis.x1 }}" x2="{{ distribution.axis.x2 }}" y1="{{ distribution.axis.y1 }}" y2="{{ distribution.axis.y2 }}" class="stroke-slate-700" stroke-width="1"/>
         {% for bar in distribution.bars %}
-            <rect x="{{ bar.barX }}" y="{{ bar.barY }}" width="{{ bar.barWidth }}" height="{{ bar.barHeight }}" class="fill-emerald-400 hover:fill-emerald-300">
+            <rect x="{{ bar.bar.x }}" y="{{ bar.bar.y }}" width="{{ bar.bar.width }}" height="{{ bar.bar.height }}" class="fill-emerald-400 hover:fill-emerald-300">
                 <title>{{ bar.fullLabel }} : {{ bar.value|fr_number }}{{ unit }}{% if bar.median is not null %} (médiane {{ bar.median|fr_number }}{{ unit }}){% endif %}{% if bar.rank %} · {{ bar.rank }}{{ 1 == bar.rank ? 'er' : 'e' }} sur {{ bar.total|fr_number }}{% endif %}</title>
             </rect>
-            {% if bar.medianY is not null %}
-                <line x1="{{ bar.medianX1 }}" x2="{{ bar.medianX2 }}" y1="{{ bar.medianY }}" y2="{{ bar.medianY }}" class="stroke-amber-400" stroke-width="2.5" stroke-dasharray="5 3"/>
+            {% if bar.median_segment is not null %}
+                <line x1="{{ bar.median_segment.x1 }}" x2="{{ bar.median_segment.x2 }}" y1="{{ bar.median_segment.y1 }}" y2="{{ bar.median_segment.y2 }}" class="stroke-amber-400" stroke-width="2.5" stroke-dasharray="5 3"/>
             {% endif %}
-            <text x="{{ bar.labelX }}" y="{{ bar.valueY }}" text-anchor="middle" class="fill-slate-200 text-[11px]">{{ bar.value|round(1)|fr_number }}</text>
-            <text x="{{ bar.labelX }}" y="{{ distribution.plotBottom + 15 }}" text-anchor="middle" class="fill-slate-300 text-[11px]">{{ bar.label }}</text>
+            <text x="{{ bar.value_text.x }}" y="{{ bar.value_text.y }}" text-anchor="{{ bar.value_text.anchor }}" class="fill-slate-200 text-[11px]">{{ bar.value|round(1)|fr_number }}</text>
+            <text x="{{ bar.label_text.x }}" y="{{ bar.label_text.y }}" text-anchor="{{ bar.label_text.anchor }}" class="fill-slate-300 text-[11px]">{{ bar.label }}</text>
         {% endfor %}
     </svg>
     <p class="mt-1 flex flex-wrap items-center justify-center gap-x-4 text-xs text-slate-400">
