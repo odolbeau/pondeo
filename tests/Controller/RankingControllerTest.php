@@ -65,6 +65,30 @@ final class RankingControllerTest extends WebTestCase
         self::assertSelectorTextNotContains('tbody', 'Ancienne');
     }
 
+    public function testProjectionRankingStartsWithTheFewestHotDays(): void
+    {
+        $client = self::createClient();
+        $this->createValues('jours_plus_35_2050', ['Brest' => 0.1, 'Marseille' => 9.1], rankFromLowest: true);
+
+        $client->request('GET', '/classements/jours_plus_35_2050');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Le moins de canicules en 2050');
+        self::assertSelectorTextContains('tbody tr:first-child', 'Brest');
+    }
+
+    public function testIndexGroupsClimateAndRiskRankingsByTheme(): void
+    {
+        $client = self::createClient();
+        $this->createValues('ensoleillement', ['Marseille' => 3803, 'Brest' => 3217]);
+
+        $client->request('GET', '/classements');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('main', 'Climat');
+        self::assertSelectorTextContains('main', 'Les plus ensoleillées');
+    }
+
     public function testRowLinksToTheUniteUrbaineDetail(): void
     {
         $client = self::createClient();
