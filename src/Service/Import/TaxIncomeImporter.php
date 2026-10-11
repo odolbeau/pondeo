@@ -37,7 +37,7 @@ final readonly class TaxIncomeImporter
             ],
             [
                 ['code' => 'revenu_fiscal_moyen', 'label' => 'Revenu fiscal moyen par foyer', 'numerator' => 'rfr', 'denominator' => 'foyers', 'unit' => '€', 'factor' => 1000],
-                ['code' => 'part_foyers_moins_15000', 'label' => 'Foyers à moins de 15 000 €', 'numerator' => 'moins_15k', 'denominator' => 'foyers_tranches'],
+                ['code' => 'part_foyers_moins_15000', 'label' => 'Foyers à moins de 15 000 €', 'numerator' => 'moins_15k', 'denominator' => 'foyers_tranches', 'rankFromLowest' => true],
                 ['code' => 'part_foyers_15000_30000', 'label' => 'Foyers de 15 000 à 30 000 €', 'numerator' => '15_30k', 'denominator' => 'foyers_tranches'],
                 ['code' => 'part_foyers_30000_50000', 'label' => 'Foyers de 30 000 à 50 000 €', 'numerator' => '30_50k', 'denominator' => 'foyers_tranches'],
                 ['code' => 'part_foyers_50000_100000', 'label' => 'Foyers de 50 000 à 100 000 €', 'numerator' => '50_100k', 'denominator' => 'foyers_tranches'],

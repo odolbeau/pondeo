@@ -50,11 +50,23 @@ final class HousingImporterTest extends KernelTestCase
         self::assertSame(7.5, $this->decimal('56501', 'part_logements_vacants'));
         self::assertNull($this->integer('56501', 'count_logements'));
 
+        // Few vacant dwellings is better: only that share is ranked from the lowest.
+        self::assertTrue($this->rankFromLowest('part_logements_vacants'));
+        self::assertFalse($this->rankFromLowest('part_proprietaires'));
+
         // Idempotent: a second run updates in place.
         $importer->import($csvPath);
         self::assertSame(40.0, $this->decimal('56501', 'part_proprietaires'));
 
         unlink($csvPath);
+    }
+
+    private function rankFromLowest(string $criterionCode): bool
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+
+        return (bool) $entityManager->getConnection()->fetchOne('SELECT rank_from_lowest FROM criterion WHERE code = :code', ['code' => $criterionCode]);
     }
 
     private function writeCsv(string $content): string

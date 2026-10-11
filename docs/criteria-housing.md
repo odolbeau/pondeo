@@ -18,7 +18,7 @@ no authentication, open licence). Figures exist for the **census years only**
 |---|---|
 | Part de propriétaires | Main residences occupied by their owner, over all main residences, in % |
 | Part de logement social | Main residences rented in social housing (HLM), over all main residences, in % |
-| Part de logements vacants | Vacant dwellings, over all dwellings (main, secondary and vacant), in % |
+| Part de logements vacants | Vacant dwellings, over all dwellings (main, secondary and vacant), in %. Ranked from the lowest: the 1st unit is the one with the fewest vacant dwellings |
 
 The first two are shares of **main residences** (where people actually live);
 secondary homes and vacant dwellings are out of their base. The third has all

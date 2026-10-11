@@ -38,7 +38,9 @@ The brackets are not listed as five rows but drawn as one chart under the mean
 unit, and a dashed mark the median of all urban units for that bracket, so the
 shape of the unit stands out against a typical one. Hovering a column gives its
 exact share, the median and the rank. Each bracket still is a criterion, with
-its rank and median, as for any other.
+its rank and median, as for any other; the share of households under 15 000 €
+is ranked from the lowest (the 1st unit has the fewest low-income households),
+the others from the highest.
 
 - **Counts:** the households and their income are summed over the communes of
   each urban unit (communes outside every urban unit are skipped). They are

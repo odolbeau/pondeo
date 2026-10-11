@@ -35,7 +35,7 @@ final readonly class HousingImporter
             [
                 ['code' => 'part_proprietaires', 'label' => 'Part de propriétaires', 'numerator' => 'proprietaires', 'denominator' => 'residences_principales'],
                 ['code' => 'part_logement_social', 'label' => 'Part de logement social', 'numerator' => 'hlm', 'denominator' => 'residences_principales'],
-                ['code' => 'part_logements_vacants', 'label' => 'Part de logements vacants', 'numerator' => 'vacants', 'denominator' => 'logements'],
+                ['code' => 'part_logements_vacants', 'label' => 'Part de logements vacants', 'numerator' => 'vacants', 'denominator' => 'logements', 'rankFromLowest' => true],
             ],
         );
     }
