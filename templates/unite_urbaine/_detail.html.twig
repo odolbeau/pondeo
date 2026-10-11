@@ -87,6 +87,22 @@
 {% endfor %}
 </div>
 
+{% if stations %}
+    <details open class="mt-8 border-t border-slate-800 pt-4">
+        <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">{{ stations|length > 1 ? 'Gares les plus proches' : 'Gare la plus proche' }}</summary>
+        <ul class="mt-2 divide-y divide-slate-800/60 text-sm">
+            {% for station in stations %}
+                <li class="flex items-baseline justify-between gap-4 py-2">
+                    <span class="text-slate-100">{{ station.name }}</span>
+                    <span class="shrink-0 text-slate-400">
+                        {% if station.inside %}dans l'agglomération{% else %}~{{ station.minutes }}&nbsp;min · {{ station.kilometers|number_format(1, ',') }}&nbsp;km{% endif %}
+                    </span>
+                </li>
+            {% endfor %}
+        </ul>
+    </details>
+{% endif %}
+
 {% if poiCategories %}
     <details open class="mt-8 border-t border-slate-800 pt-4">
         <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">Points d'intérêt</summary>
