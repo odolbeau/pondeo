@@ -13,6 +13,7 @@ use Symfony\Component\Validator\Constraints as Assert;
  * controller falls back to the full bounds. The exclusions default to off:
  * every unité urbaine is shown until asked otherwise. The commerce
  * density minimum (shops per 1000 inhabitants) is likewise off when null, as is the exclusion radius (km) around nuclear plants. The price per m² maximum (€) has no minimum counterpart and is off when null.
+ * Keeping only the unités urbaines with a railway station is off by default too.
  */
 final readonly class UniteUrbaineMapDataInput
 {
@@ -29,6 +30,7 @@ final readonly class UniteUrbaineMapDataInput
         public ?float $nuclearExclusionKm = null,
         #[Assert\PositiveOrZero]
         public ?float $priceMax = null,
+        public bool $withStation = false,
     ) {
     }
 

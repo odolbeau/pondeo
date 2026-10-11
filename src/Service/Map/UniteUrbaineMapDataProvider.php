@@ -8,6 +8,7 @@ use App\Enum\AttractionCategory;
 use App\Repository\CriterionRepository;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\ParameterType;
 
 /**
  * Raw-SQL queries backing the unité urbaine map (Doctrine can't express the
@@ -73,12 +74,13 @@ final readonly class UniteUrbaineMapDataProvider
      * cannot be said to reach it. With a nuclear exclusion radius, an unité urbaine whose
      * centroid is within it of a plant is left out. A price per m² maximum
      * leaves out an unité urbaine without a price (Alsace-Moselle is not in the source) for the same reason as the density minimum.
+     * With `withStation`, only the unités urbaine containing a railway station are kept.
      *
      * @param list<AttractionCategory> $excludedAttractionCategories
      *
      * @return list<array{id: string, code: string, name: string, population: int, geometryJson: string}>
      */
-    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null, ?float $priceMax = null): array
+    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null, ?float $priceMax = null, bool $withStation = false): array
     {
         $criterionId = $this->populationCriterionId();
         $excludedCategoryValues = array_map(static fn (AttractionCategory $category): string => $category->value, $excludedAttractionCategories);
@@ -127,6 +129,13 @@ final readonly class UniteUrbaineMapDataProvider
                             SELECT MAX(period) FROM criterion_value WHERE criterion_id = pc.id
                         )
                         AND price.value_integer <= CAST(:priceMax AS numeric)
+                    ))
+                  AND (NOT :withStation OR EXISTS (
+                      SELECT 1
+                      FROM poi station
+                      INNER JOIN poi_category station_category ON station_category.id = station.category_id
+                      WHERE station_category.code = 'railway_station'
+                        AND station.unite_urbaine_id = uu.id
                   ))
                 SQL,
             [
@@ -137,10 +146,11 @@ final readonly class UniteUrbaineMapDataProvider
                 'densityMin' => $commerceDensityMin,
                 'nuclearKm' => $nuclearExclusionKm,
                 'priceMax' => $priceMax,
+                'withStation' => $withStation,
                 // An empty IN () list is invalid SQL: a value no category has keeps the clause a no-op.
                 'excludedCategories' => [] === $excludedCategoryValues ? [''] : $excludedCategoryValues,
             ],
-            ['excludedCategories' => ArrayParameterType::STRING],
+            ['excludedCategories' => ArrayParameterType::STRING, 'withStation' => ParameterType::BOOLEAN],
         );
 
         return array_map(
