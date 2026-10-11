@@ -66,7 +66,7 @@ final readonly class AgePyramid
         $half = (self::WIDTH - self::LABEL_WIDTH) / 2.0;
         $womenStart = $half + self::LABEL_WIDTH;
 
-        $step = self::niceStep((float) $largest);
+        $step = AxisScale::niceStep((float) $largest, self::TARGET_TICKS);
         $axisMax = $step * (int) ceil($largest / $step);
         $perUnit = $half / $axisMax;
 
@@ -115,22 +115,5 @@ final readonly class AgePyramid
             $brackets,
             $ticks,
         );
-    }
-
-    /**
-     * A round graduation (1, 2, 5, 10, 20, 50… times a power of ten) giving about three marks on the axis.
-     */
-    private static function niceStep(float $largest): int
-    {
-        $raw = max(1.0, $largest / self::TARGET_TICKS);
-        $magnitude = 10 ** floor(log10($raw));
-
-        foreach ([1, 2, 5, 10] as $multiple) {
-            if ($raw <= $multiple * $magnitude) {
-                return max(1, (int) ($multiple * $magnitude));
-            }
-        }
-
-        return max(1, (int) (10 * $magnitude));
     }
 }

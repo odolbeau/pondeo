@@ -1,0 +1,26 @@
+{% set unit = distribution.unit ? ' ' ~ distribution.unit : '' %}
+<div class="mt-4" data-criteria-filter-target="row" data-label="{{ distribution.title }} {% for bar in distribution.bars %}{{ bar.fullLabel }} {% endfor %}">
+    <p class="text-sm text-slate-300">{{ distribution.title }} <span class="ml-1 text-xs text-slate-500">({{ distribution.period }})</span></p>
+    <svg viewBox="0 0 {{ constant('App\\Service\\Detail\\BracketDistribution::WIDTH') }} {{ distribution.height }}" class="mx-auto mt-2 w-full max-w-xl" role="img"
+         aria-label="{{ distribution.title }}, comparé à la médiane des unités urbaines">
+        {% for tick in distribution.ticks %}
+            <line x1="30" x2="{{ distribution.plotRight }}" y1="{{ tick.y }}" y2="{{ tick.y }}" class="stroke-slate-800" stroke-width="1"/>
+            <text x="26" y="{{ tick.y + 3 }}" text-anchor="end" class="fill-slate-500 text-[11px]">{{ tick.value|fr_number }}</text>
+        {% endfor %}
+        <line x1="30" x2="{{ distribution.plotRight }}" y1="{{ distribution.plotBottom }}" y2="{{ distribution.plotBottom }}" class="stroke-slate-700" stroke-width="1"/>
+        {% for bar in distribution.bars %}
+            <rect x="{{ bar.barX }}" y="{{ bar.barY }}" width="{{ bar.barWidth }}" height="{{ bar.barHeight }}" class="fill-emerald-400 hover:fill-emerald-300">
+                <title>{{ bar.fullLabel }} : {{ bar.value|fr_number }}{{ unit }}{% if bar.median is not null %} (médiane {{ bar.median|fr_number }}{{ unit }}){% endif %}{% if bar.rank %} · {{ bar.rank }}{{ 1 == bar.rank ? 'er' : 'e' }} sur {{ bar.total|fr_number }}{% endif %}</title>
+            </rect>
+            {% if bar.medianY is not null %}
+                <line x1="{{ bar.medianX1 }}" x2="{{ bar.medianX2 }}" y1="{{ bar.medianY }}" y2="{{ bar.medianY }}" class="stroke-amber-400" stroke-width="2.5" stroke-dasharray="5 3"/>
+            {% endif %}
+            <text x="{{ bar.labelX }}" y="{{ bar.valueY }}" text-anchor="middle" class="fill-slate-200 text-[11px]">{{ bar.value|round(1)|fr_number }}</text>
+            <text x="{{ bar.labelX }}" y="{{ distribution.plotBottom + 15 }}" text-anchor="middle" class="fill-slate-300 text-[11px]">{{ bar.label }}</text>
+        {% endfor %}
+    </svg>
+    <p class="mt-1 flex flex-wrap items-center justify-center gap-x-4 text-xs text-slate-400">
+        <span><span class="mr-1 inline-block h-2 w-3 rounded-sm bg-emerald-400 align-middle"></span>Cette unité urbaine{% if distribution.unit %} ({{ distribution.unit }}){% endif %}</span>
+        <span><span class="mr-1 inline-block h-0.5 w-3 border-t-2 border-dashed border-amber-400 align-middle"></span>Médiane des unités urbaines</span>
+    </p>
+</div>

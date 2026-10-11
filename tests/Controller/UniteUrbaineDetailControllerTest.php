@@ -100,6 +100,39 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorNotExists('[data-age-pyramid-width-param]');
     }
 
+    public function testIncomeBracketsAreDrawnAsOneChartAgainstTheMedian(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $other = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $mean = CriterionFactory::createOne(['code' => 'revenu_fiscal_moyen', 'label' => 'Revenu fiscal moyen par foyer', 'unit' => '€', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Revenus fiscaux', 'position' => 0]);
+        $small = CriterionFactory::createOne(['code' => 'part_foyers_moins_15000', 'label' => 'Foyers à moins de 15 000 €', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Revenus fiscaux', 'position' => 1]);
+        $big = CriterionFactory::createOne(['code' => 'part_foyers_plus_100000', 'label' => 'Foyers à plus de 100 000 €', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Revenus fiscaux', 'position' => 2]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($mean, $vannes, '32000', 2024));
+        $entityManager->persist(new CriterionValue($small, $vannes, '24', 2024));
+        $entityManager->persist(new CriterionValue($small, $other, '30', 2024));
+        $entityManager->persist(new CriterionValue($big, $vannes, '3', 2024));
+        $entityManager->persist(new CriterionValue($big, $other, '1', 2024));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        // The mean keeps its row; the brackets are one chart, not one row each.
+        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="Revenu fiscal moyen par foyer"]');
+        self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="Foyers à moins de 15 000 €"]');
+        self::assertSelectorExists('svg[role="img"][aria-label^="Foyers fiscaux par tranche de revenu fiscal"]');
+        self::assertAnySelectorTextContains('svg title', 'Foyers à moins de 15 000 € : 24 % (médiane 27 %)');
+        self::assertAnySelectorTextContains('svg text', '< 15 k€');
+        self::assertAnySelectorTextContains('svg text', '> 100 k€');
+        // The chart is found by the label of its brackets.
+        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label*="100 000"]');
+    }
+
     public function testPageListsPoisByCategoryAndCommunes(): void
     {
         $client = self::createClient();

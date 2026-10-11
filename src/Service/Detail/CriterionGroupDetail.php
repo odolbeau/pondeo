@@ -12,6 +12,7 @@ final readonly class CriterionGroupDetail
     public function __construct(
         public string $label,
         public array $criteria,
+        public ?BracketDistribution $distribution = null,
     ) {
     }
 

@@ -25,6 +25,23 @@ final readonly class UniteUrbaineCriteriaProvider
     /** Code suffix of a criterion derived from the count `<code>`: the detail page folds that count into its title. */
     public const string DENSITY_SUFFIX = '_pour_1000_hab';
 
+    /**
+     * Criteria that are the brackets of one distribution: drawn as a single chart in their group rather than one
+     * row each. Indexed by group, then by criterion code, in display order, with the label under the column.
+     */
+    private const array DISTRIBUTIONS = [
+        'Revenus fiscaux' => [
+            'title' => 'Foyers fiscaux par tranche de revenu fiscal',
+            'brackets' => [
+                'part_foyers_moins_15000' => '< 15 k€',
+                'part_foyers_15000_30000' => '15-30 k€',
+                'part_foyers_30000_50000' => '30-50 k€',
+                'part_foyers_50000_100000' => '50-100 k€',
+                'part_foyers_plus_100000' => '> 100 k€',
+            ],
+        ],
+    ];
+
     public function __construct(private Connection $connection)
     {
     }
@@ -83,10 +100,37 @@ final readonly class UniteUrbaineCriteriaProvider
         $groups = [];
         foreach ($criteriaByGroup as $label => $criteria) {
             usort($criteria, static fn (CriterionDetail $a, CriterionDetail $b): int => [$a->position ?? \PHP_INT_MAX, $a->label] <=> [$b->position ?? \PHP_INT_MAX, $b->label]);
-            $groups[] = new CriterionGroupDetail($label, $criteria);
+            $groups[] = $this->toGroup($label, $criteria);
         }
 
         return $groups;
+    }
+
+    /**
+     * @param list<CriterionDetail> $criteria
+     */
+    private function toGroup(string $label, array $criteria): CriterionGroupDetail
+    {
+        $distribution = self::DISTRIBUTIONS[$label] ?? null;
+        if (null === $distribution) {
+            return new CriterionGroupDetail($label, $criteria);
+        }
+
+        $byCode = [];
+        foreach ($criteria as $criterion) {
+            $byCode[$criterion->code] = $criterion;
+        }
+
+        $brackets = [];
+        foreach ($distribution['brackets'] as $code => $shortLabel) {
+            if (isset($byCode[$code])) {
+                $brackets[] = ['shortLabel' => $shortLabel, 'criterion' => $byCode[$code]];
+            }
+        }
+
+        $rows = array_values(array_filter($criteria, static fn (CriterionDetail $criterion): bool => !isset($distribution['brackets'][$criterion->code])));
+
+        return new CriterionGroupDetail($label, $rows, BracketDistribution::fromCriteria($distribution['title'], $brackets));
     }
 
     private static function groupRank(string $label): int

@@ -27,15 +27,18 @@ consumption unit, after tax and benefits, use the median standard of living of
 | Criterion | Meaning |
 |---|---|
 | Revenu fiscal moyen par foyer | Reference taxable income of all the tax households of the unit, divided by their number, in € |
-| Foyers à moins de 15 000 € | Share of tax households whose reference income is under 15 000 €, in % |
-| Foyers de 15 000 à 30 000 € | idem |
-| Foyers de 30 000 à 50 000 € | idem |
-| Foyers de 50 000 à 100 000 € | idem |
-| Foyers à plus de 100 000 € | idem |
+| Foyers par tranche | Share of tax households whose reference income is under 15 000 €, then 15 000 to 30 000 €, 30 000 to 50 000 €, 50 000 to 100 000 € and over 100 000 €, in % |
 
 The five brackets do not overlap, so their shares add up to 100 %. A mean
 hides the distribution: the last bracket tells about wealthy households, the
 first about the poorest.
+
+The brackets are not listed as five rows but drawn as one chart under the mean
+(see `docs/urban-unit-detail.md`): a column per bracket gives the share of the
+unit, and a dashed mark the median of all urban units for that bracket, so the
+shape of the unit stands out against a typical one. Hovering a column gives its
+exact share, the median and the rank. Each bracket still is a criterion, with
+its rank and median, as for any other.
 
 - **Counts:** the households and their income are summed over the communes of
   each urban unit (communes outside every urban unit are skipped). They are

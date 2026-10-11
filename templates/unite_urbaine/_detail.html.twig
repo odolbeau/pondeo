@@ -83,6 +83,9 @@
                 </div>
             {% endfor %}
         </dl>
+        {% if group.distribution %}
+            {{ include('unite_urbaine/_bracket_distribution.html.twig', {distribution: group.distribution}) }}
+        {% endif %}
     </details>
 {% endfor %}
 </div>
