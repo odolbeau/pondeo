@@ -4,13 +4,15 @@ declare(strict_types=1);
 
 namespace App\Service\Import;
 
+use Doctrine\DBAL\Connection;
 use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Downloads commune-level counts of an INSEE Mélodi dataset into a long CSV
  * (`code_insee,year,status,count`), one status per set of query filters. The
- * years are whatever the dataset holds for those filters.
+ * years are whatever the dataset holds for those filters. Only the communes of
+ * an unité urbaine are kept, the only ones imported: import the zones first.
  */
 final readonly class MelodiCountsDownloader
 {
@@ -23,8 +25,10 @@ final readonly class MelodiCountsDownloader
     // Smaller pages than the API default (10 000): the wider datasets would exhaust PHP's memory decoding one.
     private const int PAGE_SIZE = 5000;
 
-    public function __construct(private HttpClientInterface $httpClient)
-    {
+    public function __construct(
+        private HttpClientInterface $httpClient,
+        private Connection $connection,
+    ) {
     }
 
     /**
@@ -35,12 +39,16 @@ final readonly class MelodiCountsDownloader
      */
     public function download(string $dataset, string $targetPath, array $statuses, \Closure $progress): void
     {
+        /** @var list<string> $communeCodes */
+        $communeCodes = $this->connection->fetchFirstColumn('SELECT insee_code FROM commune');
+        $communes = array_flip($communeCodes);
+
         $handle = fopen($targetPath, 'w') ?: throw new \RuntimeException("Cannot write {$targetPath}");
         fputcsv($handle, ['code_insee', 'year', 'status', 'count'], escape: '\\');
 
         foreach ($statuses as $status => $filters) {
             $progress(\sprintf('Downloading %s...', $status));
-            $progress(\sprintf('  %d values', $this->downloadStatus($dataset, $status, $filters, $handle)));
+            $progress(\sprintf('  %d values', $this->downloadStatus($dataset, $status, $filters, $communes, $handle)));
         }
 
         fclose($handle);
@@ -48,9 +56,10 @@ final readonly class MelodiCountsDownloader
 
     /**
      * @param array<string, string> $filters
+     * @param array<string, int>    $communes the codes of the communes to keep, as keys
      * @param resource              $handle
      */
-    private function downloadStatus(string $dataset, string $status, array $filters, $handle): int
+    private function downloadStatus(string $dataset, string $status, array $filters, array $communes, $handle): int
     {
         $rowCount = 0;
         $page = 1;
@@ -62,8 +71,8 @@ final readonly class MelodiCountsDownloader
 
             foreach ($data['observations'] as $observation) {
                 $value = $observation['measures']['OBS_VALUE_NIVEAU']['value'] ?? null;
-                if (null === $value || 1 !== preg_match('/^\d{4}-COM-(\w+)$/', $observation['dimensions']['GEO'], $matches)) {
-                    continue; // Not a commune, or no figure (statistical secrecy).
+                if (null === $value || 1 !== preg_match('/^\d{4}-COM-(\w+)$/', $observation['dimensions']['GEO'], $matches) || !isset($communes[$matches[1]])) {
+                    continue; // Not a commune of an unité urbaine, or no figure (statistical secrecy).
                 }
 
                 fputcsv($handle, [$matches[1], $observation['dimensions']['TIME_PERIOD'], $status, round($value, 2)], escape: '\\');
