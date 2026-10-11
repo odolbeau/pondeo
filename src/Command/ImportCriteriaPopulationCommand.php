@@ -8,6 +8,7 @@ use App\Enum\CriterionValueType;
 use App\Service\Import\CriterionCsvSpec;
 use App\Service\Import\CsvCriterionImporter;
 use App\Service\Import\PopulationSourceDownloader;
+use App\Service\Import\PopulationTrendDeriver;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -16,7 +17,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 
 #[AsCommand(
     name: 'app:import:criteria:population',
-    description: 'Import the population criterion (all years) from resources/geo/population-historique.csv, summed per unité urbaine',
+    description: 'Import the population criterion (all years) from resources/geo/population-historique.csv, summed per unité urbaine, and derive growth and density from it',
     help: <<<'HELP'
         Idempotent — safe to re-run.
 
@@ -29,6 +30,7 @@ final class ImportCriteriaPopulationCommand extends Command
     public function __construct(
         private readonly CsvCriterionImporter $csvCriterionImporter,
         private readonly PopulationSourceDownloader $populationSourceDownloader,
+        private readonly PopulationTrendDeriver $populationTrendDeriver,
     ) {
         parent::__construct();
     }
@@ -61,11 +63,14 @@ final class ImportCriteriaPopulationCommand extends Command
             periodColumn: 'year',
             valueColumn: 'population',
             groupLabel: 'Démographie',
+            position: 0,
         );
 
         $count = $this->csvCriterionImporter->import($spec, $dir.'/population-historique.csv');
 
-        $io->success(\sprintf('%d population values imported (one per unité urbaine and year).', $count));
+        $trendCount = $this->populationTrendDeriver->derive();
+
+        $io->success(\sprintf('%d population values imported (one per unité urbaine and year), %d growth and density values derived.', $count, $trendCount));
 
         return Command::SUCCESS;
     }
