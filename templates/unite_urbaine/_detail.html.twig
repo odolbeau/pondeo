@@ -26,7 +26,7 @@
             </p>
             {% if population.rank %}
                 <p class="mt-1 text-sm text-slate-300">
-                    {{ include('unite_urbaine/_rank.html.twig', {criterion: population}) }}
+                    <a href="{{ path('app_ranking', {code: 'population'}) }}" {% if inFrame %}data-turbo-frame="_top" {% endif %}class="hover:text-emerald-400">{{ include('unite_urbaine/_rank.html.twig', {criterion: population}) }}</a>
                 </p>
             {% endif %}
         </div>
