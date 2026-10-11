@@ -1,34 +1,77 @@
 {% extends 'base.html.twig' %}
 
-{% block title %}Pondeo — Bientôt disponible{% endblock %}
+{% block title %}Pondeo — Comparez les agglomérations de France{% endblock %}
 
 {% block body %}
-<main class="flex min-h-screen items-center justify-center bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 px-6 py-16 text-slate-100">
-    <div class="w-full max-w-2xl text-center">
-        <span class="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-1 text-sm font-medium text-emerald-300">
-            Bientôt disponible
-        </span>
+<main class="bg-slate-950 text-slate-100">
+    <section class="relative overflow-hidden bg-gradient-to-br from-slate-950 via-slate-900 to-emerald-950 px-6 py-24 sm:py-32">
+        <div class="pointer-events-none absolute -top-32 left-1/2 h-96 w-[48rem] -translate-x-1/2 rounded-full bg-emerald-500/20 blur-3xl"></div>
+        <div class="relative mx-auto max-w-3xl text-center">
+            <span class="inline-flex items-center gap-2 rounded-full border border-emerald-400/30 bg-emerald-400/10 px-4 py-1 text-sm font-medium text-emerald-300">
+                Données publiques, lisibles
+            </span>
+            <h1 class="mt-6 text-5xl font-bold tracking-tight sm:text-7xl">
+                Où <span class="bg-gradient-to-r from-emerald-300 to-teal-400 bg-clip-text text-transparent">vivre</span> en France&nbsp;?
+            </h1>
+            <p class="mx-auto mt-6 max-w-xl text-lg text-slate-300">
+                Comparez les agglomérations (unités urbaines) selon ce qui compte vraiment :
+                emploi, revenus, prix de l'immobilier, commerces, démographie.
+            </p>
+            <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+                <a href="{{ path('app_map') }}" class="rounded-full bg-emerald-500 px-6 py-3 font-semibold text-slate-950 transition hover:bg-emerald-400">Explorer la carte</a>
+                <a href="{{ path('app_rankings') }}" class="rounded-full border border-slate-600 px-6 py-3 font-semibold text-slate-100 transition hover:border-emerald-400 hover:text-emerald-300">Voir les classements</a>
+            </div>
+        </div>
 
-        <h1 class="mt-6 text-5xl font-bold tracking-tight sm:text-6xl">
-            Pondeo
-        </h1>
+        <dl class="relative mx-auto mt-16 grid max-w-3xl grid-cols-3 gap-4 text-center">
+            <div>
+                <dt class="text-sm text-slate-400">Unités urbaines</dt>
+                <dd class="mt-1 text-3xl font-bold text-emerald-300 sm:text-4xl">{{ stats.uniteUrbaines|fr_number }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-slate-400">Critères</dt>
+                <dd class="mt-1 text-3xl font-bold text-emerald-300 sm:text-4xl">{{ stats.criteria|fr_number }}</dd>
+            </div>
+            <div>
+                <dt class="text-sm text-slate-400">Habitants couverts</dt>
+                <dd class="mt-1 text-3xl font-bold text-emerald-300 sm:text-4xl">{{ (stats.population / 1000000)|round(1)|fr_number }}&nbsp;M</dd>
+            </div>
+        </dl>
+    </section>
 
-        <p class="mx-auto mt-6 max-w-xl text-lg text-slate-300">
-            Comparez les agglomérations de France (unités urbaines) selon les
-            critères qui comptent vraiment pour vous.
-        </p>
+    <section class="mx-auto max-w-6xl px-6 py-20">
+        <div class="flex items-end justify-between gap-4">
+            <h2 class="text-3xl font-bold tracking-tight">Classements à la une</h2>
+            <a href="{{ path('app_rankings') }}" class="text-sm text-emerald-400 hover:underline">Tous les classements →</a>
+        </div>
+        <div class="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+            {% for podium in podiums %}
+                {{ include('ranking/_podium.html.twig', {podium: podium}) }}
+            {% endfor %}
+        </div>
+    </section>
 
-        <ul class="mx-auto mt-10 grid max-w-lg grid-cols-1 gap-3 text-left sm:grid-cols-3 sm:text-center">
-            <li class="rounded-lg border border-slate-700/50 bg-slate-800/40 p-4 text-sm text-slate-300">
-                Démographie
-            </li>
-            <li class="rounded-lg border border-slate-700/50 bg-slate-800/40 p-4 text-sm text-slate-300">
-                Commerces &amp; services à proximité
-            </li>
-            <li class="rounded-lg border border-slate-700/50 bg-slate-800/40 p-4 text-sm text-slate-300">
-                Climat
-            </li>
-        </ul>
-    </div>
+    <section class="border-t border-slate-800 bg-slate-900/40 px-6 py-20">
+        <div class="mx-auto max-w-5xl">
+            <h2 class="text-center text-3xl font-bold tracking-tight">Comment ça marche</h2>
+            <ol class="mt-12 grid gap-8 sm:grid-cols-3">
+                <li>
+                    <span class="text-4xl font-bold text-emerald-400">1</span>
+                    <h3 class="mt-2 font-semibold">Des données ouvertes</h3>
+                    <p class="mt-1 text-sm text-slate-400">Insee, impôts, transactions immobilières : des sources publiques, rassemblées au même endroit.</p>
+                </li>
+                <li>
+                    <span class="text-4xl font-bold text-emerald-400">2</span>
+                    <h3 class="mt-2 font-semibold">Une échelle comparable</h3>
+                    <p class="mt-1 text-sm text-slate-400">Tout est ramené à l'unité urbaine, l'agglomération telle qu'on la vit, au-delà des limites communales.</p>
+                </li>
+                <li>
+                    <span class="text-4xl font-bold text-emerald-400">3</span>
+                    <h3 class="mt-2 font-semibold">À vous de comparer</h3>
+                    <p class="mt-1 text-sm text-slate-400">Filtrez sur la carte, parcourez les classements ou ouvrez la fiche d'une ville.</p>
+                </li>
+            </ol>
+        </div>
+    </section>
 </main>
 {% endblock %}
