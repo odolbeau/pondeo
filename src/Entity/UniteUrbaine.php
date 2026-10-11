@@ -11,6 +11,7 @@ use App\Enum\Departement;
 use App\Repository\UniteUrbaineRepository;
 use Doctrine\Common\Collections\ArrayCollection;
 use Doctrine\Common\Collections\Collection;
+use Doctrine\DBAL\Types\Types;
 use Doctrine\ORM\Mapping as ORM;
 use Symfony\Component\Uid\Uuid;
 use Symfony\Component\Validator\Constraints as Assert;
@@ -64,6 +65,16 @@ class UniteUrbaine
     /** EWKT, union of the member communes' boundaries. */
     #[ORM\Column(type: 'geometry', nullable: true, options: ['geometry_type' => 'MULTIPOLYGON', 'srid' => 4326])]
     private ?string $boundary = null;
+
+    /**
+     * Population by sex and five-year age bracket of one census year, for the
+     * pyramid of the detail page (see `docs/population-pyramid.md`): `women`
+     * and `men` hold one count per bracket, from 0-4 up to 95 and over.
+     *
+     * @var array{year: int, women: list<int>, men: list<int>}|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true, options: ['jsonb' => true])]
+    private ?array $agePyramid = null;
 
     /**
      * Generated column, computed by Postgres from `boundary`: read-only for
@@ -150,6 +161,24 @@ class UniteUrbaine
     public function setBoundary(?string $boundary): static
     {
         $this->boundary = $boundary;
+
+        return $this;
+    }
+
+    /**
+     * @return array{year: int, women: list<int>, men: list<int>}|null
+     */
+    public function getAgePyramid(): ?array
+    {
+        return $this->agePyramid;
+    }
+
+    /**
+     * @param array{year: int, women: list<int>, men: list<int>}|null $agePyramid
+     */
+    public function setAgePyramid(?array $agePyramid): static
+    {
+        $this->agePyramid = $agePyramid;
 
         return $this;
     }

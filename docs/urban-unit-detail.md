@@ -23,6 +23,7 @@ a full page.
   listing its criteria with the latest value, its period and, for numeric
   criteria, a chart of the series (see [Criterion chart](#criterion-chart)). A search
   field filters criteria by label (accent- and case-insensitive).
+- **Population pyramid**, by sex and five-year age bracket (see [population-pyramid.md](population-pyramid.md)).
 - **Points of interest**, by category: the count, plus a sample of each.
 - **Communes** making up the unit.
 

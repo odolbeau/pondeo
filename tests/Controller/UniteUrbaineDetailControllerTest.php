@@ -52,6 +52,26 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorExists('[data-controller="criterion-chart"][data-criterion-chart-url-value="/unites-urbaines/56501/criteres/population/serie"]');
     }
 
+    public function testPageDrawsTheAgePyramidWhenKnown(): void
+    {
+        $client = self::createClient();
+
+        UniteUrbaineFactory::createOne(['inseeCode' => '56501', 'agePyramid' => ['year' => 2023, 'women' => [30, 20, 10], 'men' => [40, 10, 0]]]);
+        UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('details summary', 'Pyramide des âges');
+        self::assertSelectorExists('[role="img"] [title="0-4 ans : 40 hommes"]');
+        // The last bracket is open-ended.
+        self::assertSelectorTextContains('[role="img"]', '10 et +');
+        self::assertSelectorExists('[role="img"][aria-label*="110 habitants"]');
+
+        $client->request('GET', '/unites-urbaines/44701');
+        self::assertSelectorNotExists('[role="img"]');
+    }
+
     public function testPageListsPoisByCategoryAndCommunes(): void
     {
         $client = self::createClient();

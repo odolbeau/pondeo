@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\UniteUrbaine;
+use App\Service\Detail\AgePyramid;
 use App\Service\Detail\CriterionDetail;
 use App\Service\Detail\CriterionGroupDetail;
 use App\Service\Detail\UniteUrbaineCriteriaProvider;
@@ -40,6 +41,7 @@ final class UniteUrbaineDetailController extends AbstractController
             'groups' => $groups,
             'poiCategories' => $this->poiProvider->findCategories($uniteUrbaine),
             'population' => $this->findPopulation($groups),
+            'agePyramid' => null === $uniteUrbaine->getAgePyramid() ? null : AgePyramid::fromStored($uniteUrbaine->getAgePyramid()),
             'inFrame' => $request->headers->has('Turbo-Frame'),
         ]);
     }
