@@ -23,6 +23,7 @@ php "$CURDIR/console" app:import:criteria:age-structure --no-debug
 php "$CURDIR/console" app:import:criteria:pcs --no-debug
 php "$CURDIR/console" app:import:criteria:tax-income --no-debug
 php "$CURDIR/console" app:import:criteria:risks --no-debug
+php "$CURDIR/console" app:import:criteria:climate --no-debug
 php "$CURDIR/console" app:import:criteria:climate-projections --no-debug
 php "$CURDIR/console" app:import:age-pyramid --no-debug
 php "$CURDIR/console" app:import:station-access --no-debug
