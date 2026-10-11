@@ -37,6 +37,7 @@ final class UniteUrbaineSearchIndexControllerTest extends WebTestCase
 
         $client->request('GET', '/criteres');
 
-        self::assertSelectorExists('nav [data-controller="search"][data-search-index-url-value="/recherche/index"][data-search-detail-url-value="/unites-urbaines/XXXXX"]');
+        self::assertSelectorExists('nav[data-controller="nav"] button[aria-controls="nav-panel"][aria-expanded="false"]');
+        self::assertSelectorExists('nav #nav-panel [data-controller="search"][data-search-index-url-value="/recherche/index"][data-search-detail-url-value="/unites-urbaines/XXXXX"]');
     }
 }

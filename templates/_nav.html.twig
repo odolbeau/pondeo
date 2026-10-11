@@ -1,19 +1,30 @@
-<nav class="sticky top-0 z-30 flex h-14 items-center gap-6 border-b border-stone-200 bg-white/85 px-6 text-sm font-medium text-stone-700 backdrop-blur">
+{% set link_class = 'rounded-full px-3 py-2 transition hover:bg-emerald-50 hover:text-emerald-700 lg:py-1' %}
+<nav class="sticky top-0 z-30 flex h-14 items-center gap-6 border-b border-stone-200 bg-white/85 px-6 text-sm font-medium text-stone-700 backdrop-blur" data-controller="nav">
     <a href="{{ path('app_home') }}" class="flex items-center gap-2 text-lg font-bold tracking-tight text-emerald-800"><span aria-hidden="true">🌳</span>Pondeo</a>
-    <a href="{{ path('app_map') }}" class="rounded-full px-3 py-1 transition hover:bg-emerald-50 hover:text-emerald-700">Carte des unités urbaines</a>
-    <a href="{{ path('app_unite_urbaine_list') }}" class="rounded-full px-3 py-1 transition hover:bg-emerald-50 hover:text-emerald-700">Unités urbaines</a>
-    <a href="{{ path('app_rankings') }}" class="rounded-full px-3 py-1 transition hover:bg-emerald-50 hover:text-emerald-700">Classements</a>
-    <a href="{{ path('app_criteria') }}" class="rounded-full px-3 py-1 transition hover:bg-emerald-50 hover:text-emerald-700">Critères</a>
-    <div class="relative ml-auto w-44 sm:w-64"
-         data-controller="search"
-         data-search-index-url-value="{{ path('app_search_index') }}"
-         data-search-detail-url-value="{{ path('app_unite_urbaine_detail', {code: 'XXXXX'}) }}">
-        <input type="search" placeholder="Rechercher une ville…" autocomplete="off" aria-label="Rechercher une unité urbaine"
-               role="combobox" aria-expanded="false" aria-controls="search-results"
-               data-search-target="input"
-               data-action="focus->search#load input->search#search keydown->search#keydown blur->search#blur"
-               class="w-full rounded-full border border-stone-300 bg-white px-4 py-1.5 text-sm font-normal text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none">
-        <ul id="search-results" role="listbox" hidden data-search-target="results"
-            class="absolute right-0 top-full z-40 mt-1 w-72 max-w-[calc(100vw-3rem)] overflow-hidden rounded-xl border border-stone-200 bg-white text-sm font-normal shadow-lg"></ul>
+
+    <button type="button" class="ml-auto rounded-full p-2 text-stone-700 hover:bg-emerald-50 lg:hidden" aria-label="Menu" aria-controls="nav-panel" aria-expanded="false"
+            data-nav-target="button" data-action="nav#toggle">
+        <svg aria-hidden="true" viewBox="0 0 24 24" class="h-6 w-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
+    </button>
+
+    {# A dropdown under the bar on small screens, inline in the bar from `lg` up. #}
+    <div id="nav-panel" data-nav-target="panel"
+         class="hidden absolute inset-x-0 top-14 flex-col gap-1 border-b border-stone-200 bg-white p-4 shadow-sm lg:static lg:flex lg:flex-1 lg:flex-row lg:items-center lg:gap-6 lg:border-0 lg:bg-transparent lg:p-0 lg:shadow-none">
+        <a href="{{ path('app_map') }}" class="{{ link_class }}">Carte</a>
+        <a href="{{ path('app_unite_urbaine_list') }}" class="{{ link_class }}">Unités urbaines</a>
+        <a href="{{ path('app_rankings') }}" class="{{ link_class }}">Classements</a>
+        <a href="{{ path('app_criteria') }}" class="{{ link_class }}">Critères</a>
+        <div class="relative mt-2 w-full lg:ml-auto lg:mt-0 lg:w-64"
+             data-controller="search"
+             data-search-index-url-value="{{ path('app_search_index') }}"
+             data-search-detail-url-value="{{ path('app_unite_urbaine_detail', {code: 'XXXXX'}) }}">
+            <input type="search" placeholder="Rechercher une ville…" autocomplete="off" aria-label="Rechercher une unité urbaine"
+                   role="combobox" aria-expanded="false" aria-controls="search-results"
+                   data-search-target="input"
+                   data-action="focus->search#load input->search#search keydown->search#keydown blur->search#blur"
+                   class="w-full rounded-full border border-stone-300 bg-white px-4 py-1.5 text-sm font-normal text-stone-900 placeholder:text-stone-400 focus:border-emerald-600 focus:outline-none">
+            <ul id="search-results" role="listbox" hidden data-search-target="results"
+                class="absolute right-0 top-full z-40 mt-1 w-full overflow-hidden rounded-xl border border-stone-200 bg-white text-sm font-normal shadow-lg lg:w-72"></ul>
+        </div>
     </div>
 </nav>
