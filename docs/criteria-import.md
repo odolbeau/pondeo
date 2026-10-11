@@ -56,3 +56,7 @@ uses today's perimeters throughout, so years are comparable with each other.
 ## Shops
 
 See [criteria-commerces.md](criteria-commerces.md): same shape, with a derived density per 1000 inhabitants.
+
+## Real estate prices
+
+See [criteria-real-estate.md](criteria-real-estate.md): not additive, so averaged per urban unit with the number of sales as weight.
