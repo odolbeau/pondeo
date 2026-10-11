@@ -87,3 +87,7 @@ See [criteria-age-structure.md](criteria-age-structure.md): counts are summed, t
 ## Socio-professional categories
 
 See [criteria-pcs.md](criteria-pcs.md): counts are summed, the shares derived from them; census years only.
+
+## Tax income
+
+See [criteria-tax-income.md](criteria-tax-income.md): counts are summed, the figures derived from them; a single income year.

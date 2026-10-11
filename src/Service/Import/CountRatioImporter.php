@@ -10,10 +10,11 @@ use Doctrine\DBAL\Connection;
 use Symfony\Component\Uid\Uuid;
 
 /**
- * Imports a share (in %) per unité urbaine from commune counts: the counts
- * are additive, so they are summed per unité urbaine like any criterion, and
- * the shares are derived from those sums, never summed. The counts are only a
- * means to the shares and are dropped once these are derived.
+ * Imports a ratio per unité urbaine from commune counts, a share in % unless
+ * told otherwise: the counts are additive, so they are summed per unité
+ * urbaine like any criterion, and the ratios are derived from those sums,
+ * never summed. The counts are only a means to the ratios and are dropped once
+ * these are derived.
  */
 final readonly class CountRatioImporter
 {
@@ -25,8 +26,8 @@ final readonly class CountRatioImporter
     }
 
     /**
-     * @param array<string, string>                                                            $counts criterion label indexed by the CSV status it is read from; the criterion code is `count_<status>`
-     * @param list<array{code: string, label: string, numerator: string, denominator: string}> $shares numerator and denominator are CSV statuses; the list order is the display order
+     * @param array<string, string>                                                                                         $counts criterion label indexed by the CSV status it is read from; the criterion code is `count_<status>`
+     * @param list<array{code: string, label: string, numerator: string, denominator: string, unit?: string, factor?: int}> $shares numerator and denominator are CSV statuses, the list order is the display order; a ratio is multiplied by `factor` (100 for a share in %, the default) and shown with `unit` ("%" by default)
      *
      * @return int number of (unité urbaine, period) share values upserted
      */
@@ -51,8 +52,8 @@ final readonly class CountRatioImporter
         }
 
         $count = 0;
-        foreach ($shares as $position => ['code' => $code, 'label' => $label, 'numerator' => $numerator, 'denominator' => $denominator]) {
-            $count += $this->deriveShare($code, $label, $group, $codes[$numerator], $codes[$denominator], $position);
+        foreach ($shares as $position => $share) {
+            $count += $this->deriveShare($share['code'], $share['label'], $group, $codes[$share['numerator']], $codes[$share['denominator']], $position, $share['unit'] ?? '%', $share['factor'] ?? 100);
         }
 
         $this->connection->executeStatement('DELETE FROM criterion_value WHERE criterion_id IN (SELECT id FROM criterion WHERE code IN (:codes))', ['codes' => array_values($codes)], ['codes' => ArrayParameterType::STRING]);
@@ -61,9 +62,9 @@ final readonly class CountRatioImporter
         return $count;
     }
 
-    private function deriveShare(string $code, string $label, string $group, string $numeratorCode, string $denominatorCode, int $position): int
+    private function deriveShare(string $code, string $label, string $group, string $numeratorCode, string $denominatorCode, int $position, string $unit, int $factor): int
     {
-        $share = $this->csvCriterionImporter->findOrCreate($code, $label, CriterionValueType::Decimal, '%', $group, position: $position);
+        $share = $this->csvCriterionImporter->findOrCreate($code, $label, CriterionValueType::Decimal, $unit, $group, position: $position);
 
         $rows = $this->connection->fetchAllAssociative(
             <<<'SQL'
@@ -84,7 +85,7 @@ final readonly class CountRatioImporter
                 'id' => Uuid::v7(),
                 'uniteUrbaineId' => Uuid::fromString(\is_string($row['unite_urbaine_id']) ? $row['unite_urbaine_id'] : throw new \UnexpectedValueException('Unexpected unité urbaine id.')),
                 'period' => (int) (is_numeric($row['period']) ? $row['period'] : 0),
-                'value' => number_format((int) (is_numeric($row['numerator']) ? $row['numerator'] : 0) / (int) (is_numeric($row['denominator']) ? $row['denominator'] : 1) * 100, 2, '.', ''),
+                'value' => number_format((int) (is_numeric($row['numerator']) ? $row['numerator'] : 0) / (int) (is_numeric($row['denominator']) ? $row['denominator'] : 1) * $factor, 2, '.', ''),
             ];
 
             if (\count($batch) >= CriterionValueWriter::BATCH_SIZE) {
