@@ -54,6 +54,27 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorExists('[data-criterion-chart-open-value="true"]');
     }
 
+    public function testPageShowsTheClimateGroupWithItsAttribution(): void
+    {
+        $client = self::createClient();
+
+        $marseille = UniteUrbaineFactory::createOne(['inseeCode' => '13701']);
+        UniteUrbaineFactory::createOne(['inseeCode' => '29701']);
+        $sunshine = CriterionFactory::createOne(['code' => 'ensoleillement', 'label' => 'Ensoleillement', 'unit' => 'h/an', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Climat']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($sunshine, $marseille, 2_860, 2020));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/13701');
+
+        self::assertResponseIsSuccessful();
+        self::assertAnySelectorTextContains('section h2', 'Climat');
+        self::assertSelectorExists('[data-label="Ensoleillement"]');
+        self::assertAnySelectorTextContains('section p', 'Données météo : Open-Meteo.com (CC BY 4.0)');
+    }
+
     public function testPageDrawsTheAgePyramidWhenKnown(): void
     {
         $client = self::createClient();
