@@ -21,13 +21,13 @@ final readonly class CriterionRankingProvider
     }
 
     /**
-     * @return array{period: ?int, total: int, rows: list<RankingRow>}
+     * @return array{period: ?int, total: int, median: ?float, maxValue: float, rows: list<RankingRow>}
      */
     public function findRanking(string $criterionCode, bool $rankFromLowest, int $limit, int $offset = 0): array
     {
         $direction = $rankFromLowest ? 'ASC' : 'DESC';
 
-        /** @var list<array{rank: int, code: string, name: string, departement: ?string, value: string|int|float, population: ?int, period: int, total: int}> $rows */
+        /** @var list<array{rank: int, code: string, name: string, departement: ?string, value: string|int|float, population: ?int, period: int, total: int, median: string|float, max_value: string|float}> $rows */
         $rows = $this->connection->fetchAllAssociative(
             <<<SQL
                 WITH criterion_period AS (
@@ -48,6 +48,8 @@ final readonly class CriterionRankingProvider
                     FROM scoped s
                 )
                 SELECT r.rank, uu.insee_code AS code, uu.name, uu.departement, r.value, r.period, r.total,
+                       (SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY value) FROM scoped) AS median,
+                       (SELECT MAX(ABS(value)) FROM scoped) AS max_value,
                        (
                            SELECT p.value_integer
                            FROM criterion_value p
@@ -79,6 +81,8 @@ final readonly class CriterionRankingProvider
         return [
             'period' => [] === $rows ? null : $rows[0]['period'],
             'total' => [] === $rows ? 0 : $rows[0]['total'],
+            'median' => [] === $rows ? null : (float) $rows[0]['median'],
+            'maxValue' => [] === $rows ? 0.0 : (float) $rows[0]['max_value'],
             'rows' => $result,
         ];
     }

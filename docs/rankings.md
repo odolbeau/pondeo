@@ -25,6 +25,13 @@ Each ranking starts from the best end as defined by the criterion's
 for the criterion across all unités urbaines, never at each unit's own latest.
 Ties share a rank. Pages hold 50 rows (`?page=`).
 
+## Median marker
+
+A ranking page states the median of all unités urbaines for the criterion and
+draws it as a tick on every row's bar, to read each value against a typical
+unit. Bars are scaled on the largest value of the whole ranking, not of the
+page, so they stay comparable from one page to the next.
+
 ## Explanatory note
 
 Each ranking page opens with a short text in plain language: what is measured
