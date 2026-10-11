@@ -173,6 +173,31 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         self::assertSame(['00003'], $this->codes($client, ['nuclearExclusionKm' => '150']));
     }
 
+    public function testDataEndpointCanKeepOnlyUnitesUrbainesWithAStation(): void
+    {
+        $client = self::createClient();
+
+        $with = UniteUrbaineFactory::createOne(['inseeCode' => '00001', 'boundary' => 'SRID=4326;MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))']);
+        $without = UniteUrbaineFactory::createOne(['inseeCode' => '00002', 'boundary' => 'SRID=4326;MULTIPOLYGON(((1 0,1 1,2 1,2 0,1 0)))']);
+        $otherPoi = UniteUrbaineFactory::createOne(['inseeCode' => '00003', 'boundary' => 'SRID=4326;MULTIPOLYGON(((2 0,2 1,3 1,3 0,2 0)))']);
+
+        $population = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ([$with, $without, $otherPoi] as $uniteUrbaine) {
+            $entityManager->persist(new CriterionValue($population, $uniteUrbaine, 10_000, 2023));
+        }
+
+        $entityManager->flush();
+
+        PoiFactory::createOne(['category' => PoiCategoryFactory::createOne(['code' => 'railway_station']), 'uniteUrbaine' => $with]);
+        // Another kind of POI is not a station.
+        PoiFactory::createOne(['uniteUrbaine' => $otherPoi]);
+
+        self::assertSame(['00001', '00002', '00003'], $this->codes($client, []));
+        self::assertSame(['00001'], $this->codes($client, ['withStation' => '1']));
+    }
+
     public function testNuclearPlantsEndpointReturnsThePlantsWithTheirDetails(): void
     {
         $client = self::createClient();
