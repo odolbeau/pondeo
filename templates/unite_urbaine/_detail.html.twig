@@ -109,6 +109,40 @@
             {% endfor %}
         </svg>
         <p class="text-center text-xs text-slate-500">Habitants par tranche de 5 ans</p>
+        <details class="mt-4">
+            <summary class="cursor-pointer text-xs text-slate-400 hover:text-slate-200">Détail par tranche d'âge</summary>
+            <table class="mt-2 w-full text-right text-sm tabular-nums">
+                <thead class="text-xs text-slate-500">
+                    <tr>
+                        <th scope="col" class="py-1 text-left font-normal">Âge</th>
+                        <th scope="col" class="py-1 font-normal text-sky-400">Hommes</th>
+                        <th scope="col" class="py-1 font-normal text-pink-400">Femmes</th>
+                        <th scope="col" class="py-1 font-normal">Total</th>
+                        <th scope="col" class="py-1 font-normal">Part</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-800/60 text-slate-300">
+                    {% for bracket in agePyramid.brackets|reverse %}
+                        <tr>
+                            <th scope="row" class="py-1 text-left font-normal text-slate-400">{{ bracket.label }} ans</th>
+                            <td class="py-1">{{ bracket.men|fr_number }}</td>
+                            <td class="py-1">{{ bracket.women|fr_number }}</td>
+                            <td class="py-1 text-slate-100">{{ (bracket.men + bracket.women)|fr_number }}</td>
+                            <td class="py-1 text-slate-500">{{ bracket.share|fr_number }} %</td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+                <tfoot class="border-t border-slate-700 font-medium text-slate-100">
+                    <tr>
+                        <th scope="row" class="py-1 text-left font-medium">Total</th>
+                        <td class="py-1">{{ agePyramid.menTotal|fr_number }}</td>
+                        <td class="py-1">{{ agePyramid.womenTotal|fr_number }}</td>
+                        <td class="py-1">{{ agePyramid.total|fr_number }}</td>
+                        <td class="py-1">100 %</td>
+                    </tr>
+                </tfoot>
+            </table>
+        </details>
     </details>
 {% endif %}
 

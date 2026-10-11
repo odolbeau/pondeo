@@ -27,12 +27,14 @@ final readonly class AgePyramid
     private const int TARGET_TICKS = 3;
 
     /**
-     * @param list<array{label: string, women: int, men: int, y: int, womenX: float, womenWidth: float, menX: float, menWidth: float}> $brackets oldest first
-     * @param list<array{value: int, menX: float, womenX: float}>                                                                      $ticks    from the first graduation after zero
+     * @param list<array{label: string, women: int, men: int, share: float, y: int, womenX: float, womenWidth: float, menX: float, menWidth: float}> $brackets oldest first
+     * @param list<array{value: int, menX: float, womenX: float}>                                                                                    $ticks    from the first graduation after zero
      */
     private function __construct(
         public int $year,
         public int $total,
+        public int $menTotal,
+        public int $womenTotal,
         public float $menShare,
         public float $womenShare,
         public int $height,
@@ -68,10 +70,13 @@ final readonly class AgePyramid
             ];
         }
 
+        $total = array_sum($stored['men']) + array_sum($stored['women']);
+
         $brackets = [];
         foreach (array_reverse($rows) as $row => $bracket) {
             $menWidth = round($bracket['men'] * $perUnit, 1);
             $brackets[] = $bracket + [
+                'share' => $total > 0 ? round(($bracket['men'] + $bracket['women']) / $total * 100, 1) : 0.0,
                 'y' => self::TOP + $row * self::ROW_HEIGHT,
                 'womenX' => $womenStart,
                 'womenWidth' => round($bracket['women'] * $perUnit, 1),
@@ -87,12 +92,13 @@ final readonly class AgePyramid
 
         $men = array_sum($stored['men']);
         $women = array_sum($stored['women']);
-        $total = $men + $women;
         $plotBottom = self::TOP + \count($rows) * self::ROW_HEIGHT;
 
         return new self(
             $stored['year'],
             $total,
+            $men,
+            $women,
             $total > 0 ? round($men / $total * 100, 1) : 0.0,
             $total > 0 ? round($women / $total * 100, 1) : 0.0,
             $plotBottom + self::AXIS_HEIGHT,

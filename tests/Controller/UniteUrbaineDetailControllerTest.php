@@ -69,6 +69,10 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('svg[role="img"]', '10 et +');
         self::assertSelectorExists('svg[role="img"][aria-label*="110 habitants"]');
         self::assertSelectorTextContains('details', 'Hommes · 45,5 %');
+        // The same figures as a table, youngest first, with the total.
+        self::assertSelectorTextContains('table tbody tr:first-child', '0-4 ans');
+        self::assertSelectorTextContains('table tbody tr:first-child', '70');
+        self::assertSelectorTextContains('table tfoot', '110');
 
         $client->request('GET', '/unites-urbaines/44701');
         self::assertSelectorNotExists('[role="img"]');

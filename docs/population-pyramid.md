@@ -8,6 +8,10 @@ graduated axis gives the number of inhabitants, hovering a bar gives its exact
 count, and the share of each sex is written above. Both sides share the same
 scale, so the shape of the pyramid is not distorted.
 
+Under the pyramid, a folded table gives the same figures as numbers, youngest
+bracket first: men, women, total and share of the population of each bracket,
+with the totals.
+
 A unit without data has no pyramid section.
 
 ## Source
