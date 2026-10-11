@@ -1,52 +1,52 @@
 <div class="mt-3 flex justify-between text-xs">
-    <span class="text-sky-400">Hommes · {{ pyramid.menShare|fr_number }} %</span>
-    <span class="text-pink-400">Femmes · {{ pyramid.womenShare|fr_number }} %</span>
+    <span class="text-sky-700">Hommes · {{ pyramid.menShare|fr_number }} %</span>
+    <span class="text-pink-700">Femmes · {{ pyramid.womenShare|fr_number }} %</span>
 </div>
 <div class="relative" data-controller="chart-tooltip" data-action="pointermove->chart-tooltip#move pointerdown->chart-tooltip#move pointerleave->chart-tooltip#hide">
     <svg viewBox="0 0 {{ constant('App\\Service\\Detail\\AgePyramid::WIDTH') }} {{ pyramid.height }}" class="mx-auto mt-1 w-full max-w-xl" role="img"
          aria-label="Pyramide des âges de {{ pyramid.total|fr_number }} habitants, par tranche de {{ pyramid.bracketYears }} ans">
         {% for tick in pyramid.ticks %}
-            <line x1="{{ tick.menX }}" x2="{{ tick.menX }}" y1="0" y2="{{ pyramid.plotBottom }}" class="stroke-slate-800" stroke-width="1"/>
-            <line x1="{{ tick.womenX }}" x2="{{ tick.womenX }}" y1="0" y2="{{ pyramid.plotBottom }}" class="stroke-slate-800" stroke-width="1"/>
-            <text x="{{ tick.menX }}" y="{{ pyramid.height - 6 }}" text-anchor="middle" class="fill-slate-500 text-[11px]">{{ tick.value|fr_number }}</text>
-            <text x="{{ tick.womenX }}" y="{{ pyramid.height - 6 }}" text-anchor="middle" class="fill-slate-500 text-[11px]">{{ tick.value|fr_number }}</text>
+            <line x1="{{ tick.menX }}" x2="{{ tick.menX }}" y1="0" y2="{{ pyramid.plotBottom }}" class="stroke-stone-200" stroke-width="1"/>
+            <line x1="{{ tick.womenX }}" x2="{{ tick.womenX }}" y1="0" y2="{{ pyramid.plotBottom }}" class="stroke-stone-200" stroke-width="1"/>
+            <text x="{{ tick.menX }}" y="{{ pyramid.height - 6 }}" text-anchor="middle" class="fill-stone-500 text-[11px]">{{ tick.value|fr_number }}</text>
+            <text x="{{ tick.womenX }}" y="{{ pyramid.height - 6 }}" text-anchor="middle" class="fill-stone-500 text-[11px]">{{ tick.value|fr_number }}</text>
         {% endfor %}
         {% for bracket in pyramid.brackets %}
-            <rect x="{{ bracket.menX }}" y="{{ bracket.y }}" width="{{ bracket.menWidth }}" height="{{ pyramid.rowHeight - 1 }}" class="fill-sky-400"/>
-            <rect x="{{ pyramid.womenStart }}" y="{{ bracket.y }}" width="{{ bracket.womenWidth }}" height="{{ pyramid.rowHeight - 1 }}" class="fill-pink-400"/>
-            <text x="{{ pyramid.labelX }}" y="{{ bracket.y + pyramid.rowHeight // 2 + 4 }}" text-anchor="middle" class="fill-slate-300 text-[11px]">{{ bracket.label }}</text>
+            <rect x="{{ bracket.menX }}" y="{{ bracket.y }}" width="{{ bracket.menWidth }}" height="{{ pyramid.rowHeight - 1 }}" class="fill-sky-500"/>
+            <rect x="{{ pyramid.womenStart }}" y="{{ bracket.y }}" width="{{ bracket.womenWidth }}" height="{{ pyramid.rowHeight - 1 }}" class="fill-pink-500"/>
+            <text x="{{ pyramid.labelX }}" y="{{ bracket.y + pyramid.rowHeight // 2 + 4 }}" text-anchor="middle" class="fill-stone-700 text-[11px]">{{ bracket.label }}</text>
             {# The whole row answers to the pointer, not only the thin bars. #}
-            <rect x="0" y="{{ bracket.y }}" width="{{ constant('App\\Service\\Detail\\AgePyramid::WIDTH') }}" height="{{ pyramid.rowHeight }}" class="fill-transparent hover:fill-white/10"
+            <rect x="0" y="{{ bracket.y }}" width="{{ constant('App\\Service\\Detail\\AgePyramid::WIDTH') }}" height="{{ pyramid.rowHeight }}" class="fill-transparent hover:fill-emerald-600/10"
                   data-tooltip="{{ [bracket.label ~ ' ans', bracket.men|fr_number ~ ' hommes', bracket.women|fr_number ~ ' femmes', (bracket.men + bracket.women)|fr_number ~ ' au total · ' ~ bracket.share|fr_number ~ ' %']|join('\n') }}"/>
         {% endfor %}
     </svg>
-    <div hidden data-chart-tooltip-target="tooltip" class="pointer-events-none absolute z-10 whitespace-nowrap rounded border border-slate-600 bg-slate-900 px-2 py-1 text-xs text-slate-100 shadow-lg"></div>
+    <div hidden data-chart-tooltip-target="tooltip" class="pointer-events-none absolute z-10 whitespace-nowrap rounded border border-stone-700 bg-stone-800 px-2 py-1 text-xs text-white shadow-lg"></div>
 </div>
-<p class="text-center text-xs text-slate-500">Habitants par tranche de {{ pyramid.bracketYears }} ans · survolez une ligne pour le détail</p>
+<p class="text-center text-xs text-stone-500">Habitants par tranche de {{ pyramid.bracketYears }} ans · survolez une ligne pour le détail</p>
 <details class="mt-4">
-    <summary class="cursor-pointer text-xs text-slate-400 hover:text-slate-200">Détail par tranche d'âge</summary>
+    <summary class="cursor-pointer text-xs text-stone-600 hover:text-stone-800">Détail par tranche d'âge</summary>
     <table class="mt-2 w-full text-right text-sm tabular-nums">
-        <thead class="text-xs text-slate-500">
+        <thead class="text-xs text-stone-500">
             <tr>
                 <th scope="col" class="py-1 text-left font-normal">Âge</th>
-                <th scope="col" class="py-1 font-normal text-sky-400">Hommes</th>
-                <th scope="col" class="py-1 font-normal text-pink-400">Femmes</th>
+                <th scope="col" class="py-1 font-normal text-sky-700">Hommes</th>
+                <th scope="col" class="py-1 font-normal text-pink-700">Femmes</th>
                 <th scope="col" class="py-1 font-normal">Total</th>
                 <th scope="col" class="py-1 font-normal">Part</th>
             </tr>
         </thead>
-        <tbody class="divide-y divide-slate-800/60 text-slate-300">
+        <tbody class="divide-y divide-stone-200 text-stone-700">
             {% for bracket in pyramid.brackets|reverse %}
                 <tr>
-                    <th scope="row" class="py-1 text-left font-normal text-slate-400">{{ bracket.label }} ans</th>
+                    <th scope="row" class="py-1 text-left font-normal text-stone-600">{{ bracket.label }} ans</th>
                     <td class="py-1">{{ bracket.men|fr_number }}</td>
                     <td class="py-1">{{ bracket.women|fr_number }}</td>
-                    <td class="py-1 text-slate-100">{{ (bracket.men + bracket.women)|fr_number }}</td>
-                    <td class="py-1 text-slate-500">{{ bracket.share|fr_number }} %</td>
+                    <td class="py-1 text-stone-900">{{ (bracket.men + bracket.women)|fr_number }}</td>
+                    <td class="py-1 text-stone-500">{{ bracket.share|fr_number }} %</td>
                 </tr>
             {% endfor %}
         </tbody>
-        <tfoot class="border-t border-slate-700 font-medium text-slate-100">
+        <tfoot class="border-t border-stone-300 font-medium text-stone-900">
             <tr>
                 <th scope="row" class="py-1 text-left font-medium">Total</th>
                 <td class="py-1">{{ pyramid.menTotal|fr_number }}</td>

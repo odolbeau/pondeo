@@ -1,18 +1,18 @@
     <section class="{{ card }}">
         <h2 class="{{ title }}">Points d'intérêt</h2>
         {% for category in poiCategories %}
-            <h3 class="mt-4 text-sm text-slate-300">{{ category.label }} <span class="text-slate-500">({{ category.total }})</span></h3>
-            <ul class="mt-1 divide-y divide-slate-800/60 text-sm">
+            <h3 class="mt-4 text-sm text-stone-700">{{ category.label }} <span class="text-stone-500">({{ category.total }})</span></h3>
+            <ul class="mt-1 divide-y divide-stone-200 text-sm">
                 {% for poi in category.pois %}
                     <li class="py-2">
-                        <span class="text-slate-100">{{ poi.name }}</span>
-                        {% if poi.brand %}<span class="text-slate-500"> · {{ poi.brand }}</span>{% endif %}
-                        {% if poi.address %}<div class="text-xs text-slate-500">{{ poi.address }}</div>{% endif %}
+                        <span class="text-stone-900">{{ poi.name }}</span>
+                        {% if poi.brand %}<span class="text-stone-500"> · {{ poi.brand }}</span>{% endif %}
+                        {% if poi.address %}<div class="text-xs text-stone-500">{{ poi.address }}</div>{% endif %}
                     </li>
                 {% endfor %}
             </ul>
             {% if category.total > category.pois|length %}
-                <p class="mt-1 text-xs text-slate-500">et {{ category.total - category.pois|length }} autres</p>
+                <p class="mt-1 text-xs text-stone-500">et {{ category.total - category.pois|length }} autres</p>
             {% endif %}
         {% endfor %}
     </section>

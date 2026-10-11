@@ -3,7 +3,7 @@
 {% block title %}Pondeo — {{ title }}{% endblock %}
 
 {% block body %}
-<div class="flex h-[calc(100vh-3.5rem)] bg-slate-950 text-slate-100"
+<div class="flex h-[calc(100vh-3.5rem)] bg-transparent text-stone-900"
      data-controller="map"
      data-map-data-url-value="{{ dataUrl }}"
      data-map-plants-url-value="{{ plantsUrl }}"
@@ -11,113 +11,113 @@
      data-map-population-min-value="{{ populationMin }}"
      data-map-population-max-value="{{ populationMax }}"
 >
-    <aside class="w-80 shrink-0 overflow-y-auto border-r border-slate-800 bg-slate-900/60 p-6">
-        <h2 class="text-sm font-semibold uppercase tracking-wide text-slate-400">Population</h2>
+    <aside class="w-80 shrink-0 overflow-y-auto border-r border-stone-200 bg-white p-6">
+        <h2 class="text-sm font-semibold uppercase tracking-wide text-stone-600">Population</h2>
 
-        <div class="relative mt-6 h-1 rounded bg-slate-700">
+        <div class="relative mt-6 h-1 rounded bg-stone-300">
             <input type="range" data-map-target="minRange"
                    min="0" max="0" step="1" value="0"
                    data-action="input->map#onRangeInput"
-                   class="pointer-events-none absolute inset-x-0 top-1/2 h-1 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-400 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-emerald-400">
+                   class="pointer-events-none absolute inset-x-0 top-1/2 h-1 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-500 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-emerald-500">
             <input type="range" data-map-target="maxRange"
                    min="0" max="0" step="1" value="0"
                    data-action="input->map#onRangeInput"
-                   class="pointer-events-none absolute inset-x-0 top-1/2 h-1 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-400 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-emerald-400">
+                   class="pointer-events-none absolute inset-x-0 top-1/2 h-1 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-500 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-emerald-500">
         </div>
 
-        <div class="mt-4 flex items-center gap-2 text-sm text-slate-300">
+        <div class="mt-4 flex items-center gap-2 text-sm text-stone-700">
             <input type="number" inputmode="numeric" step="1" aria-label="Population minimale"
                    min="{{ populationMin }}" max="{{ populationMax }}" value="{{ populationMin }}"
                    data-map-target="minInput"
                    data-action="input->map#onNumberInput change->map#onNumberChange"
-                   class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
+                   class="w-full rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
             <span aria-hidden="true">–</span>
             <input type="number" inputmode="numeric" step="1" aria-label="Population maximale"
                    min="{{ populationMin }}" max="{{ populationMax }}" value="{{ populationMax }}"
                    data-map-target="maxInput"
                    data-action="input->map#onNumberInput change->map#onNumberChange"
-                   class="w-full rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
+                   class="w-full rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
         </div>
 
-        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Aires d'attraction</h2>
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Aires d'attraction</h2>
 
-        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-slate-300">
+        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
             <input type="checkbox" data-map-target="excludeCouronne" data-action="change->map#onToggleChange"
-                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-400">
+                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
             <span>Exclure les villes de la couronne d'une autre
-                <span class="block text-xs text-slate-500">Arradon, qui dépend de Vannes, par exemple</span>
+                <span class="block text-xs text-stone-500">Arradon, qui dépend de Vannes, par exemple</span>
             </span>
         </label>
 
-        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-slate-300">
+        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
             <input type="checkbox" data-map-target="excludePolesSecondaires" data-action="change->map#onToggleChange"
-                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-400">
+                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
             <span>Exclure les pôles secondaires
-                <span class="block text-xs text-slate-500">Villes qui forment un pôle d'emploi dans l'aire d'une plus grande</span>
+                <span class="block text-xs text-stone-500">Villes qui forment un pôle d'emploi dans l'aire d'une plus grande</span>
             </span>
         </label>
 
-        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Gares</h2>
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Gares</h2>
 
-        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-slate-300">
+        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
             <input type="checkbox" data-map-target="withStation" data-action="change->map#onToggleChange"
-                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-400">
+                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
             <span>Garder les villes qui ont une gare
-                <span class="block text-xs text-slate-500">Au moins une gare voyageurs dans l'agglomération</span>
+                <span class="block text-xs text-stone-500">Au moins une gare voyageurs dans l'agglomération</span>
             </span>
         </label>
 
-        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Commerces</h2>
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Commerces</h2>
 
-        <label class="mt-4 block text-sm text-slate-300">
+        <label class="mt-4 block text-sm text-stone-700">
             Au moins
             <span class="mt-2 flex items-center gap-2">
                 <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="0"
                        aria-label="Commerces minimum pour 1000 habitants"
                        data-map-target="commerceDensityMin"
                        data-action="input->map#onCommerceInput"
-                       class="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
+                       class="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
                 <span>commerces pour 1000 hab.</span>
             </span>
-            <span class="mt-1 block text-xs text-slate-500">Tous commerces confondus (INSEE, BPE)</span>
+            <span class="mt-1 block text-xs text-stone-500">Tous commerces confondus (INSEE, BPE)</span>
         </label>
 
-        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Immobilier</h2>
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Immobilier</h2>
 
-        <label class="mt-4 block text-sm text-slate-300">
+        <label class="mt-4 block text-sm text-stone-700">
             Au plus
             <span class="mt-2 flex items-center gap-2">
                 <input type="number" inputmode="numeric" step="100" min="0" placeholder="∞"
                        aria-label="Prix maximum au mètre carré, en euros"
                        data-map-target="priceMax"
                        data-action="input->map#onPriceInput"
-                       class="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
+                       class="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
                 <span>€/m²</span>
             </span>
-            <span class="mt-1 block text-xs text-slate-500">Appartements et maisons, dernière année (DVF)</span>
+            <span class="mt-1 block text-xs text-stone-500">Appartements et maisons, dernière année (DVF)</span>
         </label>
 
-        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Centrales nucléaires</h2>
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Centrales nucléaires</h2>
 
-        <label class="mt-4 block text-sm text-slate-300">
+        <label class="mt-4 block text-sm text-stone-700">
             Écarter les villes à moins de
             <span class="mt-2 flex items-center gap-2">
                 <input type="number" inputmode="decimal" step="5" min="0" placeholder="0"
                        aria-label="Distance minimale à une centrale nucléaire, en kilomètres"
                        data-map-target="nuclearExclusionKm"
                        data-action="input->map#onNuclearInput"
-                       class="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
+                       class="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
                 <span>km d'une centrale</span>
             </span>
-            <span class="mt-1 block text-xs text-slate-500">Distance mesurée depuis le centre de la ville ; le rayon est tracé sur la carte</span>
+            <span class="mt-1 block text-xs text-stone-500">Distance mesurée depuis le centre de la ville ; le rayon est tracé sur la carte</span>
         </label>
     </aside>
 
     <div class="relative flex-1" data-map-target="mapContainer"></div>
 
-    <aside class="relative hidden w-[26rem] shrink-0 overflow-y-auto border-l border-slate-800 bg-slate-950 p-6" data-map-target="panel">
+    <aside class="relative hidden w-[26rem] shrink-0 overflow-y-auto border-l border-stone-200 bg-stone-50 p-6" data-map-target="panel">
         <button type="button" data-action="map#closePanel" aria-label="Fermer le détail"
-                class="absolute right-4 top-4 text-slate-400 hover:text-slate-100">✕</button>
+                class="absolute right-4 top-4 text-stone-600 hover:text-stone-900">✕</button>
         <turbo-frame id="unite-urbaine-detail" class="block transition-opacity aria-busy:opacity-50" data-map-target="frame"></turbo-frame>
     </aside>
 </div>

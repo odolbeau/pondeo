@@ -1,10 +1,10 @@
     <section class="{{ card }}">
         <h2 class="{{ title }}">{{ stations|length > 1 ? 'Gares les plus proches' : 'Gare la plus proche' }}</h2>
-        <ul class="mt-2 divide-y divide-slate-800/60 text-sm">
+        <ul class="mt-2 divide-y divide-stone-200 text-sm">
             {% for station in stations %}
                 <li class="flex items-baseline justify-between gap-4 py-2">
-                    <span class="text-slate-100">{{ station.name }}</span>
-                    <span class="shrink-0 text-slate-400">
+                    <span class="text-stone-900">{{ station.name }}</span>
+                    <span class="shrink-0 text-stone-600">
                         {% if station.inside %}dans l'agglomération{% else %}~{{ station.minutes }}&nbsp;min · {{ station.kilometers|number_format(1, ',') }}&nbsp;km{% endif %}
                     </span>
                 </li>
