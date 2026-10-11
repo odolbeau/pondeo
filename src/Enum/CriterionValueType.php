@@ -21,8 +21,8 @@ enum CriterionValueType: string
         return 'value_'.$this->value;
     }
 
-    /** Whether summing values of this type across communes is meaningful (e.g. population, not an average temperature). */
-    public function isSummable(): bool
+    /** Whether values of this type can be aggregated across communes (sum, mean, max), unlike a label or a flag. */
+    public function isNumeric(): bool
     {
         return match ($this) {
             self::Integer, self::Decimal => true,
