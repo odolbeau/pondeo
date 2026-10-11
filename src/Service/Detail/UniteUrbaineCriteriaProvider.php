@@ -211,10 +211,11 @@ final readonly class UniteUrbaineCriteriaProvider
                     WHERE cv.value_integer IS NOT NULL OR cv.value_decimal IS NOT NULL
                 ),
                 ranked AS (
-                    SELECT criterion_id, unite_urbaine_id,
-                           RANK() OVER (PARTITION BY criterion_id ORDER BY value DESC) AS rank,
-                           COUNT(*) OVER (PARTITION BY criterion_id) AS total
-                    FROM scoped
+                    SELECT s.criterion_id, s.unite_urbaine_id,
+                           RANK() OVER (PARTITION BY s.criterion_id ORDER BY CASE WHEN c.rank_from_lowest THEN -s.value ELSE s.value END DESC) AS rank,
+                           COUNT(*) OVER (PARTITION BY s.criterion_id) AS total
+                    FROM scoped s
+                    INNER JOIN criterion c ON c.id = s.criterion_id
                 ),
                 medians AS (
                     SELECT criterion_id, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY value) AS median

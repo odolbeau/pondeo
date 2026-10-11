@@ -48,12 +48,24 @@ final class EmploymentImporterTest extends KernelTestCase
         self::assertSame(66.8, $this->decimal('56501', 'taux_activite'));
         self::assertNull($this->decimal('44701', 'taux_chomage'));
 
+        // A high unemployment is a handicap: its rank starts from the lowest rate, the activity rate's from the highest.
+        self::assertTrue($this->rankFromLowest('taux_chomage'));
+        self::assertFalse($this->rankFromLowest('taux_activite'));
+
         // Idempotent: a second run updates in place.
         $importer->import($csvPath);
         self::assertNull($this->integer('56501', 'actifs_15_64'));
         self::assertSame(9.98, $this->decimal('56501', 'taux_chomage'));
 
         unlink($csvPath);
+    }
+
+    private function rankFromLowest(string $criterionCode): bool
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+
+        return (bool) $entityManager->getConnection()->fetchOne('SELECT rank_from_lowest FROM criterion WHERE code = :code', ['code' => $criterionCode]);
     }
 
     private function writeCsv(string $content): string

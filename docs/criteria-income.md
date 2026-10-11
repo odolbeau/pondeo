@@ -17,7 +17,7 @@ chart.
 | Criterion | Meaning |
 |---|---|
 | Niveau de vie médian | Yearly disposable income per consumption unit: half of the inhabitants live on less, in €/year |
-| Taux de pauvreté | Share of inhabitants living under 60 % of the national median standard of living, in % |
+| Taux de pauvreté | Share of inhabitants living under 60 % of the national median standard of living, in %. Ranked from the lowest: the 1st unit is the one with the least poverty |
 
 ## Aggregation
 

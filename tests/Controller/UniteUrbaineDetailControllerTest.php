@@ -133,6 +133,33 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorExists('[data-criteria-filter-target="row"][data-label*="100 000"]');
     }
 
+    public function testCriterionRankedFromTheLowestPutsTheLowestValueFirst(): void
+    {
+        $client = self::createClient();
+
+        $low = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $high = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $poverty = CriterionFactory::createOne(['code' => 'taux_pauvrete', 'label' => 'Taux de pauvreté', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Revenus', 'rankFromLowest' => true]);
+        $income = CriterionFactory::createOne(['code' => 'niveau_vie_median', 'label' => 'Niveau de vie médian', 'unit' => '€/an', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Revenus']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($poverty, $low, '8.5', 2023));
+        $entityManager->persist(new CriterionValue($poverty, $high, '21.7', 2023));
+        $entityManager->persist(new CriterionValue($income, $low, 30_000, 2023));
+        $entityManager->persist(new CriterionValue($income, $high, 20_000, 2023));
+        $entityManager->flush();
+
+        // The lowest poverty rate is first, while the highest income is first.
+        $client->request('GET', '/unites-urbaines/56501');
+        self::assertSelectorTextContains('[data-label="Taux de pauvreté"]', '1er sur 2');
+        self::assertSelectorTextContains('[data-label="Niveau de vie médian"]', '1er sur 2');
+
+        $client->request('GET', '/unites-urbaines/44701');
+        self::assertSelectorTextContains('[data-label="Taux de pauvreté"]', '2e sur 2');
+        self::assertSelectorTextContains('[data-label="Niveau de vie médian"]', '2e sur 2');
+    }
+
     public function testPageListsPoisByCategoryAndCommunes(): void
     {
         $client = self::createClient();

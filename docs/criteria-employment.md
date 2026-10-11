@@ -19,7 +19,7 @@ publishes for zones d'emploi and from Pôle emploi / France Travail registration
 
 | Criterion | Meaning |
 |---|---|
-| Taux de chômage | Unemployed / active population, in % |
+| Taux de chômage | Unemployed / active population, in %. Ranked from the lowest: the 1st unit is the one with the least unemployment |
 | Taux d'activité | Active population / population aged 15-64, in % |
 
 - **Counts:** the active, unemployed and 15-64 populations are summed over

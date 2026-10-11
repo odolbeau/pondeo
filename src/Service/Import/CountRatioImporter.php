@@ -26,8 +26,8 @@ final readonly class CountRatioImporter
     }
 
     /**
-     * @param array<string, string>                                                                                         $counts criterion label indexed by the CSV status it is read from; the criterion code is `count_<status>`
-     * @param list<array{code: string, label: string, numerator: string, denominator: string, unit?: string, factor?: int}> $shares numerator and denominator are CSV statuses, the list order is the display order; a ratio is multiplied by `factor` (100 for a share in %, the default) and shown with `unit` ("%" by default)
+     * @param array<string, string>                                                                                                                $counts criterion label indexed by the CSV status it is read from; the criterion code is `count_<status>`
+     * @param list<array{code: string, label: string, numerator: string, denominator: string, unit?: string, factor?: int, rankFromLowest?: bool}> $shares numerator and denominator are CSV statuses, the list order is the display order; a ratio is multiplied by `factor` (100 for a share in %, the default) and shown with `unit` ("%" by default), and ranked from the lowest value when `rankFromLowest` is set
      *
      * @return int number of (unité urbaine, period) share values upserted
      */
@@ -53,7 +53,7 @@ final readonly class CountRatioImporter
 
         $count = 0;
         foreach ($shares as $position => $share) {
-            $count += $this->deriveShare($share['code'], $share['label'], $group, $codes[$share['numerator']], $codes[$share['denominator']], $position, $share['unit'] ?? '%', $share['factor'] ?? 100);
+            $count += $this->deriveShare($share['code'], $share['label'], $group, $codes[$share['numerator']], $codes[$share['denominator']], $position, $share['unit'] ?? '%', $share['factor'] ?? 100, $share['rankFromLowest'] ?? false);
         }
 
         $this->connection->executeStatement('DELETE FROM criterion_value WHERE criterion_id IN (SELECT id FROM criterion WHERE code IN (:codes))', ['codes' => array_values($codes)], ['codes' => ArrayParameterType::STRING]);
@@ -62,9 +62,9 @@ final readonly class CountRatioImporter
         return $count;
     }
 
-    private function deriveShare(string $code, string $label, string $group, string $numeratorCode, string $denominatorCode, int $position, string $unit, int $factor): int
+    private function deriveShare(string $code, string $label, string $group, string $numeratorCode, string $denominatorCode, int $position, string $unit, int $factor, bool $rankFromLowest): int
     {
-        $share = $this->csvCriterionImporter->findOrCreate($code, $label, CriterionValueType::Decimal, $unit, $group, position: $position);
+        $share = $this->csvCriterionImporter->findOrCreate($code, $label, CriterionValueType::Decimal, $unit, $group, position: $position, rankFromLowest: $rankFromLowest);
 
         $rows = $this->connection->fetchAllAssociative(
             <<<'SQL'

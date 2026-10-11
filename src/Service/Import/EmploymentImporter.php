@@ -26,7 +26,7 @@ final readonly class EmploymentImporter
             self::GROUP,
             ['actifs' => 'Actifs de 15 à 64 ans', 'chomeurs' => 'Chômeurs de 15 à 64 ans', 'population' => 'Population de 15 à 64 ans'],
             [
-                ['code' => 'taux_chomage', 'label' => 'Taux de chômage', 'numerator' => 'chomeurs', 'denominator' => 'actifs'],
+                ['code' => 'taux_chomage', 'label' => 'Taux de chômage', 'numerator' => 'chomeurs', 'denominator' => 'actifs', 'rankFromLowest' => true],
                 ['code' => 'taux_activite', 'label' => 'Taux d\'activité', 'numerator' => 'actifs', 'denominator' => 'population'],
             ],
         );

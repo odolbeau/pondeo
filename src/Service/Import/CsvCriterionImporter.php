@@ -93,16 +93,17 @@ final readonly class CsvCriterionImporter
     /**
      * Also used by importers that derive a criterion rather than read it from a CSV.
      */
-    public function findOrCreate(string $code, string $label, CriterionValueType $valueType, ?string $unit, ?string $groupLabel, bool $comparable = true, ?int $position = null): Criterion
+    public function findOrCreate(string $code, string $label, CriterionValueType $valueType, ?string $unit, ?string $groupLabel, bool $comparable = true, ?int $position = null, bool $rankFromLowest = false): Criterion
     {
         $criterion = $this->criterionRepository->findOneBy(['code' => $code]);
         if (null !== $criterion) {
-            // Keeps a criterion created before its label, group, comparability or position changed in step with its spec.
-            if ($criterion->getLabel() !== $label || $criterion->getGroupLabel() !== $groupLabel || $criterion->isComparable() !== $comparable || $criterion->getPosition() !== $position) {
+            // Keeps a criterion created before its label, group, comparability, position or rank direction changed in step with its spec.
+            if ($criterion->getLabel() !== $label || $criterion->getGroupLabel() !== $groupLabel || $criterion->isComparable() !== $comparable || $criterion->getPosition() !== $position || $criterion->isRankFromLowest() !== $rankFromLowest) {
                 $criterion->setLabel($label);
                 $criterion->setGroupLabel($groupLabel);
                 $criterion->setComparable($comparable);
                 $criterion->setPosition($position);
+                $criterion->setRankFromLowest($rankFromLowest);
                 $this->entityManager->flush();
             }
 
@@ -114,6 +115,7 @@ final readonly class CsvCriterionImporter
         $criterion->setGroupLabel($groupLabel);
         $criterion->setComparable($comparable);
         $criterion->setPosition($position);
+        $criterion->setRankFromLowest($rankFromLowest);
 
         $this->entityManager->persist($criterion);
         $this->entityManager->flush();

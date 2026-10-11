@@ -42,7 +42,10 @@ period for that criterion:
 
 - **Rank:** position by descending value (1 = highest), out of the number of
   units compared. Ties share the same rank. Whether high is "good" is not
-  encoded: the rank only orders.
+  encoded: the rank only orders, so 1st is the highest value, not the best.
+  A criterion where a high value is a handicap can be ranked from the lowest
+  value instead (1 = lowest): this is the case of the poverty rate, so that
+  its 1st is the unit with the least poverty.
 - **Median:** median of the compared values, as a reference point.
 
 Text and boolean criteria have no rank or median.

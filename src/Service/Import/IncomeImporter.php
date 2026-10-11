@@ -20,11 +20,11 @@ final readonly class IncomeImporter
     /**
      * Indexed by the CSV measure.
      *
-     * @var array<string, array{code: string, label: string, type: CriterionValueType, unit: string, position: int}>
+     * @var array<string, array{code: string, label: string, type: CriterionValueType, unit: string, position: int, rankFromLowest: bool}>
      */
     private const array CRITERIA = [
-        'median' => ['code' => 'niveau_vie_median', 'label' => 'Niveau de vie médian', 'type' => CriterionValueType::Integer, 'unit' => '€/an', 'position' => 0],
-        'poverty' => ['code' => 'taux_pauvrete', 'label' => 'Taux de pauvreté', 'type' => CriterionValueType::Decimal, 'unit' => '%', 'position' => 1],
+        'median' => ['code' => 'niveau_vie_median', 'label' => 'Niveau de vie médian', 'type' => CriterionValueType::Integer, 'unit' => '€/an', 'position' => 0, 'rankFromLowest' => false],
+        'poverty' => ['code' => 'taux_pauvrete', 'label' => 'Taux de pauvreté', 'type' => CriterionValueType::Decimal, 'unit' => '%', 'position' => 1, 'rankFromLowest' => true],
     ];
 
     public function __construct(
@@ -61,8 +61,8 @@ final readonly class IncomeImporter
         }
 
         $count = 0;
-        foreach (self::CRITERIA as $measure => ['code' => $code, 'label' => $label, 'type' => $type, 'unit' => $unit, 'position' => $position]) {
-            $criterionId = $this->csvCriterionImporter->findOrCreate($code, $label, $type, $unit, self::GROUP, position: $position)->getId();
+        foreach (self::CRITERIA as $measure => ['code' => $code, 'label' => $label, 'type' => $type, 'unit' => $unit, 'position' => $position, 'rankFromLowest' => $rankFromLowest]) {
+            $criterionId = $this->csvCriterionImporter->findOrCreate($code, $label, $type, $unit, self::GROUP, position: $position, rankFromLowest: $rankFromLowest)->getId();
 
             foreach (array_chunk($batches[$measure] ?? [], CriterionValueWriter::BATCH_SIZE) as $chunk) {
                 $this->criterionValueWriter->upsertBatch($criterionId, $type->valueColumn(), $chunk);
