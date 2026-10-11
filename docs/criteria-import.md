@@ -67,3 +67,7 @@ See [criteria-real-estate.md](criteria-real-estate.md): not additive, so average
 ## Employment
 
 See [criteria-employment.md](criteria-employment.md): counts are summed, rates derived from them; census years only.
+
+## Income
+
+See [criteria-income.md](criteria-income.md): not additive, so averaged per urban unit with the population as weight.
