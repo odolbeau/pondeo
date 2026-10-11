@@ -297,7 +297,7 @@ final readonly class ClimateSourceDownloader
             $data = $this->httpClient->request('GET', '' === $this->apiKey ? self::FREE_URL : self::CUSTOMER_URL, ['query' => $query, 'timeout' => 300])->toArray();
         } catch (ExceptionInterface $e) {
             // The exception message carries the URL, hence the key.
-            throw new \RuntimeException(str_replace($this->apiKey, '***', $e->getMessage()), $e->getCode(), previous: null);
+            throw new \RuntimeException(str_replace($this->apiKey, '***', $e->getMessage()), $e->getCode());
         }
 
         // A single location is answered as an object, several as a list.
