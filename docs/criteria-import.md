@@ -63,3 +63,7 @@ See [criteria-commerces.md](criteria-commerces.md): same shape, with a derived d
 ## Real estate prices
 
 See [criteria-real-estate.md](criteria-real-estate.md): not additive, so averaged per urban unit with the number of sales as weight.
+
+## Employment
+
+See [criteria-employment.md](criteria-employment.md): counts are summed, rates derived from them; census years only.
