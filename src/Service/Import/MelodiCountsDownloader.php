@@ -20,6 +20,9 @@ final readonly class MelodiCountsDownloader
     // occasional, manual refresh well under any reasonable rate limit.
     private const int THROTTLE_MICROSECONDS = 2_100_000;
 
+    // Smaller pages than the API default (10 000): the wider datasets would exhaust PHP's memory decoding one.
+    private const int PAGE_SIZE = 5000;
+
     public function __construct(private HttpClientInterface $httpClient)
     {
     }
@@ -53,7 +56,7 @@ final readonly class MelodiCountsDownloader
         $page = 1;
 
         do {
-            $response = $this->httpClient->request('GET', self::API_URL.$dataset, ['query' => $filters + ['page' => $page]]);
+            $response = $this->httpClient->request('GET', self::API_URL.$dataset, ['query' => $filters + ['maxResult' => self::PAGE_SIZE, 'page' => $page]]);
             /** @var array{observations: list<array{dimensions: array{GEO: string, TIME_PERIOD: string}, measures: array{OBS_VALUE_NIVEAU: array{value?: float}}}>, paging: array{isLast?: bool}} $data */
             $data = $response->toArray();
 

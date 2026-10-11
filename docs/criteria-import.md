@@ -75,3 +75,7 @@ See [criteria-income.md](criteria-income.md): not additive, so averaged per urba
 ## Education
 
 See [criteria-education.md](criteria-education.md): counts are summed, the share derived from them; census years only.
+
+## Housing
+
+See [criteria-housing.md](criteria-housing.md): counts are summed, the shares derived from them; census years only.
