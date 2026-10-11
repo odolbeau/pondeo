@@ -1,0 +1,92 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Service\Import;
+
+use Doctrine\DBAL\Connection;
+use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
+use Symfony\Contracts\HttpClient\HttpClientInterface;
+
+/**
+ * Downloads commune-level counts of an INSEE Mélodi dataset into a long CSV
+ * (`code_insee,year,status,count`), one status per set of query filters. The
+ * years are whatever the dataset holds for those filters. Only the communes of
+ * an unité urbaine are kept, the only ones imported: import the zones first.
+ */
+final readonly class MelodiCountsDownloader
+{
+    private const string API_URL = 'https://api.insee.fr/melodi/data/';
+
+    // The API isn't documented as unlimited: a pause between pages keeps an
+    // occasional, manual refresh well under any reasonable rate limit.
+    private const int THROTTLE_MICROSECONDS = 2_100_000;
+
+    // Smaller pages than the API default (10 000): the wider datasets would exhaust PHP's memory decoding one.
+    private const int PAGE_SIZE = 5000;
+
+    public function __construct(
+        private HttpClientInterface $httpClient,
+        private Connection $connection,
+    ) {
+    }
+
+    /**
+     * @param array<string, array<string, string>> $statuses query filters indexed by the status written in the CSV
+     * @param \Closure(string): void               $progress called with a line per status downloaded
+     *
+     * @throws ExceptionInterface when a request fails
+     */
+    public function download(string $dataset, string $targetPath, array $statuses, \Closure $progress): void
+    {
+        /** @var list<string> $communeCodes */
+        $communeCodes = $this->connection->fetchFirstColumn('SELECT insee_code FROM commune');
+        $communes = array_flip($communeCodes);
+
+        $handle = fopen($targetPath, 'w') ?: throw new \RuntimeException("Cannot write {$targetPath}");
+        fputcsv($handle, ['code_insee', 'year', 'status', 'count'], escape: '\\');
+
+        foreach ($statuses as $status => $filters) {
+            $progress(\sprintf('Downloading %s...', $status));
+            $progress(\sprintf('  %d values', $this->downloadStatus($dataset, $status, $filters, $communes, $handle)));
+        }
+
+        fclose($handle);
+    }
+
+    /**
+     * @param array<string, string> $filters
+     * @param array<string, int>    $communes the codes of the communes to keep, as keys
+     * @param resource              $handle
+     */
+    private function downloadStatus(string $dataset, string $status, array $filters, array $communes, $handle): int
+    {
+        $rowCount = 0;
+        $page = 1;
+
+        do {
+            $response = $this->httpClient->request('GET', self::API_URL.$dataset, ['query' => $filters + ['maxResult' => self::PAGE_SIZE, 'page' => $page]]);
+            /** @var array{observations: list<array{dimensions: array{GEO: string, TIME_PERIOD: string}, measures: array{OBS_VALUE_NIVEAU: array{value?: float}}}>, paging: array{isLast?: bool}} $data */
+            $data = $response->toArray();
+
+            foreach ($data['observations'] as $observation) {
+                $value = $observation['measures']['OBS_VALUE_NIVEAU']['value'] ?? null;
+                if (null === $value || 1 !== preg_match('/^\d{4}-COM-(\w+)$/', $observation['dimensions']['GEO'], $matches) || !isset($communes[$matches[1]])) {
+                    continue; // Not a commune of an unité urbaine, or no figure (statistical secrecy).
+                }
+
+                fputcsv($handle, [$matches[1], $observation['dimensions']['TIME_PERIOD'], $status, round($value, 2)], escape: '\\');
+                ++$rowCount;
+            }
+
+            $isLast = $data['paging']['isLast'] ?? false;
+            ++$page;
+
+            if (!$isLast) {
+                usleep(self::THROTTLE_MICROSECONDS);
+            }
+        } while (!$isLast);
+
+        return $rowCount;
+    }
+}

@@ -53,6 +53,146 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorExists('[data-controller="criterion-chart"][data-criterion-chart-url-value="/unites-urbaines/56501/criteres/population/serie"]');
     }
 
+    public function testPageDrawsTheAgePyramidWhenKnown(): void
+    {
+        $client = self::createClient();
+
+        UniteUrbaineFactory::createOne(['inseeCode' => '56501', 'agePyramid' => ['year' => 2023, 'women' => [30, 20, 10], 'men' => [40, 10, 0]]]);
+        UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('details summary', 'Pyramide des âges');
+        self::assertSelectorExists('svg [data-tooltip*="0-4 ans"][data-tooltip*="40 hommes"][data-tooltip*="30 femmes"]');
+        self::assertSelectorExists('svg [data-tooltip*="10 et + ans"][data-tooltip*="10 femmes"]');
+        // The last bracket is open-ended, and the shares of each sex are given.
+        self::assertSelectorTextContains('svg[role="img"]', '10 et +');
+        self::assertSelectorExists('svg[role="img"][aria-label*="110 habitants"]');
+        self::assertSelectorTextContains('details', 'Hommes · 45,5 %');
+        // The same figures as a table, youngest first, with the total.
+        self::assertSelectorTextContains('table tbody tr:first-child', '0-4 ans');
+        self::assertSelectorTextContains('table tbody tr:first-child', '70');
+        self::assertSelectorTextContains('table tfoot', '110');
+
+        // The full page offers both bracket widths, five years first.
+        self::assertSelectorExists('[data-controller="age-pyramid"] button[aria-pressed="true"][data-age-pyramid-width-param="5"]');
+        self::assertSelectorExists('[data-controller="age-pyramid"] button[aria-pressed="false"][data-age-pyramid-width-param="10"]');
+        self::assertSelectorExists('[data-age-pyramid-target="panel"][data-width="5"]:not([hidden])');
+        self::assertSelectorExists('[data-age-pyramid-target="panel"][data-width="10"][hidden]');
+        self::assertSelectorExists('svg [data-tooltip*="0-9 ans"][data-tooltip*="50 hommes"]');
+
+        $client->request('GET', '/unites-urbaines/44701');
+        self::assertSelectorNotExists('[role="img"]');
+    }
+
+    public function testMapPanelDrawsTheAgePyramidInTenYearBracketsOnly(): void
+    {
+        $client = self::createClient();
+
+        UniteUrbaineFactory::createOne(['inseeCode' => '56501', 'agePyramid' => ['year' => 2023, 'women' => [30, 20, 10], 'men' => [40, 10, 0]]]);
+
+        $client->request('GET', '/unites-urbaines/56501', server: ['HTTP_TURBO_FRAME' => 'unite-urbaine-detail']);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('svg [data-tooltip*="0-9 ans"][data-tooltip*="50 hommes"]');
+        self::assertSelectorExists('svg [data-tooltip*="10 et + ans"][data-tooltip*="10 femmes"]');
+        self::assertSelectorNotExists('svg [data-tooltip*="0-4 ans"]');
+        self::assertSelectorNotExists('[data-age-pyramid-width-param]');
+    }
+
+    public function testIncomeBracketsAreDrawnAsOneChartAgainstTheMedian(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $other = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $mean = CriterionFactory::createOne(['code' => 'revenu_fiscal_moyen', 'label' => 'Revenu fiscal moyen par foyer', 'unit' => '€', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Revenus fiscaux', 'position' => 0]);
+        $small = CriterionFactory::createOne(['code' => 'part_foyers_moins_15000', 'label' => 'Foyers à moins de 15 000 €', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Revenus fiscaux', 'position' => 1]);
+        $big = CriterionFactory::createOne(['code' => 'part_foyers_plus_100000', 'label' => 'Foyers à plus de 100 000 €', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Revenus fiscaux', 'position' => 2]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($mean, $vannes, '32000', 2024));
+        $entityManager->persist(new CriterionValue($small, $vannes, '24', 2024));
+        $entityManager->persist(new CriterionValue($small, $other, '30', 2024));
+        $entityManager->persist(new CriterionValue($big, $vannes, '3', 2024));
+        $entityManager->persist(new CriterionValue($big, $other, '1', 2024));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        // The mean keeps its row; the brackets are one chart, not one row each.
+        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="Revenu fiscal moyen par foyer"]');
+        self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="Foyers à moins de 15 000 €"]');
+        self::assertSelectorExists('svg[role="img"][aria-label^="Foyers fiscaux par tranche de revenu fiscal"]');
+        self::assertSelectorExists('svg [data-tooltip*="Foyers à moins de 15 000 €"][data-tooltip*="Cette unité urbaine : 24 % (médiane : 27 %)"]');
+        // The tooltip is ours, instant, not the browser's delayed one.
+        self::assertSelectorExists('[data-controller="chart-tooltip"] [data-chart-tooltip-target="tooltip"][hidden]');
+        self::assertSelectorNotExists('svg title');
+        self::assertAnySelectorTextContains('svg text', '< 15 k€');
+        self::assertAnySelectorTextContains('svg text', '> 100 k€');
+        // The chart is found by the label of its brackets.
+        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label*="100 000"]');
+    }
+
+    public function testCriterionRankedFromTheLowestPutsTheLowestValueFirst(): void
+    {
+        $client = self::createClient();
+
+        $low = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $high = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $poverty = CriterionFactory::createOne(['code' => 'taux_pauvrete', 'label' => 'Taux de pauvreté', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Revenus', 'rankFromLowest' => true]);
+        $income = CriterionFactory::createOne(['code' => 'niveau_vie_median', 'label' => 'Niveau de vie médian', 'unit' => '€/an', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Revenus']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($poverty, $low, '8.5', 2023));
+        $entityManager->persist(new CriterionValue($poverty, $high, '21.7', 2023));
+        $entityManager->persist(new CriterionValue($income, $low, 30_000, 2023));
+        $entityManager->persist(new CriterionValue($income, $high, 20_000, 2023));
+        $entityManager->flush();
+
+        // The lowest poverty rate is first, while the highest income is first.
+        $client->request('GET', '/unites-urbaines/56501');
+        self::assertSelectorTextContains('[data-label="Taux de pauvreté"]', '1er sur 2');
+        self::assertSelectorTextContains('[data-label="Niveau de vie médian"]', '1er sur 2');
+
+        $client->request('GET', '/unites-urbaines/44701');
+        self::assertSelectorTextContains('[data-label="Taux de pauvreté"]', '2e sur 2');
+        self::assertSelectorTextContains('[data-label="Niveau de vie médian"]', '2e sur 2');
+    }
+
+    public function testSocioProfessionalCategoriesAreDrawnAsRows(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $other = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $cadres = CriterionFactory::createOne(['code' => 'part_cadres', 'label' => 'Cadres et professions intellectuelles supérieures', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Catégories socioprofessionnelles', 'position' => 2]);
+        $retraites = CriterionFactory::createOne(['code' => 'part_retraites', 'label' => 'Retraités', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Catégories socioprofessionnelles', 'position' => 6]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($cadres, $vannes, '12.5', 2023));
+        $entityManager->persist(new CriterionValue($cadres, $other, '8', 2023));
+        $entityManager->persist(new CriterionValue($retraites, $vannes, '31', 2023));
+        $entityManager->persist(new CriterionValue($retraites, $other, '25', 2023));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="Retraités"]');
+        self::assertSelectorExists('svg[role="img"][aria-label^="Population de 15 ans ou plus par catégorie socioprofessionnelle"]');
+        self::assertSelectorExists('svg [data-tooltip*="Retraités"][data-tooltip*="Cette unité urbaine : 31 % (médiane : 28 %)"]');
+        // A row per category, labelled on the left of its bar.
+        self::assertAnySelectorTextContains('svg text', 'Cadres');
+        self::assertAnySelectorTextContains('svg text', 'Retraités');
+        self::assertSelectorExists('svg rect[x="146"]');
+    }
+
     public function testPageListsTheClosestStationsWithTheirCarRoute(): void
     {
         $client = self::createClient();
@@ -118,6 +258,24 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('a[data-turbo-frame="_top"][href="/unites-urbaines/56501"]');
+    }
+
+    public function testAgeSharesAreLeftOutOfTheMapPanelOnly(): void
+    {
+        $client = self::createClient();
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $criterion = CriterionFactory::createOne(['code' => 'part_80_ans_et_plus', 'label' => '80 ans ou plus', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Âge']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($criterion, $vannes, '8.16', 2023));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/56501');
+        self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="80 ans ou plus"]');
+
+        $client->request('GET', '/unites-urbaines/56501', server: ['HTTP_TURBO_FRAME' => 'unite-urbaine-detail']);
+        self::assertSelectorNotExists('[data-criteria-filter-target="row"][data-label="80 ans ou plus"]');
     }
 
     public function testUnknownUniteUrbaineReturns404(): void

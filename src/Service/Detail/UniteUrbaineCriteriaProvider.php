@@ -20,10 +20,42 @@ final readonly class UniteUrbaineCriteriaProvider
     public const string DEFAULT_GROUP_LABEL = 'Autres';
 
     /** Groups listed first, in this order; the others follow alphabetically, then the default one. */
-    private const array GROUP_ORDER = ['Démographie', 'Immobilier', 'Commerces'];
+    private const array GROUP_ORDER = ['Démographie', 'Âge', 'Immobilier', 'Commerces', 'Emploi', 'Revenus', 'Revenus fiscaux', 'Diplômes', 'Logement', 'Catégories socioprofessionnelles'];
 
     /** Code suffix of a criterion derived from the count `<code>`: the detail page folds that count into its title. */
     public const string DENSITY_SUFFIX = '_pour_1000_hab';
+
+    /**
+     * Criteria that are the brackets of one distribution: drawn as a single chart in their group rather than one
+     * row each. Indexed by group, then by criterion code, in display order, with its short label in the chart.
+     */
+    private const array DISTRIBUTIONS = [
+        'Revenus fiscaux' => [
+            'title' => 'Foyers fiscaux par tranche de revenu fiscal',
+            'layout' => BracketLayout::Columns,
+            'brackets' => [
+                'part_foyers_moins_15000' => '< 15 k€',
+                'part_foyers_15000_30000' => '15-30 k€',
+                'part_foyers_30000_50000' => '30-50 k€',
+                'part_foyers_50000_100000' => '50-100 k€',
+                'part_foyers_plus_100000' => '> 100 k€',
+            ],
+        ],
+        'Catégories socioprofessionnelles' => [
+            'title' => 'Population de 15 ans ou plus par catégorie socioprofessionnelle',
+            'layout' => BracketLayout::Rows,
+            'brackets' => [
+                'part_agriculteurs' => 'Agriculteurs',
+                'part_artisans_commercants' => 'Artisans, commerçants',
+                'part_cadres' => 'Cadres',
+                'part_professions_intermediaires' => 'Prof. intermédiaires',
+                'part_employes' => 'Employés',
+                'part_ouvriers' => 'Ouvriers',
+                'part_retraites' => 'Retraités',
+                'part_sans_activite' => 'Sans activité pro.',
+            ],
+        ],
+    ];
 
     public function __construct(private Connection $connection)
     {
@@ -83,10 +115,37 @@ final readonly class UniteUrbaineCriteriaProvider
         $groups = [];
         foreach ($criteriaByGroup as $label => $criteria) {
             usort($criteria, static fn (CriterionDetail $a, CriterionDetail $b): int => [$a->position ?? \PHP_INT_MAX, $a->label] <=> [$b->position ?? \PHP_INT_MAX, $b->label]);
-            $groups[] = new CriterionGroupDetail($label, $criteria);
+            $groups[] = $this->toGroup($label, $criteria);
         }
 
         return $groups;
+    }
+
+    /**
+     * @param list<CriterionDetail> $criteria
+     */
+    private function toGroup(string $label, array $criteria): CriterionGroupDetail
+    {
+        $distribution = self::DISTRIBUTIONS[$label] ?? null;
+        if (null === $distribution) {
+            return new CriterionGroupDetail($label, $criteria);
+        }
+
+        $byCode = [];
+        foreach ($criteria as $criterion) {
+            $byCode[$criterion->code] = $criterion;
+        }
+
+        $brackets = [];
+        foreach ($distribution['brackets'] as $code => $shortLabel) {
+            if (isset($byCode[$code])) {
+                $brackets[] = ['shortLabel' => $shortLabel, 'criterion' => $byCode[$code]];
+            }
+        }
+
+        $rows = array_values(array_filter($criteria, static fn (CriterionDetail $criterion): bool => !isset($distribution['brackets'][$criterion->code])));
+
+        return new CriterionGroupDetail($label, $rows, BracketDistribution::fromCriteria($distribution['title'], $brackets, $distribution['layout']));
     }
 
     private static function groupRank(string $label): int
@@ -167,10 +226,11 @@ final readonly class UniteUrbaineCriteriaProvider
                     WHERE cv.value_integer IS NOT NULL OR cv.value_decimal IS NOT NULL
                 ),
                 ranked AS (
-                    SELECT criterion_id, unite_urbaine_id,
-                           RANK() OVER (PARTITION BY criterion_id ORDER BY value DESC) AS rank,
-                           COUNT(*) OVER (PARTITION BY criterion_id) AS total
-                    FROM scoped
+                    SELECT s.criterion_id, s.unite_urbaine_id,
+                           RANK() OVER (PARTITION BY s.criterion_id ORDER BY CASE WHEN c.rank_from_lowest THEN -s.value ELSE s.value END DESC) AS rank,
+                           COUNT(*) OVER (PARTITION BY s.criterion_id) AS total
+                    FROM scoped s
+                    INNER JOIN criterion c ON c.id = s.criterion_id
                 ),
                 medians AS (
                     SELECT criterion_id, PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY value) AS median

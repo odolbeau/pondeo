@@ -23,8 +23,27 @@ a full page.
   listing its criteria with the latest value, its period and, for numeric
   criteria, a chart of the series (see [Criterion chart](#criterion-chart)). A search
   field filters criteria by label (accent- and case-insensitive).
+  The "Âge" group (share of each age bracket, see [criteria-age-structure.md](criteria-age-structure.md))
+  is left out of the narrow map panel, where it would only repeat the pyramid:
+  the full page has it.
+  A group whose criteria are the brackets of one distribution draws them as a
+  single chart against the median of all urban units, instead of one row per
+  bracket: columns for the tax households by bracket of income (see
+  [criteria-tax-income.md](criteria-tax-income.md)), rows for the
+  socio-professional categories, whose labels are longer (see
+  [criteria-pcs.md](criteria-pcs.md)).
+- **Population pyramid**, by sex and five-year age bracket (see [population-pyramid.md](population-pyramid.md)).
 - **Points of interest**, by category: the count, plus a sample of each.
 - **Communes** making up the unit.
+
+## Chart tooltips
+
+The charts drawn as SVG (the pyramid, the income brackets, the
+socio-professional categories) show their figures in a tooltip that follows the
+pointer and appears at once, over the whole column, row or age bracket and not
+only over its bar, rather than in the browser's own tooltip, which only shows
+after a delay. Each chart says under it that it can be hovered; a tap shows the
+tooltip on a touch screen. The pyramid also has its numbers in a table.
 
 ## Rank and median
 
@@ -34,7 +53,10 @@ period for that criterion:
 
 - **Rank:** position by descending value (1 = highest), out of the number of
   units compared. Ties share the same rank. Whether high is "good" is not
-  encoded: the rank only orders.
+  encoded: the rank only orders, so 1st is the highest value, not the best.
+  A criterion where a high value is a handicap can be ranked from the lowest
+  value instead (1 = lowest): this is the case of the poverty rate, so that
+  its 1st is the unit with the least poverty.
 - **Median:** median of the compared values, as a reference point.
 
 Text and boolean criteria have no rank or median.

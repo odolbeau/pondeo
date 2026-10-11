@@ -53,6 +53,15 @@ makes browsers trust (it asks for sudo once). Without it the certificate is
 self-signed and browsers show a warning. Install mkcert later, then re-run
 `bin/doctor`: it regenerates the certificate.
 
+## Front-end dev server
+
+The `node` container runs the Vite dev server, which watches the project:
+a changed template, stylesheet or Stimulus controller is picked up within a
+second, with no restart. Only `vendor/`, `var/` and `.git/` of the project are
+left out of the watch: the patterns are anchored on the project's own path,
+because a bare `**/var/**` would match the container's `/var/www` and ignore
+every file.
+
 ## Archiving a worktree
 
 [Orca](../orca.yaml) runs `make destroy` when a worktree is archived, which

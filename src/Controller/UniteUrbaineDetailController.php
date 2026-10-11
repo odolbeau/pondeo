@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Entity\UniteUrbaine;
+use App\Service\Detail\AgePyramid;
 use App\Service\Detail\CriterionDetail;
 use App\Service\Detail\CriterionGroupDetail;
 use App\Service\Detail\UniteUrbaineCriteriaProvider;
 use App\Service\Detail\UniteUrbainePoiProvider;
 use App\Service\Detail\UniteUrbaineStationAccessProvider;
+use App\Service\Import\AgeStructureImporter;
 use Symfony\Bridge\Doctrine\Attribute\MapEntity;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Request;
@@ -36,15 +38,35 @@ final class UniteUrbaineDetailController extends AbstractController
         UniteUrbaine $uniteUrbaine,
     ): Response {
         $groups = $this->criteriaProvider->findGroups($uniteUrbaine);
+        $inFrame = $request->headers->has('Turbo-Frame');
 
         return $this->render('unite_urbaine/detail.html.twig', [
             'uniteUrbaine' => $uniteUrbaine,
-            'groups' => $groups,
+            // The age shares only repeat the pyramid in the narrow map panel; the full page keeps them, with their rank and evolution.
+            'groups' => $inFrame ? array_values(array_filter($groups, static fn (CriterionGroupDetail $group): bool => AgeStructureImporter::GROUP !== $group->label)) : $groups,
             'poiCategories' => $this->poiProvider->findCategories($uniteUrbaine),
             'stations' => $this->stationAccessProvider->find($uniteUrbaine),
             'population' => $this->findPopulation($groups),
-            'inFrame' => $request->headers->has('Turbo-Frame'),
+            'agePyramids' => $this->findAgePyramids($uniteUrbaine, $inFrame),
+            'inFrame' => $inFrame,
         ]);
+    }
+
+    /**
+     * The pyramid by bracket width: the full page offers both, the narrow map panel only the coarser one.
+     *
+     * @return array<int, AgePyramid>
+     */
+    private function findAgePyramids(UniteUrbaine $uniteUrbaine, bool $inFrame): array
+    {
+        $stored = $uniteUrbaine->getAgePyramid();
+        if (null === $stored) {
+            return [];
+        }
+
+        $widths = $inFrame ? [10] : [5, 10];
+
+        return array_combine($widths, array_map(static fn (int $width): AgePyramid => AgePyramid::fromStored($stored, $width), $widths));
     }
 
     /**

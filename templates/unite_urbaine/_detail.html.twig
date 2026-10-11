@@ -83,9 +83,31 @@
                 </div>
             {% endfor %}
         </dl>
+        {% if group.distribution %}
+            {{ include('unite_urbaine/_bracket_distribution.html.twig', {distribution: group.distribution}) }}
+        {% endif %}
     </details>
 {% endfor %}
 </div>
+
+{% if agePyramids %}
+    <details open class="mt-8 border-t border-slate-800 pt-4" data-controller="age-pyramid">
+        <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">Pyramide des âges <span class="ml-1 text-xs font-normal normal-case tracking-normal text-slate-500">({{ (agePyramids|first).year }})</span></summary>
+        {% if agePyramids|length > 1 %}
+            <div class="mt-3 flex items-center justify-end gap-1 text-xs" role="group" aria-label="Largeur des tranches d'âge">
+                {% for width, pyramid in agePyramids %}
+                    <button type="button" aria-pressed="{{ loop.first ? 'true' : 'false' }}" data-age-pyramid-target="button" data-age-pyramid-width-param="{{ width }}" data-action="age-pyramid#show"
+                            class="rounded border border-slate-700 px-2 py-1 text-slate-300 hover:border-emerald-400 aria-pressed:border-emerald-400 aria-pressed:text-emerald-400">{{ width }} ans</button>
+                {% endfor %}
+            </div>
+        {% endif %}
+        {% for width, pyramid in agePyramids %}
+            <div data-age-pyramid-target="panel" data-width="{{ width }}"{% if not loop.first %} hidden{% endif %}>
+                {{ include('unite_urbaine/_age_pyramid.html.twig', {pyramid: pyramid}) }}
+            </div>
+        {% endfor %}
+    </details>
+{% endif %}
 
 {% if stations %}
     <details open class="mt-8 border-t border-slate-800 pt-4">

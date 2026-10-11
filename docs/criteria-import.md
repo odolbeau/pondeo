@@ -63,3 +63,31 @@ See [criteria-commerces.md](criteria-commerces.md): same shape, with a derived d
 ## Real estate prices
 
 See [criteria-real-estate.md](criteria-real-estate.md): not additive, so averaged per urban unit with the number of sales as weight.
+
+## Employment
+
+See [criteria-employment.md](criteria-employment.md): counts are summed, rates derived from them; census years only.
+
+## Income
+
+See [criteria-income.md](criteria-income.md): not additive, so taken from INSEE's own figures for each urban unit.
+
+## Education
+
+See [criteria-education.md](criteria-education.md): counts are summed, the share derived from them; census years only.
+
+## Housing
+
+See [criteria-housing.md](criteria-housing.md): counts are summed, the shares derived from them; census years only.
+
+## Age structure
+
+See [criteria-age-structure.md](criteria-age-structure.md): counts are summed, the shares derived from them; census years only.
+
+## Socio-professional categories
+
+See [criteria-pcs.md](criteria-pcs.md): counts are summed, the shares derived from them; census years only.
+
+## Tax income
+
+See [criteria-tax-income.md](criteria-tax-income.md): counts are summed, the figures derived from them; a single income year.

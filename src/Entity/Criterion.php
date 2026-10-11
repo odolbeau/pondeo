@@ -48,6 +48,14 @@ class Criterion
     #[ORM\Column(options: ['default' => true])]
     private bool $comparable = true;
 
+    /**
+     * Whether the rank starts from the lowest value (1 = lowest) instead of the
+     * highest: for a criterion where a high value is a handicap, such as the
+     * poverty rate, so that the best unité urbaine comes first.
+     */
+    #[ORM\Column(options: ['default' => false])]
+    private bool $rankFromLowest = false;
+
     /** Order within its group on the detail page; criteria without one come after, alphabetically. */
     #[ORM\Column(nullable: true)]
     private ?int $position = null;
@@ -133,6 +141,18 @@ class Criterion
     public function isComparable(): bool
     {
         return $this->comparable;
+    }
+
+    public function isRankFromLowest(): bool
+    {
+        return $this->rankFromLowest;
+    }
+
+    public function setRankFromLowest(bool $rankFromLowest): static
+    {
+        $this->rankFromLowest = $rankFromLowest;
+
+        return $this;
     }
 
     public function setComparable(bool $comparable): static
