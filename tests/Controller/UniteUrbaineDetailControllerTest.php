@@ -165,6 +165,27 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('[data-label="Niveau de vie médian"]', '2e sur 2');
     }
 
+    public function testClimateProjectionsAreListedUnderTheirOwnGroup(): void
+    {
+        $client = self::createClient();
+
+        $marseille = UniteUrbaineFactory::createOne(['inseeCode' => '13701']);
+        $brest = UniteUrbaineFactory::createOne(['inseeCode' => '29201']);
+        $hotDays = CriterionFactory::createOne(['code' => 'jours_plus_35_2050', 'label' => 'Jours > 35 °C vers 2050', 'unit' => 'j/an', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Climat 2050', 'rankFromLowest' => true]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($hotDays, $marseille, '18.3', 2050));
+        $entityManager->persist(new CriterionValue($hotDays, $brest, '0.4', 2050));
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/13701');
+
+        self::assertResponseIsSuccessful();
+        self::assertAnySelectorTextContains('section h2', 'Climat 2050');
+        self::assertSelectorTextContains('[data-label="Jours > 35 °C vers 2050"]', '2e sur 2');
+    }
+
     public function testSocioProfessionalCategoriesAreDrawnAsRows(): void
     {
         $client = self::createClient();
