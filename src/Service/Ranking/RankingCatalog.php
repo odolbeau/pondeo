@@ -34,6 +34,17 @@ final class RankingCatalog
             new Ranking('part_logements_vacants', 'Immobilier', 'Le moins de logements vacants', 'Un marché tendu ou une ville qui se vide ?'),
             new Ranking('commerces_total_pour_1000_hab', 'Qualité de vie', 'Les mieux achalandées', 'Le nombre de commerces pour 1 000 habitants.'),
             new Ranking('part_diplomes_superieur', 'Qualité de vie', 'Les plus diplômées', 'La part des habitants diplômés du supérieur.'),
+            new Ranking('ensoleillement', 'Climat', 'Les plus ensoleillées', 'Les heures de soleil par an, en moyenne sur 1991-2020.'),
+            new Ranking('nuits_tropicales', 'Climat', 'Les nuits les plus fraîches', 'Le moins de nuits à plus de 20 °C, celles où l\'on ne récupère plus de la chaleur.'),
+            new Ranking('deficit_hydrique_estival', 'Climat', 'Les moins sujettes à la sécheresse', 'L\'écart entre ce que l\'été évapore et ce qu\'il pleut.'),
+            new Ranking('jours_chaleur_humide', 'Climat', 'Le moins de chaleur étouffante', 'Les jours où l\'air chaud et moite empêche de se rafraîchir.'),
+            new Ranking('jours_plus_35_2050', 'Climat en 2050', 'Le moins de canicules en 2050', 'Les jours à plus de 35 °C par an, selon les projections 2041-2050.'),
+            new Ranking('nuits_tropicales_2050', 'Climat en 2050', 'Les nuits les plus fraîches en 2050', 'Les nuits à plus de 20 °C par an, selon les projections 2041-2050.'),
+            new Ranking('vagues_chaleur_2050', 'Climat en 2050', 'Le moins de vagues de chaleur en 2050', 'Les épisodes d\'au moins trois jours à plus de 30 °C, selon les projections.'),
+            new Ranking('hausse_temperature_2050', 'Climat en 2050', 'Le moins de réchauffement d\'ici 2050', 'La hausse de la température moyenne par rapport à 1991-2020.'),
+            new Ranking('arretes_catnat', 'Risques', 'Le moins de catastrophes naturelles', 'Les arrêtés de catastrophe naturelle des vingt dernières années, par commune.'),
+            new Ranking('part_zone_inondable', 'Risques', 'Le moins exposées aux inondations', "La part des habitants dans une commune soumise au risque d'inondation."),
+            new Ranking('part_feux_foret', 'Risques', 'Le moins exposées aux feux de forêt', 'La part des habitants dans une commune soumise au risque de feu de forêt.'),
         ];
 
         foreach ($rankings as $ranking) {
