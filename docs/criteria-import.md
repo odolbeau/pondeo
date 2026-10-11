@@ -101,3 +101,7 @@ See [criteria-pcs.md](criteria-pcs.md): counts are summed, the shares derived fr
 ## Tax income
 
 See [criteria-tax-income.md](criteria-tax-income.md): counts are summed, the figures derived from them; a single income year.
+
+## Risks
+
+See [criteria-risks.md](criteria-risks.md): flags and counts per commune, averaged with population as weight (the seismic zone: highest).
