@@ -12,6 +12,7 @@ final readonly class Ranking
         public string $theme,
         public string $title,
         public string $tagline,
+        public RankingNote $note,
     ) {
     }
 }

@@ -25,7 +25,14 @@ Each ranking starts from the best end as defined by the criterion's
 for the criterion across all unités urbaines, never at each unit's own latest.
 Ties share a rank. Pages hold 50 rows (`?page=`).
 
+## Explanatory note
+
+Each ranking page opens with a short text in plain language: what is measured
+(with an example when the criterion is not obvious), how to read it and its
+limits, followed by the source in small print. Self-evident criteria such as
+the population get one sentence. The text lives with the ranking in the catalog.
+
 ## Adding a ranking
 
-Add the criterion code to the catalog with its theme, title and tagline: the
+Add the criterion code to the catalog with its theme, title, tagline and note: the
 label, unit and direction come from the criterion itself.

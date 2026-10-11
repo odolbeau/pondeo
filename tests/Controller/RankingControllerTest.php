@@ -29,6 +29,7 @@ final class RankingControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('h1', 'Les plus peuplées');
+        self::assertSelectorTextContains('main section', 'Source : INSEE');
         self::assertSelectorTextContains('tbody tr:first-child', 'Grande');
         self::assertSelectorTextContains('tbody tr:last-child', 'Petite');
     }
