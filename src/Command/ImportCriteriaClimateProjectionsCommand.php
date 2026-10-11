@@ -19,9 +19,9 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         Idempotent — safe to re-run, and works offline. Import the zones first.
 
         With <comment>--download</comment>, the vendored file is first recomputed from the Open-Meteo Climate API.
-        The API's free quota is far smaller than the run needs, so it is spread over several days: the cells
-        done so far are kept in var/ and the command resumes where it stopped. The file is only written, and
-        imported, once every cell is done.
+        Every answer is archived outside the repository (OPENMETEO_ARCHIVE_DIR), so the command resumes where it
+        stopped and the file can be derived again offline. It is only written, and imported, once every cell is
+        archived. Set OPENMETEO_API_KEY to use the paid API; the free quota is far smaller than the run needs.
         HELP,
 )]
 final class ImportCriteriaClimateProjectionsCommand extends Command
@@ -49,8 +49,9 @@ final class ImportCriteriaClimateProjectionsCommand extends Command
                 return Command::FAILURE;
             }
 
+            $io->writeln(\sprintf('About %d API calls spent in this run.', $result['calls']));
             if (!$result['written']) {
-                $io->warning(\sprintf('Stopped at %d/%d cells: run again once the quota is renewed.', $result['done'], $result['total']));
+                $io->warning(\sprintf('Stopped at %d/%d cells: %s', $result['done'], $result['total'], $result['message'] ?? 'run again to resume.'));
 
                 return Command::FAILURE;
             }

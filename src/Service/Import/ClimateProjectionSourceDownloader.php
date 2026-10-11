@@ -6,56 +6,74 @@ namespace App\Service\Import;
 
 use Doctrine\DBAL\Connection;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
+use Symfony\Component\HttpClient\HttpClient;
 use Symfony\Component\HttpClient\RetryableHttpClient;
 use Symfony\Contracts\HttpClient\Exception\HttpExceptionInterface;
+use Symfony\Contracts\HttpClient\Exception\TransportExceptionInterface;
 use Symfony\Contracts\HttpClient\HttpClientInterface;
 
 /**
  * Computes `resources/geo/climat-projections.csv` from the Open-Meteo Climate
  * API (see `docs/criteria-climate-projections.md`): one value per unité
  * urbaine, read at its centroid snapped to a 0.1° grid, the units sharing a
- * cell sharing its figures. The API is metered per variable and day, so the
- * run is resumable: each cell is kept in a work file as soon as it is
- * computed, and the CSV is only written once every cell is done.
+ * cell sharing its figures.
+ *
+ * Two steps. Every API answer is first archived as received (per cell, see
+ * {@see ClimateProjectionArchive}), which makes the run resumable. The CSV is
+ * then derived from the archive alone, offline, once every cell is there.
  */
 final readonly class ClimateProjectionSourceDownloader
 {
     public const string FILE = 'climat-projections.csv';
-
-    public const string WORK_FILE = 'climate-projections-cells.csv';
 
     public const int YEAR = 2050;
 
     // EC_Earth3P_HR is left out: it has no data for 2050.
     public const array MODELS = ['CMCC_CM2_VHR4', 'MPI_ESM1_2_XR', 'MRI_AGCM3_2_S'];
 
-    private const string API_URL = 'https://climate-api.open-meteo.com/v1/climate';
-
     // The API's last day is 2050-12-31.
-    private const array BASELINE = ['1991-01-01', '2020-12-31'];
+    public const array BASELINE = ['1991-01-01', '2020-12-31'];
 
-    private const array WINDOW = ['2041-01-01', '2050-12-31'];
+    public const array WINDOW = ['2041-01-01', '2050-12-31'];
 
-    private const int CELLS_PER_REQUEST = 5;
+    // The reference period only needs the mean temperature and the rain.
+    public const array BASELINE_VARIABLES = ['temperature_2m_mean', 'precipitation_sum'];
 
-    private const int THROTTLE_MICROSECONDS = 1_000_000;
+    public const array WINDOW_VARIABLES = ['temperature_2m_max', 'temperature_2m_min', 'temperature_2m_mean', 'precipitation_sum'];
+
+    // Stops the download when it is projected to cost more calls than this.
+    public const int CALL_BUDGET = 1_800_000;
+
+    // The budget is checked once this many cells have been fetched in a run.
+    private const int CELLS_BEFORE_BUDGET_CHECK = 20;
+
+    // Measured on the free API: one call is about this many variable-days (a variable, a model, a day).
+    private const int VARIABLE_DAYS_PER_CALL = 130;
+
+    private const int CELLS_PER_REQUEST = 10;
+
+    private const string FREE_URL = 'https://climate-api.open-meteo.com/v1/climate';
+
+    private const string PAID_URL = 'https://customer-climate-api.open-meteo.com/v1/climate';
 
     private HttpClientInterface $httpClient;
 
     public function __construct(
-        HttpClientInterface $httpClient,
         private Connection $connection,
         private ClimateProjectionDeriver $deriver,
-        #[Autowire('%kernel.project_dir%/var')]
-        private string $workDir,
+        private ClimateProjectionArchive $archive,
+        #[Autowire(env: 'OPENMETEO_API_KEY')]
+        private string $apiKey,
     ) {
-        $this->httpClient = new RetryableHttpClient($httpClient, new OpenMeteoRetryStrategy(), 5);
+        // Not the framework's client: its logger would write the API key, a query parameter, to the logs.
+        // Without a key, the free API's per-minute quota is waited out; with one, there is none.
+        $this->httpClient = new RetryableHttpClient(HttpClient::create(), new OpenMeteoRetryStrategy('' === $apiKey ? 61_000 : 5_000), 5);
     }
 
     /**
      * @param \Closure(string): void $progress
      *
-     * @return array{done: int, total: int, written: bool} the CSV is only written when every cell is done
+     * @return array{done: int, total: int, written: bool, calls: int, message: string|null} calls is the estimated cost of this run; the CSV is only written when every cell is archived
      */
     public function download(string $targetDir, \Closure $progress): array
     {
@@ -78,57 +96,81 @@ final readonly class ClimateProjectionSourceDownloader
         $cells = array_values(array_unique($cellOfUnit));
         sort($cells);
 
-        $results = $this->loadWorkFile();
-        $todo = array_values(array_diff($cells, array_keys($results)));
-        $progress(\sprintf('%d cells for %d units, %d already done', \count($cells), \count($units), \count($cells) - \count($todo)));
+        $missing = array_values(array_filter($cells, fn (string $cell): bool => !$this->isArchived($cell)));
+        $progress(\sprintf('%d cells for %d units, %d already archived in %s', \count($cells), \count($units), \count($cells) - \count($missing), $this->archive->getDir()));
 
-        foreach (array_chunk($todo, self::CELLS_PER_REQUEST) as $chunk) {
+        $calls = 0;
+        $fetched = 0;
+        foreach (array_chunk($missing, self::CELLS_PER_REQUEST) as $chunk) {
             try {
-                $derived = $this->deriveCells($chunk);
+                $calls += $this->archiveCells($chunk);
             } catch (HttpExceptionInterface $e) {
-                if (429 !== $e->getResponse()->getStatusCode()) {
-                    throw $e;
-                }
+                $body = $e->getResponse()->getContent(false);
+                $stopped = 429 === $e->getResponse()->getStatusCode();
 
-                $progress('Quota reached: '.$e->getResponse()->getContent(false));
-
-                return ['done' => \count($cells) - \count($todo), 'total' => \count($cells), 'written' => false];
+                return $this->result($cells, $calls, false, \sprintf('Open-Meteo answered HTTP %d%s: %s', $e->getResponse()->getStatusCode(), $stopped ? ' (quota reached)' : '', $body));
+            } catch (TransportExceptionInterface $e) {
+                return $this->result($cells, $calls, false, 'Transport error: '.str_replace($this->apiKey, '***', $e->getMessage()));
             }
 
-            $this->appendToWorkFile($derived);
-            $results += $derived;
-            $todo = array_values(array_diff($todo, $chunk));
-            $progress(\sprintf('  %d/%d cells', \count($cells) - \count($todo), \count($cells)));
+            $fetched += \count($chunk);
+            $progress(\sprintf('  %d/%d cells, about %d calls so far', \count($cells) - \count($missing) + $fetched, \count($cells), $calls));
 
-            usleep(self::THROTTLE_MICROSECONDS);
+            $projected = (int) round($calls / $fetched * \count($missing));
+            if ($fetched >= self::CELLS_BEFORE_BUDGET_CHECK && $projected > self::CALL_BUDGET) {
+                return $this->result($cells, $calls, false, \sprintf('Projected cost of the remaining run is %d calls, above the budget of %d.', $projected, self::CALL_BUDGET));
+            }
         }
 
-        $this->writeCsv($targetDir.'/'.self::FILE, $cellOfUnit, $results);
+        $this->writeCsv($targetDir.'/'.self::FILE, $cellOfUnit);
 
-        return ['done' => \count($cells), 'total' => \count($cells), 'written' => true];
+        return $this->result($cells, $calls, true, null);
     }
 
     /**
-     * @param list<string> $cells "lat,lon"
+     * @param list<string> $cells
      *
-     * @return array<string, array{hotDays: float, tropicalNights: float, warming: float}|null>
+     * @return array{done: int, total: int, written: bool, calls: int, message: string|null}
      */
-    private function deriveCells(array $cells): array
+    private function result(array $cells, int $calls, bool $written, ?string $message): array
     {
-        $baseline = $this->fetch($cells, self::BASELINE, ['temperature_2m_mean']);
-        usleep(self::THROTTLE_MICROSECONDS);
-        $future = $this->fetch($cells, self::WINDOW, ['temperature_2m_max', 'temperature_2m_min', 'temperature_2m_mean']);
+        $done = \count(array_filter($cells, $this->isArchived(...)));
 
-        /**
-         * @var list<array<string, array{time: list<string>, mean: list<float|null>}>>                                               $baseline
-         * @var list<array<string, array{time: list<string>, max: list<float|null>, min: list<float|null>, mean: list<float|null>}>> $future
-         */
-        $derived = [];
-        foreach ($cells as $i => $cell) {
-            $derived[$cell] = $this->deriver->derive($baseline[$i] ?? [], $future[$i] ?? []);
+        return ['done' => $done, 'total' => \count($cells), 'written' => $written, 'calls' => $calls, 'message' => $message];
+    }
+
+    private function isArchived(string $cell): bool
+    {
+        return $this->archive->has($cell, self::BASELINE, self::MODELS, self::BASELINE_VARIABLES)
+            && $this->archive->has($cell, self::WINDOW, self::MODELS, self::WINDOW_VARIABLES);
+    }
+
+    /**
+     * @param list<string> $cells
+     *
+     * @return int estimated number of API calls spent
+     */
+    private function archiveCells(array $cells): int
+    {
+        $calls = 0;
+        foreach ([[self::BASELINE, self::BASELINE_VARIABLES], [self::WINDOW, self::WINDOW_VARIABLES]] as [$period, $variables]) {
+            $wanted = array_values(array_filter($cells, fn (string $cell): bool => !$this->archive->has($cell, $period, self::MODELS, $variables)));
+            if ([] === $wanted) {
+                continue;
+            }
+
+            $locations = $this->fetch($wanted, $period, $variables);
+            foreach ($wanted as $i => $cell) {
+                $this->archive->write($cell, $period, self::MODELS, $variables, $locations[$i]);
+            }
+
+            $days = (int) round((strtotime($period[1]) - strtotime($period[0])) / 86400) + 1;
+            $cost = (int) ceil(\count($wanted) * \count($variables) * \count(self::MODELS) * $days / self::VARIABLE_DAYS_PER_CALL);
+            $calls += $cost;
+            $this->archive->logRequest(\sprintf('%s %s..%s %d cells, about %d calls', date('c'), $period[0], $period[1], \count($wanted), $cost));
         }
 
-        return $derived;
+        return $calls;
     }
 
     /**
@@ -136,7 +178,7 @@ final readonly class ClimateProjectionSourceDownloader
      * @param array{string, string} $period
      * @param list<string>          $variables
      *
-     * @return list<array<string, array<string, mixed>>> per cell, the daily series by model
+     * @return list<array<string, mixed>> the API's answer for each cell, in order
      */
     private function fetch(array $cells, array $period, array $variables): array
     {
@@ -146,94 +188,98 @@ final readonly class ClimateProjectionSourceDownloader
             [$latitudes[], $longitudes[]] = explode(',', $cell);
         }
 
-        $response = $this->httpClient->request('GET', self::API_URL, ['query' => [
+        $query = [
             'latitude' => implode(',', $latitudes),
             'longitude' => implode(',', $longitudes),
             'daily' => implode(',', $variables),
             'models' => implode(',', self::MODELS),
             'start_date' => $period[0],
             'end_date' => $period[1],
-        ]]);
-        /** @var array{daily: array<string, mixed>}|list<array{daily: array<string, mixed>}> $data */
+        ];
+        if ('' !== $this->apiKey) {
+            $query['apikey'] = $this->apiKey;
+        }
+
+        $response = $this->httpClient->request('GET', '' === $this->apiKey ? self::FREE_URL : self::PAID_URL, ['query' => $query]);
+        /** @var array<string, mixed>|list<array<string, mixed>> $data */
         $data = $response->toArray();
+
         // A single location comes back as an object instead of a list.
+        /** @var list<array<string, mixed>> $locations */
         $locations = array_is_list($data) ? $data : [$data];
 
-        $series = [];
-        foreach ($locations as $location) {
-            /** @var array<string, list<float|string|null>> $daily */
-            $daily = $location['daily'];
-            $byModel = [];
-            foreach (self::MODELS as $model) {
-                $byModel[$model] = ['time' => $daily['time']];
-                foreach (['max', 'min', 'mean'] as $stat) {
-                    if (isset($daily["temperature_2m_{$stat}_{$model}"])) {
-                        $byModel[$model][$stat] = $daily["temperature_2m_{$stat}_{$model}"];
-                    }
-                }
-            }
-
-            $series[] = $byModel;
-        }
-
-        return $series;
+        return $locations;
     }
 
     /**
-     * @return array<string, array{hotDays: float, tropicalNights: float, warming: float}|null>
+     * @param array<string, string> $cellOfUnit
      */
-    private function loadWorkFile(): array
+    private function writeCsv(string $path, array $cellOfUnit): void
     {
-        $path = $this->workDir.'/'.self::WORK_FILE;
-        if (!is_file($path)) {
-            return [];
+        /** @var array<string, array{hotDays: float, tropicalNights: float, warming: float, heatWaves: float, precipitationChange: float|null, uncertainty: float|null}|null> $figures */
+        $figures = [];
+        foreach (array_unique($cellOfUnit) as $cell) {
+            $figures[$cell] = $this->deriveCell($cell);
         }
 
-        $results = [];
-        $handle = fopen($path, 'r') ?: throw new \RuntimeException("Cannot read {$path}");
-        while (false !== $row = fgetcsv($handle, escape: '\\')) {
-            // An empty figure is a cell without data, remembered so that it is not asked again.
-            $results[$row[0].','.$row[1]] = '' === $row[2] ? null : ['hotDays' => (float) $row[2], 'tropicalNights' => (float) $row[3], 'warming' => (float) $row[4]];
-        }
-
-        fclose($handle);
-
-        return $results;
-    }
-
-    /**
-     * @param array<string, array{hotDays: float, tropicalNights: float, warming: float}|null> $derived
-     */
-    private function appendToWorkFile(array $derived): void
-    {
-        $path = $this->workDir.'/'.self::WORK_FILE;
-        $handle = fopen($path, 'a') ?: throw new \RuntimeException("Cannot write {$path}");
-        foreach ($derived as $cell => $figures) {
-            fputcsv($handle, [...explode(',', $cell), ...(null === $figures ? ['', '', ''] : array_values($figures))], escape: '\\');
-        }
-
-        fclose($handle);
-    }
-
-    /**
-     * @param array<string, string>                                                            $cellOfUnit
-     * @param array<string, array{hotDays: float, tropicalNights: float, warming: float}|null> $results
-     */
-    private function writeCsv(string $path, array $cellOfUnit, array $results): void
-    {
         $handle = fopen($path, 'w') ?: throw new \RuntimeException("Cannot write {$path}");
         fputcsv($handle, ['code_unite_urbaine', 'year', 'measure', 'value'], escape: '\\');
         foreach ($cellOfUnit as $code => $cell) {
-            $figures = $results[$cell] ?? null;
-            if (null === $figures) {
+            $cellFigures = $figures[$cell];
+            if (null === $cellFigures) {
                 continue;
             }
 
-            fputcsv($handle, [$code, self::YEAR, 'hot_days', round($figures['hotDays'], 1)], escape: '\\');
-            fputcsv($handle, [$code, self::YEAR, 'tropical_nights', round($figures['tropicalNights'], 1)], escape: '\\');
-            fputcsv($handle, [$code, self::YEAR, 'warming', round($figures['warming'], 2)], escape: '\\');
+            $rows = [
+                'hot_days' => round($cellFigures['hotDays'], 1),
+                'tropical_nights' => round($cellFigures['tropicalNights'], 1),
+                'warming' => round($cellFigures['warming'], 2),
+                'heat_waves' => round($cellFigures['heatWaves'], 2),
+                'precipitation_change' => null === $cellFigures['precipitationChange'] ? null : round($cellFigures['precipitationChange'], 1),
+                'uncertainty' => null === $cellFigures['uncertainty'] ? null : round($cellFigures['uncertainty'], 2),
+            ];
+            foreach ($rows as $measure => $value) {
+                if (null !== $value) {
+                    fputcsv($handle, [$code, self::YEAR, $measure, $value], escape: '\\');
+                }
+            }
         }
 
         fclose($handle);
+    }
+
+    /**
+     * @return array{hotDays: float, tropicalNights: float, warming: float, heatWaves: float, precipitationChange: float|null, uncertainty: float|null}|null
+     */
+    private function deriveCell(string $cell): ?array
+    {
+        $baseline = $this->archive->read($cell, self::BASELINE, self::MODELS, self::BASELINE_VARIABLES)['daily'];
+        $window = $this->archive->read($cell, self::WINDOW, self::MODELS, self::WINDOW_VARIABLES)['daily'];
+
+        $baselineByModel = [];
+        $windowByModel = [];
+        foreach (self::MODELS as $model) {
+            /** @var list<string> $baselineTime */
+            $baselineTime = $baseline['time'];
+            /** @var list<string> $windowTime */
+            $windowTime = $window['time'];
+            /** @var list<float|null> $mean */
+            $mean = $baseline["temperature_2m_mean_{$model}"] ?? [];
+            /** @var list<float|null> $rain */
+            $rain = $baseline["precipitation_sum_{$model}"] ?? [];
+            $baselineByModel[$model] = ['time' => $baselineTime, 'mean' => $mean, 'precipitation' => $rain];
+
+            /** @var list<float|null> $max */
+            $max = $window["temperature_2m_max_{$model}"] ?? [];
+            /** @var list<float|null> $min */
+            $min = $window["temperature_2m_min_{$model}"] ?? [];
+            /** @var list<float|null> $windowMean */
+            $windowMean = $window["temperature_2m_mean_{$model}"] ?? [];
+            /** @var list<float|null> $windowRain */
+            $windowRain = $window["precipitation_sum_{$model}"] ?? [];
+            $windowByModel[$model] = ['time' => $windowTime, 'max' => $max, 'min' => $min, 'mean' => $windowMean, 'precipitation' => $windowRain];
+        }
+
+        return $this->deriver->derive($baselineByModel, $windowByModel);
     }
 }

@@ -29,6 +29,9 @@ final class ClimateProjectionImporterTest extends KernelTestCase
             13701,2050,hot_days,18.3
             13701,2050,tropical_nights,24.1
             13701,2050,warming,2.05
+            13701,2050,heat_waves,1.4
+            13701,2050,precipitation_change,-12.5
+            13701,2050,uncertainty,1.1
             29201,2050,hot_days,0.4
             99999,2050,hot_days,1
             CSV."\n");
@@ -36,9 +39,11 @@ final class ClimateProjectionImporterTest extends KernelTestCase
         $importer = self::getContainer()->get(ClimateProjectionImporter::class);
         \assert($importer instanceof ClimateProjectionImporter);
 
-        self::assertSame(4, $importer->import($csvPath));
+        self::assertSame(7, $importer->import($csvPath));
         self::assertSame(18.3, $this->decimal('13701', 'jours_plus_35_2050'));
         self::assertSame(2.05, $this->decimal('13701', 'hausse_temperature_2050'));
+        self::assertSame(-12.5, $this->decimal('13701', 'variation_precipitations_2050'));
+        self::assertSame(1.1, $this->decimal('13701', 'incertitude_hausse_2050'));
         self::assertNull($this->decimal('29201', 'nuits_tropicales_2050'));
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -48,9 +53,13 @@ final class ClimateProjectionImporterTest extends KernelTestCase
         self::assertTrue((bool) $connection->fetchOne("SELECT rank_from_lowest FROM criterion WHERE code = 'jours_plus_35_2050'"));
         self::assertEquals(2050, $connection->fetchOne('SELECT DISTINCT period FROM criterion_value'));
 
+        // Rain has no good direction: it is not ranked, and each of the others is ranked from the lowest.
+        self::assertFalse((bool) $connection->fetchOne("SELECT comparable FROM criterion WHERE code = 'variation_precipitations_2050'"));
+        self::assertTrue((bool) $connection->fetchOne("SELECT comparable FROM criterion WHERE code = 'incertitude_hausse_2050'"));
+
         // Idempotent: a second run updates in place.
-        self::assertSame(4, $importer->import($csvPath));
-        self::assertEquals(4, $connection->fetchOne('SELECT COUNT(*) FROM criterion_value'));
+        self::assertSame(7, $importer->import($csvPath));
+        self::assertEquals(7, $connection->fetchOne('SELECT COUNT(*) FROM criterion_value'));
 
         unlink($csvPath);
     }
