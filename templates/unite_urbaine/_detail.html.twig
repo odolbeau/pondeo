@@ -42,7 +42,11 @@
         <summary class="cursor-pointer text-sm font-semibold uppercase tracking-wide text-slate-400">{{ group.label }}{% if group.commonPeriod %} <span class="ml-1 text-xs font-normal normal-case tracking-normal text-slate-500">({{ group.commonPeriod }})</span>{% endif %}</summary>
         <dl class="mt-2 divide-y divide-slate-800/60">
             {% for criterion in group.criteria %}
-                <div class="flex items-center justify-between gap-4 py-3" data-criteria-filter-target="row" data-label="{{ criterion.label }}">
+                {% set expandable = criterion.series|length >= 2 %}
+                <div data-criteria-filter-target="row" data-label="{{ criterion.label }}"
+                     {% if expandable %}data-controller="criterion-chart" data-criterion-chart-url-value="{{ path('app_unite_urbaine_criterion_series', {code: uniteUrbaine.code, criterion: criterion.code}) }}"{% endif %}>
+                <div class="flex items-center justify-between gap-4 py-3{% if expandable %} cursor-pointer rounded hover:bg-slate-900/60{% endif %}"
+                     {% if expandable %}role="button" tabindex="0" aria-expanded="false" aria-label="Courbe de {{ criterion.label }}" data-criterion-chart-target="header" data-action="click->criterion-chart#toggle keydown.enter->criterion-chart#toggle keydown.space->criterion-chart#toggle"{% endif %}>
                     <div class="min-w-0">
                         <dt class="text-sm text-slate-300">
                             {{ criterion.label }}{% if criterion.count is not null %} ({{ criterion.count|fr_number }}){% endif %}
@@ -53,12 +57,6 @@
                         {% endif %}
                     </div>
                     <div class="flex shrink-0 items-center gap-3">
-                        {% set points = criterion.sparklinePoints(64, 20) %}
-                        {% if points %}
-                            <svg viewBox="-2 -2 68 24" width="68" height="24" class="text-emerald-400" role="img" aria-label="Évolution de {{ criterion.label }}">
-                                <polyline points="{{ points }}" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linejoin="round" stroke-linecap="round" />
-                            </svg>
-                        {% endif %}
                         <span class="text-right">
                             <span class="block text-sm font-medium text-slate-100">
                                 {{ criterion.value|criterion_value }}
@@ -68,7 +66,20 @@
                                 <span class="block text-xs text-emerald-400">médiane {{ criterion.median|fr_number }}</span>
                             {% endif %}
                         </span>
+                        {% if expandable %}<span aria-hidden="true" class="text-slate-500 transition-transform" data-criterion-chart-target="chevron">▾</span>{% endif %}
                     </div>
+                </div>
+                {% if expandable %}
+                    <div hidden class="pb-4" data-criterion-chart-target="panel">
+                        <div class="mb-2 flex items-center justify-end">
+                            <button type="button" hidden aria-pressed="false" data-criterion-chart-target="indexButton" data-action="criterion-chart#toggleIndex"
+                                    title="Ramène les deux courbes à 100 à la première année commune, pour comparer les évolutions plutôt que les niveaux"
+                                    class="rounded border border-slate-700 px-2 py-1 text-xs text-slate-300 hover:border-emerald-400 aria-pressed:border-emerald-400 aria-pressed:text-emerald-400">Base 100</button>
+                        </div>
+                        <div class="text-slate-300" data-criterion-chart-target="chart"></div>
+                        <p class="text-xs text-slate-500" data-criterion-chart-target="status" aria-live="polite"></p>
+                    </div>
+                {% endif %}
                 </div>
             {% endfor %}
         </dl>

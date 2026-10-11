@@ -30,29 +30,4 @@ final readonly class CriterionDetail
         public ?int $position = null,
     ) {
     }
-
-    /**
-     * Points of an SVG polyline drawing the series, or null when there is
-     * nothing to draw (fewer than two periods).
-     */
-    public function sparklinePoints(int $width, int $height): ?string
-    {
-        if (\count($this->series) < 2) {
-            return null;
-        }
-
-        $min = min($this->series);
-        $range = max($this->series) - $min;
-        $lastIndex = \count($this->series) - 1;
-
-        $points = [];
-        foreach (array_values($this->series) as $index => $value) {
-            $x = $index / $lastIndex * $width;
-            // A flat series is drawn as a mid-height line rather than dividing by zero.
-            $y = 0 === $range ? $height / 2 : $height - ($value - $min) / $range * $height;
-            $points[] = \sprintf('%.1f,%.1f', $x, $y);
-        }
-
-        return implode(' ', $points);
-    }
 }

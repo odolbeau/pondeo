@@ -45,10 +45,11 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('header', "84\u{a0}176");
         self::assertSelectorTextContains('header', '2e sur 2');
         self::assertSelectorTextContains('details summary', 'Démographie');
-        self::assertSelectorExists('turbo-frame#unite-urbaine-detail polyline');
         self::assertSelectorExists('[data-controller="criteria-filter"] input[type="search"]');
         self::assertSelectorExists('[data-criteria-filter-target="row"][data-label="Population"]');
         self::assertSelectorNotExists('a[data-turbo-frame="_top"]');
+        // A criterion with a series unfolds a chart, fed by the series endpoint.
+        self::assertSelectorExists('[data-controller="criterion-chart"][data-criterion-chart-url-value="/unites-urbaines/56501/criteres/population/serie"]');
     }
 
     public function testPageListsPoisByCategoryAndCommunes(): void
