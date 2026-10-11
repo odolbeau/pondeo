@@ -63,10 +63,12 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('details summary', 'Pyramide des âges');
-        self::assertSelectorExists('[role="img"] [title="0-4 ans : 40 hommes"]');
-        // The last bracket is open-ended.
-        self::assertSelectorTextContains('[role="img"]', '10 et +');
-        self::assertSelectorExists('[role="img"][aria-label*="110 habitants"]');
+        self::assertAnySelectorTextContains('svg[role="img"] title', '0-4 ans : 40 hommes');
+        self::assertAnySelectorTextContains('svg[role="img"] title', '10 et + ans : 10 femmes');
+        // The last bracket is open-ended, and the shares of each sex are given.
+        self::assertSelectorTextContains('svg[role="img"]', '10 et +');
+        self::assertSelectorExists('svg[role="img"][aria-label*="110 habitants"]');
+        self::assertSelectorTextContains('details', 'Hommes · 45,5 %');
 
         $client->request('GET', '/unites-urbaines/44701');
         self::assertSelectorNotExists('[role="img"]');

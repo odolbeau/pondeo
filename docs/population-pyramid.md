@@ -1,11 +1,12 @@
 # Population pyramid
 
 The detail page of an urban unit (see `docs/urban-unit-detail.md`) shows, under
-its criteria, the population of the unit by sex and age: men on the left, women
-on the right, one row per five-year bracket from the oldest to the youngest
-(0-4 … 90-94, then 95 and over). Hovering a bar gives its count. The bars are
-drawn relative to the largest one of the pyramid, so it shows the shape of the
-population, not its size.
+its criteria, the population of the unit by sex and age as a pyramid: men
+(blue) on the left, women (pink) on the right, one row per five-year bracket
+from the oldest at the top (0-4 … 90-94, then 95 and over) to the youngest. A
+graduated axis gives the number of inhabitants, hovering a bar gives its exact
+count, and the share of each sex is written above. Both sides share the same
+scale, so the shape of the pyramid is not distorted.
 
 A unit without data has no pyramid section.
 
