@@ -12,10 +12,16 @@ the rules here for that path.
 
 ## Adding features: Flex, not hand-wiring
 
-Ask before installing anything. Once validated, use the Flex recipe if any.
-Don't skip a good-fit component just because it isn't installed yet; just ask.
+Installing a package that fits the need is fine, no need to ask first: use the
+Flex recipe if any, and mention it in your summary. Don't skip a good-fit
+component just because it isn't installed yet.
 
 ## Conventions
+
+Don't reinvent the wheel: before writing something non-trivial by hand (a
+chart, a date picker, a parser, a queue...), check for a Symfony component or a
+well-maintained library that already does it, and prefer it over home-grown
+code.
 
 Follow https://symfony.com/doc/current/best_practices.html to write idiomatic
 Symfony:
