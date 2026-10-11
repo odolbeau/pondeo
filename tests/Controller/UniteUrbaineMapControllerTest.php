@@ -40,5 +40,6 @@ final class UniteUrbaineMapControllerTest extends WebTestCase
         self::assertSelectorExists('input[type="checkbox"][data-map-target="excludePolesSecondaires"]:not([checked])');
         self::assertSelectorExists('input[type="number"][data-map-target="minInput"][value="84176"]');
         self::assertSelectorExists('input[type="number"][data-map-target="maxInput"][value="84176"]');
+        self::assertSelectorExists('input[type="number"][data-map-target="priceMax"]:not([value])');
     }
 }

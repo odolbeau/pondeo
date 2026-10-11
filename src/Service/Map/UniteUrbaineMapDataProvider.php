@@ -71,13 +71,14 @@ final readonly class UniteUrbaineMapDataProvider
      * is not the same as satellite. Likewise, with a commerce density
      * minimum, an unité urbaine without a density value is left out: it
      * cannot be said to reach it. With a nuclear exclusion radius, an unité urbaine whose
-     * centroid is within it of a plant is left out.
+     * centroid is within it of a plant is left out. A price per m² maximum
+     * leaves out an unité urbaine without a price (Alsace-Moselle is not in the source) for the same reason as the density minimum.
      *
      * @param list<AttractionCategory> $excludedAttractionCategories
      *
      * @return list<array{id: string, code: string, name: string, population: int, geometryJson: string}>
      */
-    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null): array
+    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null, ?float $priceMax = null): array
     {
         $criterionId = $this->populationCriterionId();
         $excludedCategoryValues = array_map(static fn (AttractionCategory $category): string => $category->value, $excludedAttractionCategories);
@@ -116,6 +117,17 @@ final readonly class UniteUrbaineMapDataProvider
                       WHERE plant_category.code = 'nuclear_power_plant'
                         AND ST_DWithin(uu.centroid, plant.location, CAST(:nuclearKm AS numeric) * 1000)
                   ))
+                  AND (CAST(:priceMax AS numeric) IS NULL OR EXISTS (
+                      SELECT 1
+                      FROM criterion_value price
+                      INNER JOIN criterion pc ON pc.id = price.criterion_id
+                      WHERE pc.code = 'prix_m2'
+                        AND price.unite_urbaine_id = uu.id
+                        AND price.period = (
+                            SELECT MAX(period) FROM criterion_value WHERE criterion_id = pc.id
+                        )
+                        AND price.value_integer <= CAST(:priceMax AS numeric)
+                  ))
                 SQL,
             [
                 'criterionId' => $criterionId,
@@ -124,6 +136,7 @@ final readonly class UniteUrbaineMapDataProvider
                 'max' => $populationMax,
                 'densityMin' => $commerceDensityMin,
                 'nuclearKm' => $nuclearExclusionKm,
+                'priceMax' => $priceMax,
                 // An empty IN () list is invalid SQL: a value no category has keeps the clause a no-op.
                 'excludedCategories' => [] === $excludedCategoryValues ? [''] : $excludedCategoryValues,
             ],

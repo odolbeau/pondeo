@@ -79,4 +79,46 @@ final class UniteUrbaineCriteriaProviderTest extends KernelTestCase
         self::assertNull($labelDetail->rank);
         self::assertSame([], $labelDetail->series);
     }
+
+    public function testRealEstateGroupComesAfterDemographyAndRanksTheMostExpensiveFirst(): void
+    {
+        $paris = UniteUrbaineFactory::createOne(['inseeCode' => '00001']);
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '00002']);
+        $brest = UniteUrbaineFactory::createOne(['inseeCode' => '00003']);
+
+        $population = CriterionFactory::createOne(['code' => 'population', 'label' => 'Population', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Démographie']);
+        $price = CriterionFactory::createOne(['code' => 'prix_m2', 'label' => 'Prix au m²', 'unit' => '€/m²', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Immobilier']);
+        $shops = CriterionFactory::createOne(['code' => 'shops', 'label' => 'Commerces', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Commerces']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ([
+            [$population, $vannes, 56_000, 2023],
+            [$shops, $vannes, 5.5, 2025],
+            [$price, $paris, 10_500, 2025],
+            [$price, $vannes, 3_600, 2024],
+            [$price, $vannes, 3_800, 2025],
+            [$price, $brest, 2_000, 2025],
+        ] as [$criterion, $uniteUrbaine, $value, $period]) {
+            $entityManager->persist(new CriterionValue($criterion, $uniteUrbaine, $value, $period));
+        }
+
+        $entityManager->flush();
+        $entityManager->clear();
+
+        $provider = new UniteUrbaineCriteriaProvider($entityManager->getConnection());
+        $vannesUnit = $entityManager->getRepository($vannes::class)->findOneBy(['inseeCode' => '00002']);
+        \assert(null !== $vannesUnit);
+
+        $groups = $provider->findGroups($vannesUnit);
+
+        self::assertSame(['Démographie', 'Immobilier', 'Commerces'], array_map(static fn (\App\Service\Detail\CriterionGroupDetail $group): string => $group->label, $groups));
+
+        $priceDetail = $groups[1]->criteria[0];
+        self::assertSame(3_800, $priceDetail->value);
+        self::assertSame([2024 => 3_600, 2025 => 3_800], $priceDetail->series);
+        self::assertSame(2, $priceDetail->rank);
+        self::assertSame(3, $priceDetail->total);
+        self::assertSame(3_800.0, $priceDetail->median);
+    }
 }

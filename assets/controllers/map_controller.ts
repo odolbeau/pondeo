@@ -6,7 +6,7 @@ const ZONES_SOURCE_ID = 'unites-urbaines';
 const SELECTED_LAYER_ID = `${ZONES_SOURCE_ID}-selected`;
 const UNITE_CODE_PATTERN = /^[0-9A-Za-z]{5}$/;
 // Query params making up the filter — in the page URL and in localStorage.
-const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm'];
+const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax'];
 const PLANTS_SOURCE_ID = 'nuclear-plants';
 const PLANTS_RADIUS_SOURCE_ID = `${PLANTS_SOURCE_ID}-radius`;
 const PLANT_ICON_ID = 'nuclear-plant-icon';
@@ -23,7 +23,7 @@ const STORAGE_KEY = 'pondeo:map:population';
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'panel', 'frame'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'panel', 'frame'];
     static values = {
         dataUrl: String,
         plantsUrl: String,
@@ -40,6 +40,7 @@ export default class extends Controller {
     declare readonly excludeCouronneTarget: HTMLInputElement;
     declare readonly excludePolesSecondairesTarget: HTMLInputElement;
     declare readonly commerceDensityMinTarget: HTMLInputElement;
+    declare readonly priceMaxTarget: HTMLInputElement;
     declare readonly nuclearExclusionKmTarget: HTMLInputElement;
     declare readonly panelTarget: HTMLElement;
     declare readonly frameTarget: HTMLElement & { src: string | null };
@@ -67,6 +68,7 @@ export default class extends Controller {
         this.excludePolesSecondairesTarget.checked = '1' === initial.get('excludePolesSecondaires');
         this.commerceDensityMinTarget.value = initial.get('commerceDensityMin') ?? '';
         this.nuclearExclusionKmTarget.value = initial.get('nuclearExclusionKm') ?? '';
+        this.priceMaxTarget.value = initial.get('priceMax') ?? '';
         this.writeInputs(min, max);
         this.syncRanges(min, max);
 
@@ -205,6 +207,10 @@ export default class extends Controller {
         this.scheduleRefresh();
     }
 
+    onPriceInput() {
+        this.scheduleRefresh();
+    }
+
     onNuclearInput() {
         this.drawPlantRadii();
         this.scheduleRefresh();
@@ -213,6 +219,10 @@ export default class extends Controller {
     // Null (filter off) for an empty or invalid field.
     commerceDensityMin(): number | null {
         return this.positiveNumber(this.commerceDensityMinTarget.value);
+    }
+
+    priceMax(): number | null {
+        return this.positiveNumber(this.priceMaxTarget.value);
     }
 
     nuclearExclusionKm(): number | null {
@@ -399,6 +409,10 @@ export default class extends Controller {
         const nuclearKm = this.nuclearExclusionKm();
         if (null !== nuclearKm) {
             params.set('nuclearExclusionKm', String(nuclearKm));
+        }
+        const priceMax = this.priceMax();
+        if (null !== priceMax) {
+            params.set('priceMax', String(priceMax));
         }
 
         return params;

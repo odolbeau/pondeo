@@ -113,6 +113,36 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         self::assertSame(['00001', '00002'], $this->codes($client, ['commerceDensityMin' => '4.2']));
     }
 
+    public function testDataEndpointCanCapThePricePerSquareMeter(): void
+    {
+        $client = self::createClient();
+
+        $cheap = UniteUrbaineFactory::createOne(['inseeCode' => '00001', 'boundary' => 'SRID=4326;MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))']);
+        $expensive = UniteUrbaineFactory::createOne(['inseeCode' => '00002', 'boundary' => 'SRID=4326;MULTIPOLYGON(((1 0,1 1,2 1,2 0,1 0)))']);
+        // No price (not covered by the source): cannot be said to stay under a cap.
+        $unknown = UniteUrbaineFactory::createOne(['inseeCode' => '00003', 'boundary' => 'SRID=4326;MULTIPOLYGON(((2 0,2 1,3 1,3 0,2 0)))']);
+
+        $population = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+        $price = CriterionFactory::createOne(['code' => 'prix_m2', 'valueType' => CriterionValueType::Integer]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ([$cheap, $expensive, $unknown] as $uniteUrbaine) {
+            $entityManager->persist(new CriterionValue($population, $uniteUrbaine, 10_000, 2023));
+        }
+
+        // Only the latest year counts.
+        $entityManager->persist(new CriterionValue($price, $cheap, 9_000, 2024));
+        $entityManager->persist(new CriterionValue($price, $cheap, 2_500, 2025));
+        $entityManager->persist(new CriterionValue($price, $expensive, 6_000, 2025));
+        $entityManager->flush();
+
+        self::assertSame(['00001', '00002', '00003'], $this->codes($client, []));
+        self::assertSame(['00001', '00002'], $this->codes($client, ['priceMax' => '6000']));
+        self::assertSame(['00001'], $this->codes($client, ['priceMax' => '2500']));
+        self::assertSame([], $this->codes($client, ['priceMax' => '2499']));
+    }
+
     public function testDataEndpointCanExcludeUnitesUrbainesNearANuclearPlant(): void
     {
         $client = self::createClient();

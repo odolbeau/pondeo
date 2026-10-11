@@ -72,6 +72,21 @@
             <span class="mt-1 block text-xs text-slate-500">Tous commerces confondus (INSEE, BPE)</span>
         </label>
 
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Immobilier</h2>
+
+        <label class="mt-4 block text-sm text-slate-300">
+            Au plus
+            <span class="mt-2 flex items-center gap-2">
+                <input type="number" inputmode="numeric" step="100" min="0" placeholder="∞"
+                       aria-label="Prix maximum au mètre carré, en euros"
+                       data-map-target="priceMax"
+                       data-action="input->map#onPriceInput"
+                       class="w-24 rounded border border-slate-700 bg-slate-950 px-2 py-1 text-slate-100 focus:border-emerald-400 focus:outline-none">
+                <span>€/m²</span>
+            </span>
+            <span class="mt-1 block text-xs text-slate-500">Appartements et maisons, dernière année (DVF)</span>
+        </label>
+
         <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-slate-400">Centrales nucléaires</h2>
 
         <label class="mt-4 block text-sm text-slate-300">
