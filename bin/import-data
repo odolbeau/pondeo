@@ -11,6 +11,7 @@ php "$CURDIR/console" doctrine:database:create --if-not-exists
 php "$CURDIR/console" doctrine:migration:migrate -n --no-debug
 php "$CURDIR/console" app:import:zones --no-debug
 php "$CURDIR/console" app:import:pois:stations --no-debug
+php "$CURDIR/console" app:import:pois:stations:journeys --no-debug
 php "$CURDIR/console" app:import:pois:nuclear-plants --no-debug
 php "$CURDIR/console" app:import:criteria:population --no-debug
 php "$CURDIR/console" app:import:criteria:commerces --no-debug
