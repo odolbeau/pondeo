@@ -19,6 +19,7 @@ enum JourneyDestination: string
     case Lille = 'lille';
     case Rennes = 'rennes';
     case Strasbourg = 'strasbourg';
+    case Montpellier = 'montpellier';
 
     /** Identifier of the destination in the SNCF API. */
     public function navitiaId(): string
@@ -42,6 +43,8 @@ enum JourneyDestination: string
             self::Rennes => 'stop_area:SNCF:87471003',
             // The Strasbourg station.
             self::Strasbourg => 'stop_area:SNCF:87212027',
+            // The whole city: Saint-Roch and Sud de France.
+            self::Montpellier => 'admin:fr:34172',
         };
     }
 
@@ -57,13 +60,14 @@ enum JourneyDestination: string
             self::Lille => 'Lille',
             self::Rennes => 'Rennes',
             self::Strasbourg => 'Strasbourg',
+            self::Montpellier => 'Montpellier',
         };
     }
 
     /**
      * Whether a station is in the destination itself, so has no journey to
-     * it. Paris, Lyon and Lille are whole cities; the others are a single
-     * station, the city's other stations (Pirmil, Blancarde...) being genuine
+     * it. Paris, Lyon, Lille and Montpellier are whole cities; the others are a
+     * single station, the city's other stations (Pirmil, Blancarde...) being genuine
      * origins.
      *
      * @param string $uicCodes the station's UIC codes, ";"-separated
@@ -81,6 +85,7 @@ enum JourneyDestination: string
             // The 9 arrondissements, 69381 to 69389.
             self::Lyon => str_starts_with($inseeCommuneCode, '6938'),
             self::Lille => '59350' === $inseeCommuneCode,
+            self::Montpellier => '34172' === $inseeCommuneCode,
         };
     }
 }
