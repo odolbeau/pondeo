@@ -16,9 +16,9 @@
                                 <dt class="font-medium text-stone-700">{{ journey.destination.label }}</dt>
                                 <dd>
                                     {% if journey.reachable %}
-                                        {{ journey.transfers ? journey.transfers ~ (journey.transfers > 1 ? ' correspondances' : ' correspondance') : 'direct' }}
+                                        <span class="font-semibold text-stone-900">{{ _self.duration(journey.medianDurationMinutes) }}</span>
                                         · {{ journey.trainsPerDay }}&nbsp;train{{ journey.trainsPerDay > 1 ? 's' : '' }}/j
-                                        · {{ _self.duration(journey.medianDurationMinutes) }}
+                                        · {{ journey.transfers ? journey.transfers ~ (journey.transfers > 1 ? ' correspondances' : ' correspondance') : 'direct' }}
                                     {% else %}
                                         pas de liaison (3 correspondances max)
                                     {% endif %}

@@ -298,18 +298,21 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         $client->request('GET', '/unites-urbaines/56501');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "direct · 7\u{a0}trains/j · 1\u{a0}h\u{a0}17");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "1\u{a0}h\u{a0}17 · 7\u{a0}trains/j · direct");
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', 'pas de liaison');
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "1 correspondance · 4\u{a0}trains/j · 2\u{a0}h\u{a0}15");
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "direct · 3\u{a0}trains/j · 3\u{a0}h\u{a0}10");
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "direct · 5\u{a0}trains/j · 1\u{a0}h\u{a0}35");
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "1 correspondance · 6\u{a0}trains/j · 2\u{a0}h\u{a0}30");
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "direct · 12\u{a0}trains/j · 45\u{a0}min");
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "1 correspondance · 3\u{a0}trains/j · 1\u{a0}h\u{a0}40");
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "direct · 8\u{a0}trains/j · 1\u{a0}h\u{a0}20");
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "2 correspondances · 5\u{a0}trains/j · 2\u{a0}h\u{a0}05");
-        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "1 correspondance · 4\u{a0}trains/j · 5\u{a0}h\u{a0}30");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "2\u{a0}h\u{a0}15 · 4\u{a0}trains/j · 1 correspondance");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "3\u{a0}h\u{a0}10 · 3\u{a0}trains/j · direct");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "1\u{a0}h\u{a0}35 · 5\u{a0}trains/j · direct");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "2\u{a0}h\u{a0}30 · 6\u{a0}trains/j · 1 correspondance");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "45\u{a0}min · 12\u{a0}trains/j · direct");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "1\u{a0}h\u{a0}40 · 3\u{a0}trains/j · 1 correspondance");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "1\u{a0}h\u{a0}20 · 8\u{a0}trains/j · direct");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "2\u{a0}h\u{a0}05 · 5\u{a0}trains/j · 2 correspondances");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "5\u{a0}h\u{a0}30 · 4\u{a0}trains/j · 1 correspondance");
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', '13/10/2026');
+
+        $labels = $client->getCrawler()->filter('turbo-frame#unite-urbaine-detail dt')->each(static fn ($node): string => $node->text());
+        self::assertSame(['Lille', 'Nantes', 'Strasbourg', 'Bordeaux', 'Rennes', 'Montpellier', 'Lyon', 'Toulouse', 'Marseille', 'Nice', 'Paris'], $labels);
     }
 
     public function testPageListsPoisByCategoryAndCommunes(): void

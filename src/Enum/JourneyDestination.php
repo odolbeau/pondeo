@@ -5,22 +5,23 @@ declare(strict_types=1);
 namespace App\Enum;
 
 /**
- * Cities stations are compared against by train. Adding a city is adding a
+ * Cities stations are compared against by train, declared by decreasing
+ * population (the order of the search form). Adding a city is adding a
  * case here, then re-running the journeys import: no schema change.
  */
 enum JourneyDestination: string
 {
-    case Nantes = 'nantes';
     case Paris = 'paris';
-    case Lyon = 'lyon';
     case Marseille = 'marseille';
-    case Bordeaux = 'bordeaux';
+    case Lyon = 'lyon';
     case Toulouse = 'toulouse';
+    case Nice = 'nice';
+    case Nantes = 'nantes';
+    case Montpellier = 'montpellier';
+    case Strasbourg = 'strasbourg';
+    case Bordeaux = 'bordeaux';
     case Lille = 'lille';
     case Rennes = 'rennes';
-    case Strasbourg = 'strasbourg';
-    case Montpellier = 'montpellier';
-    case Nice = 'nice';
 
     /** Identifier of the destination in the SNCF API. */
     public function navitiaId(): string

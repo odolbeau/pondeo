@@ -41,7 +41,7 @@ final readonly class UniteUrbaineStationAccessProvider
     /**
      * @param list<string> $stationIds
      *
-     * @return array<string, list<StationJourneyDetail>> by station id, in destination order
+     * @return array<string, list<StationJourneyDetail>> by station id, fastest first
      */
     private function findJourneys(array $stationIds): array
     {
@@ -61,9 +61,9 @@ final readonly class UniteUrbaineStationAccessProvider
             $journeys[$row['station_id']][] = new StationJourneyDetail(JourneyDestination::from($row['destination']), $row['transfers'], $row['trains_per_day'], $row['median_duration_minutes'], new \DateTimeImmutable($row['reference_date']));
         }
 
-        $order = array_flip(array_map(static fn (JourneyDestination $destination): string => $destination->value, JourneyDestination::cases()));
         foreach ($journeys as &$stationJourneys) {
-            usort($stationJourneys, static fn (StationJourneyDetail $a, StationJourneyDetail $b): int => $order[$a->destination->value] <=> $order[$b->destination->value]);
+            // Unreachable destinations last.
+            usort($stationJourneys, static fn (StationJourneyDetail $a, StationJourneyDetail $b): int => ($a->medianDurationMinutes ?? \PHP_INT_MAX) <=> ($b->medianDurationMinutes ?? \PHP_INT_MAX));
         }
 
         return $journeys;
