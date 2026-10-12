@@ -4,9 +4,9 @@ Thanks for your interest in Pondeo! Issues and pull requests are welcome.
 
 ## Getting started
 
-Follow the installation steps of the [README](README.md), then start the stack
-with `make serve`. See [`docs/local-environment.md`](docs/local-environment.md)
-for details.
+Start the stack with `make serve-standalone` (see the [README](README.md)), or
+`make serve` if you use the dev proxy. See
+[`docs/local-environment.md`](docs/local-environment.md) for details.
 
 ## Before opening a pull request
 

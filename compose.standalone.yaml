@@ -1,0 +1,16 @@
+# Runs the stack without the machine-wide dev proxy: the site is published on
+# http://localhost:8080. Used by `make serve-standalone`, see
+# docs/local-environment.md.
+services:
+  node:
+    environment:
+      PONDEO_ORIGIN: http://localhost:8080
+
+  nginx:
+    ports:
+      - "8080:80"
+    labels: !reset []
+    networks: !reset []
+
+networks:
+  dev-proxy: !reset null
