@@ -17,7 +17,8 @@ stations). It is not a criterion: nothing is ranked or compared, it is a list.
 - The year the routes were computed is stored with them.
 
 Each listed station also shows its train connections to the major cities (see
-`docs/station-journeys.md`).
+`docs/station-journeys.md`). The car time to these stations also feeds the
+map's "time to a city" filter, described there.
 
 ## Source
 

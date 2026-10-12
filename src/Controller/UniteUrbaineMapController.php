@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Enum\JourneyDestination;
 use App\Service\Map\UniteUrbaineMapDataProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
@@ -28,6 +29,7 @@ final class UniteUrbaineMapController extends AbstractController
             'plantsUrl' => $this->generateUrl('app_map_nuclear_plants'),
             'populationMin' => $bounds['min'],
             'populationMax' => $bounds['max'],
+            'journeyDestinations' => JourneyDestination::cases(),
         ]);
     }
 }

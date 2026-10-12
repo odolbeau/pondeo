@@ -5,15 +5,21 @@ declare(strict_types=1);
 namespace App\Tests\Controller\Api;
 
 use App\Entity\CriterionValue;
+use App\Entity\Poi;
+use App\Entity\PoiCategory;
+use App\Entity\StationAccess;
+use App\Entity\UniteUrbaine;
 use App\Enum\AttractionCategory;
 use App\Enum\CriterionValueType;
 use App\Factory\CriterionFactory;
 use App\Factory\PoiCategoryFactory;
 use App\Factory\PoiFactory;
 use App\Factory\UniteUrbaineFactory;
+use Doctrine\DBAL\Connection;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\KernelBrowser;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Uid\Uuid;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
 
@@ -198,6 +204,57 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         self::assertSame(['00001'], $this->codes($client, ['withStation' => '1']));
     }
 
+    public function testDataEndpointKeepsUnitesUrbainesWithinCarPlusTrainTime(): void
+    {
+        $client = self::createClient();
+        [$near, $far, $viaBestStation, $unreachable, , $inside] = $this->createUnitesUrbaines(6);
+
+        // Car minutes to the station, then train minutes to Paris (null: out of reach).
+        $this->addAccess($near, 30, 'paris', 80);
+        $this->addAccess($far, 30, 'paris', 100);
+        // The closest station by car is slow by train: the second one wins.
+        $this->addAccess($viaBestStation, 5, 'paris', 200);
+        $this->addAccess($viaBestStation, 40, 'paris', 60, 2);
+        $this->addAccess($unreachable, 5, 'paris', null);
+        // The station of Paris itself has no journey to Paris: only the car counts.
+        $this->addAccess($inside, 0, null, null);
+
+        self::assertSame(['00001', '00002', '00003', '00004', '00005', '00006'], $this->codes($client, []));
+        self::assertSame(['00001', '00003', '00006'], $this->codes($client, ['trainMaxMinutes' => ['paris' => '120']]));
+        self::assertSame(['00001', '00002', '00003', '00006'], $this->codes($client, ['trainMaxMinutes' => ['paris' => '130']]));
+        self::assertSame(['00006'], $this->codes($client, ['trainMaxMinutes' => ['paris' => '90']]));
+        // Without any access station, no limit can be shown to hold.
+        self::assertNotContains('00005', $this->codes($client, ['trainMaxMinutes' => ['paris' => '1000']]));
+    }
+
+    public function testDataEndpointCombinesSeveralTrainLimits(): void
+    {
+        $client = self::createClient();
+        [$both, $parisOnly, $lyonOnly] = $this->createUnitesUrbaines(3);
+
+        $this->addAccess($both, 10, 'paris', 60);
+        $this->addJourney($this->lastStation, 'lyon', 60);
+        // Every outside station has a row per destination, empty when out of reach.
+        $this->addAccess($parisOnly, 10, 'paris', 60);
+        $this->addJourney($this->lastStation, 'lyon', null);
+        $this->addAccess($lyonOnly, 10, 'lyon', 60);
+        $this->addJourney($this->lastStation, 'paris', null);
+
+        self::assertSame(['00001', '00002'], $this->codes($client, ['trainMaxMinutes' => ['paris' => '90']]));
+        self::assertSame(['00001'], $this->codes($client, ['trainMaxMinutes' => ['paris' => '90', 'lyon' => '90']]));
+    }
+
+    public function testDataEndpointRejectsAnUnknownTrainDestination(): void
+    {
+        $client = self::createClient();
+
+        $client->request('GET', '/carte/donnees', ['trainMaxMinutes' => ['atlantis' => '90']]);
+        self::assertResponseStatusCodeSame(404);
+
+        $client->request('GET', '/carte/donnees', ['trainMaxMinutes' => ['paris' => '-5']]);
+        self::assertResponseStatusCodeSame(404);
+    }
+
     public function testNuclearPlantsEndpointReturnsThePlantsWithTheirDetails(): void
     {
         $client = self::createClient();
@@ -225,8 +282,71 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         ]], $data['features']);
     }
 
+    private ?Poi $lastStation = null;
+
+    private ?PoiCategory $stationCategory = null;
+
     /**
-     * @param array<string, string> $query
+     * @return list<UniteUrbaine>
+     */
+    private function createUnitesUrbaines(int $count): array
+    {
+        $population = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+
+        $unitesUrbaines = [];
+        for ($i = 0; $i < $count; ++$i) {
+            $uniteUrbaine = UniteUrbaineFactory::createOne([
+                'inseeCode' => \sprintf('%05d', $i + 1),
+                'boundary' => \sprintf('SRID=4326;MULTIPOLYGON(((%1$d 0,%1$d 1,%2$d 1,%2$d 0,%1$d 0)))', $i, $i + 1),
+            ]);
+            $entityManager->persist(new CriterionValue($population, $uniteUrbaine, 10_000, 2023));
+            $unitesUrbaines[] = $uniteUrbaine;
+        }
+
+        $entityManager->flush();
+
+        return $unitesUrbaines;
+    }
+
+    /**
+     * @param ?string $destination when set, the station has a journey there (null minutes: out of reach)
+     */
+    private function addAccess(UniteUrbaine $uniteUrbaine, int $carMinutes, ?string $destination, ?int $trainMinutes, int $position = 1): void
+    {
+        $this->stationCategory ??= PoiCategoryFactory::createOne(['code' => 'railway_station']);
+        $station = PoiFactory::createOne(['category' => $this->stationCategory]);
+        $this->lastStation = $station;
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new StationAccess($uniteUrbaine, $station, $position, $carMinutes * 1000, $carMinutes * 60, 2025));
+        $entityManager->flush();
+
+        if (null !== $destination) {
+            $this->addJourney($station, $destination, $trainMinutes);
+        }
+    }
+
+    private function addJourney(?Poi $station, string $destination, ?int $trainMinutes): void
+    {
+        \assert(null !== $station);
+        $connection = self::getContainer()->get(Connection::class);
+        \assert($connection instanceof Connection);
+        $connection->insert('station_journey', [
+            'id' => Uuid::v7()->toRfc4122(),
+            'station_id' => $station->getId()->toRfc4122(),
+            'destination' => $destination,
+            'reference_date' => '2026-10-13',
+            'median_duration_minutes' => $trainMinutes,
+            'created_at' => '2026-10-13 00:00:00',
+            'updated_at' => '2026-10-13 00:00:00',
+        ]);
+    }
+
+    /**
+     * @param array<string, string|array<string, string>> $query
      *
      * @return list<string>
      */

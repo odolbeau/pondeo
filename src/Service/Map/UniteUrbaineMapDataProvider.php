@@ -75,15 +75,41 @@ final readonly class UniteUrbaineMapDataProvider
      * centroid is within it of a plant is left out. A price per m² maximum
      * leaves out an unité urbaine without a price (Alsace-Moselle is not in the source) for the same reason as the density minimum.
      * With `withStation`, only the unités urbaine containing a railway station are kept.
+     * A train limit keeps an unité urbaine if, from one of its closest stations,
+     * the car ride plus the train to the destination fits in the minutes. A
+     * station without a journey row is inside the destination (train: 0); a
+     * station that cannot reach it does not count, nor does an unité urbaine
+     * without access stations.
      *
      * @param list<AttractionCategory> $excludedAttractionCategories
+     * @param array<string, int>       $trainLimits                  maximum minutes by JourneyDestination value
      *
      * @return list<array{id: string, code: string, name: string, population: int, geometryJson: string}>
      */
-    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null, ?float $priceMax = null, bool $withStation = false): array
+    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null, ?float $priceMax = null, bool $withStation = false, array $trainLimits = []): array
     {
         $criterionId = $this->populationCriterionId();
         $excludedCategoryValues = array_map(static fn (AttractionCategory $category): string => $category->value, $excludedAttractionCategories);
+
+        $trainClauses = '';
+        $trainParams = [];
+        $i = 0;
+        foreach ($trainLimits as $destination => $minutes) {
+            $trainClauses .= <<<SQL
+
+                  AND EXISTS (
+                      SELECT 1
+                      FROM station_access sa
+                      LEFT JOIN station_journey sj ON sj.station_id = sa.station_id AND sj.destination = :trainDestination{$i}
+                      WHERE sa.unite_urbaine_id = uu.id
+                        AND (sj.id IS NULL OR sj.median_duration_minutes IS NOT NULL)
+                        AND sa.duration_seconds / 60.0 + COALESCE(sj.median_duration_minutes, 0) <= :trainMinutes{$i}
+                  )
+                SQL;
+            $trainParams["trainDestination{$i}"] = $destination;
+            $trainParams["trainMinutes{$i}"] = $minutes;
+            ++$i;
+        }
 
         // Simplified: at full resolution, the boundaries of thousands of
         // unités urbaines together are too large to decode/transfer for an
@@ -137,8 +163,8 @@ final readonly class UniteUrbaineMapDataProvider
                       WHERE station_category.code = 'railway_station'
                         AND station.unite_urbaine_id = uu.id
                   ))
-                SQL,
-            [
+                SQL.$trainClauses,
+            $trainParams + [
                 'criterionId' => $criterionId,
                 'period' => $period,
                 'min' => $populationMin,

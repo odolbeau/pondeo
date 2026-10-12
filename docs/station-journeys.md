@@ -110,6 +110,22 @@ median duration, or "no connection" when the destination is out of reach. A
 station inside the destination has no line for it. A footnote gives the
 reference day, since the figures are a snapshot.
 
+## Map filter: time to a city
+
+The map can keep only the urban units within a maximum time of one or more
+destination cities (two rows in the sidebar; with several cities, a unit must
+satisfy all of them). The time of a unit to a city is the best, over its
+closest stations (see `docs/criteria-station-access.md`), of **the car ride to
+the station plus the median train duration from that station to the city**. A
+unit with no station of its own is therefore judged on its nearest ones.
+
+- A station inside the destination has no journey: only the car ride counts, so
+  the destination city itself always qualifies.
+- A station that cannot reach the destination does not count; a unit left
+  with no usable station is excluded, since it cannot be said to meet the limit.
+- Car times are theoretical and the train figures are the one-day snapshot
+  above: good to compare cities, not to plan a trip.
+
 ## Adding a destination
 
 A destination is a city the SNCF API can route to (a station or a whole city).
