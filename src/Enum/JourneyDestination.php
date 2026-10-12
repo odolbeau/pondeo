@@ -20,6 +20,7 @@ enum JourneyDestination: string
     case Rennes = 'rennes';
     case Strasbourg = 'strasbourg';
     case Montpellier = 'montpellier';
+    case Nice = 'nice';
 
     /** Identifier of the destination in the SNCF API. */
     public function navitiaId(): string
@@ -45,6 +46,8 @@ enum JourneyDestination: string
             self::Strasbourg => 'stop_area:SNCF:87212027',
             // The whole city: Saint-Roch and Sud de France.
             self::Montpellier => 'admin:fr:34172',
+            // The Nice-Ville station.
+            self::Nice => 'stop_area:SNCF:87756056',
         };
     }
 
@@ -61,6 +64,7 @@ enum JourneyDestination: string
             self::Rennes => 'Rennes',
             self::Strasbourg => 'Strasbourg',
             self::Montpellier => 'Montpellier',
+            self::Nice => 'Nice',
         };
     }
 
@@ -86,6 +90,7 @@ enum JourneyDestination: string
             self::Lyon => str_starts_with($inseeCommuneCode, '6938'),
             self::Lille => '59350' === $inseeCommuneCode,
             self::Montpellier => '34172' === $inseeCommuneCode,
+            self::Nice => \in_array('87756056', explode(';', $uicCodes), true),
         };
     }
 }
