@@ -15,6 +15,7 @@ to confirm before relying on it.
 | `revenus-fiscaux` | DGFiP, IRCOM, on data.gouv.fr | Licence Ouverte; credit DGFiP | OK |
 | `prix-immobilier` | DGFiP / Etalab, Statistiques DVF, on data.gouv.fr | Licence Ouverte; credit DGFiP and Etalab | OK |
 | `centrales-nucleaires` | EDF SA, on data.gouv.fr | Licence Ouverte; credit EDF | OK |
+| `associations-jeux` | [Subverti](https://subverti.com/fr/maps/associations/), directory of board game clubs, ludothèques and associations; the site's terms forbid extraction, so it is used **with Subverti's written permission** (obtained by email, October 2026) | Not an open licence: permission granted by Subverti for this use; credit Subverti and link to its directory | OK, keep the permission on file |
 | `gares-voyageurs` | SNCF Gares & Connexions, on data.gouv.fr | [ODbL](https://opendatacommons.org/licenses/odbl/): credit SNCF, share derived databases under the same terms | OK, see below |
 | `climat-normales`, `climat-projections` | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0; credit shown in the app. The free API is for non-commercial use, so a commercial re-download needs a paid plan | OK |
 | `risques-communes` | [Géorisques API](https://georisques.gouv.fr/api/v1) (Ministry of Ecological Transition, BRGM) | Licence Ouverte 2.0 per the [terms of use](https://www.georisques.gouv.fr/cgu); credit the producer and the date of the data | OK |
