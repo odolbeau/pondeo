@@ -4,7 +4,7 @@ For each railway station (see `docs/poi-stations.md`) and each destination
 city, the app stores how well the station is connected on a reference day:
 how many trains a day, how long they take, and how many transfers it takes.
 Destinations today: **Nantes**, **Paris**, **Lyon**, **Marseille**, **Bordeaux**,
-**Toulouse**, **Lille**, **Rennes** and **Strasbourg**.
+**Toulouse**, **Lille**, **Rennes**, **Strasbourg** and **Montpellier**.
 
 ## What is stored
 
@@ -30,8 +30,9 @@ it (see the definitions below). The other stations of a destination city
 
 ## Definitions to keep in mind
 
-- **Whole-city destinations** (Paris, Lyon, Lille): any station of the city
-  counts, and the duration is to the first one reached, whichever it is.
+- **Whole-city destinations** (Paris, Lyon, Lille, Montpellier): any station
+  of the city counts, and the duration is to the first one reached, whichever
+  it is.
   Lyon-Saint-Exupéry TGV is outside Lyon, so it is a genuine origin.
 - **Single-station destinations** (Nantes, Marseille Saint-Charles, Bordeaux
   Saint-Jean, Toulouse Matabiau, Rennes, Strasbourg): the city's main station
