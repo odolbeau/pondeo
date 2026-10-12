@@ -17,10 +17,10 @@ to confirm before relying on it.
 | `centrales-nucleaires` | EDF SA, on data.gouv.fr | Licence Ouverte; credit EDF | OK |
 | `gares-voyageurs` | SNCF Gares & Connexions, on data.gouv.fr | [ODbL](https://opendatacommons.org/licenses/odbl/): credit SNCF, share derived databases under the same terms | OK, see below |
 | `climat-normales`, `climat-projections` | [Open-Meteo](https://open-meteo.com/) | CC BY 4.0; credit shown in the app. The free API is for non-commercial use, so a commercial re-download needs a paid plan | OK |
-| `risques-communes` | [Géorisques API](https://georisques.gouv.fr/api/v1) (Ministry of Ecological Transition, BRGM) | Open API; licence not recorded | To verify |
-| `gares-acces-voiture` | Computed with the IGN Géoplateforme routing service (BD TOPO road network) | Documented as free of storage and reuse restrictions | To verify against the current Géoplateforme terms |
-| `communes-unites-urbaines` | data.gouv.fr, "Communes et villes de France" | Licence not recorded | To verify |
-| `communes.geojson` | Simplified [france-geojson](https://github.com/gregoiredavid/france-geojson) (IGN Admin Express) | Open licence, not recorded precisely | To verify |
+| `risques-communes` | [Géorisques API](https://georisques.gouv.fr/api/v1) (Ministry of Ecological Transition, BRGM) | Licence Ouverte 2.0 per the [terms of use](https://www.georisques.gouv.fr/cgu); credit the producer and the date of the data | OK |
+| `gares-acces-voiture` | Computed with the IGN Géoplateforme routing service (BD TOPO road network) | Free of charge, commercial use included; the [terms](https://cartes.gouv.fr/cgu/) set no storage or redistribution restriction and defer to the data's own licence (Licence Ouverte by default). Credit IGN | OK |
+| `communes-unites-urbaines` | data.gouv.fr, "Communes et villes de France" (third-party compilation of INSEE data; only INSEE's commune codes, names and urban units are kept) | Licence Ouverte 2.0; credit INSEE | OK |
+| `communes.geojson` | Simplified [france-geojson](https://github.com/gregoiredavid/france-geojson) (IGN Admin Express COG, 2018 edition) | Admin Express terms (Licence Ouverte); the repository has no licence of its own | To verify: regenerate from Admin Express or keep and credit |
 | `trajets-gares` | SNCF API (Navitia), journeys computed from its timetables | The feed is flagged "Private (unspecified)" and the API token comes with terms of use | **To verify, blocking** |
 
 ## Points that need a decision
