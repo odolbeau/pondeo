@@ -100,4 +100,30 @@ class UniteUrbaineRepository extends ServiceEntityRepository
 
         return $rows;
     }
+
+    /**
+     * The unités urbaines with the given INSEE codes, in the order of the codes; unknown codes are skipped.
+     *
+     * @param list<string> $codes
+     *
+     * @return list<UniteUrbaine>
+     */
+    public function findByCodes(array $codes): array
+    {
+        if ([] === $codes) {
+            return [];
+        }
+
+        /** @var list<UniteUrbaine> $unites */
+        $unites = $this->createQueryBuilder('uu')
+            ->andWhere('uu.inseeCode IN (:codes)')
+            ->setParameter('codes', $codes)
+            ->getQuery()
+            ->getResult();
+
+        $position = array_flip($codes);
+        usort($unites, static fn (UniteUrbaine $a, UniteUrbaine $b): int => $position[$a->getCode()] <=> $position[$b->getCode()]);
+
+        return $unites;
+    }
 }
