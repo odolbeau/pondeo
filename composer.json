@@ -2,7 +2,7 @@
     "name": "odolbeau/pondeo",
     "description": "Pondeo Symfony application",
     "type": "project",
-    "license": "proprietary",
+    "license": "MIT",
     "minimum-stability": "stable",
     "prefer-stable": true,
     "require": {
