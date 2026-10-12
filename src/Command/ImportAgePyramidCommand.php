@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Service\Import\AgePyramidImporter;
 use App\Service\Import\AgePyramidSourceDownloader;
+use App\Service\Import\ImportSource;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -23,6 +24,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         retried, but an interrupted download starts over.
         HELP,
 )]
+#[ImportSource('pyramide-ages.csv')]
 final class ImportAgePyramidCommand extends Command
 {
     public function __construct(

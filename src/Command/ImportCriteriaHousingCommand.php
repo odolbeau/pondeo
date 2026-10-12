@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Service\Import\HousingImporter;
 use App\Service\Import\HousingSourceDownloader;
+use App\Service\Import\ImportSource;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -22,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         (a couple of hundred paged requests, throttled: expect several minutes).
         HELP,
 )]
+#[ImportSource('logement-recensement.csv')]
 final class ImportCriteriaHousingCommand extends Command
 {
     public function __construct(

@@ -12,7 +12,8 @@ use Symfony\Component\Uid\Uuid;
  * writes values for a criterion. Upserts via a single `INSERT ... ON
  * CONFLICT ... DO UPDATE` per batch, targeting the (criterion, unité
  * urbaine, period) unique constraint — handles create and update uniformly,
- * without preloading existing rows or going through the ORM per row.
+ * without preloading existing rows or going through the ORM per row. A row
+ * whose value did not change is left untouched.
  */
 final readonly class CriterionValueWriter
 {
@@ -54,6 +55,7 @@ final readonly class CriterionValueWriter
                     VALUES %2$s
                     ON CONFLICT (criterion_id, unite_urbaine_id, period)
                     DO UPDATE SET %1$s = EXCLUDED.%1$s, updated_at = EXCLUDED.updated_at
+                    WHERE criterion_value.%1$s IS DISTINCT FROM EXCLUDED.%1$s
                     SQL,
                 $valueColumn,
                 implode(', ', $placeholders),

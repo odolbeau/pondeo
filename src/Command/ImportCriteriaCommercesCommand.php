@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Service\Import\CommercesImporter;
 use App\Service\Import\CommercesSourceDownloader;
+use App\Service\Import\ImportSource;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -22,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         (a dozen paged requests, throttled).
         HELP,
 )]
+#[ImportSource('commerces-bpe.csv')]
 final class ImportCriteriaCommercesCommand extends Command
 {
     public function __construct(

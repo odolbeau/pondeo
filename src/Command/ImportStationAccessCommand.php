@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\Import\ImportSource;
 use App\Service\Import\StationAccessImporter;
 use App\Service\Import\StationAccessSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -22,6 +23,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
         urban units change.
         HELP,
 )]
+#[ImportSource('gares-acces-voiture.csv', 'gares-voyageurs.csv', 'communes.geojson')]
 final class ImportStationAccessCommand extends Command
 {
     public function __construct(
