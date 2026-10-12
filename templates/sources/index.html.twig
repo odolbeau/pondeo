@@ -1,0 +1,93 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Sources des données — Pondeo{% endblock %}
+
+{% block meta_description %}D'où viennent les données de Pondeo : producteurs, jeux de données et licences de réutilisation.{% endblock %}
+
+{% block body %}
+{% set sources = [
+    {
+        producer: 'Insee',
+        data: 'Population, structure par âge, diplômes, emploi, logements, catégories socioprofessionnelles, pyramide des âges, revenus (Filosofi), commerces (BPE), aires d\'attraction des villes, unités urbaines',
+        url: 'https://www.insee.fr/',
+        licence: 'Licence Ouverte',
+        licence_url: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence/',
+    },
+    {
+        producer: 'DGFiP',
+        data: 'Impôt sur le revenu par commune (IRCOM) et demandes de valeurs foncières (DVF), diffusés par Etalab sur data.gouv.fr',
+        url: 'https://www.data.gouv.fr/',
+        licence: 'Licence Ouverte',
+        licence_url: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence/',
+    },
+    {
+        producer: 'EDF',
+        data: 'Centrales de production nucléaire',
+        url: 'https://www.data.gouv.fr/datasets/centrales-de-production-nucleaire-dedf-sa',
+        licence: 'Licence Ouverte',
+        licence_url: 'https://www.etalab.gouv.fr/licence-ouverte-open-licence/',
+    },
+    {
+        producer: 'SNCF Gares & Connexions',
+        data: 'Gares de voyageurs',
+        url: 'https://www.data.gouv.fr/fr/datasets/gares-de-voyageurs-1/',
+        licence: 'ODbL',
+        licence_url: 'https://opendatacommons.org/licenses/odbl/',
+    },
+    {
+        producer: 'SNCF',
+        data: 'Trajets en train vers Nantes et Paris, calculés à partir des horaires de l\'API SNCF',
+        url: 'https://numerique.sncf.com/startup/api/',
+        licence: null,
+        licence_url: null,
+    },
+    {
+        producer: 'Open-Meteo',
+        data: 'Données météo : climat 1991-2020 et projections 2041-2050',
+        url: 'https://open-meteo.com/',
+        licence: 'CC BY 4.0',
+        licence_url: 'https://creativecommons.org/licenses/by/4.0/',
+    },
+    {
+        producer: 'Ministère de la Transition écologique et BRGM',
+        data: 'Risques naturels et technologiques (Géorisques)',
+        url: 'https://georisques.gouv.fr/',
+        licence: null,
+        licence_url: null,
+    },
+    {
+        producer: 'IGN',
+        data: 'Limites des communes (Admin Express) et temps de trajet en voiture (Géoplateforme, BD TOPO)',
+        url: 'https://geoservices.ign.fr/',
+        licence: null,
+        licence_url: null,
+    },
+] %}
+<main class="min-h-[calc(100vh-3.5rem)] bg-transparent px-6 py-12 text-stone-900">
+    <div class="mx-auto max-w-4xl">
+        <h1 class="text-4xl font-bold tracking-tight">Sources des données</h1>
+        <p class="mt-3 max-w-2xl text-stone-600">
+            Pondeo ne produit aucune donnée : tout vient de jeux de données publics, que nous rassemblons et mettons en forme.
+            Merci à leurs producteurs.
+        </p>
+
+        <ul class="mt-8 divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white">
+            {% for source in sources %}
+                <li class="p-5">
+                    <h2 class="font-semibold"><a href="{{ source.url }}" class="underline decoration-stone-300 hover:text-emerald-700" rel="noopener">{{ source.producer }}</a></h2>
+                    <p class="mt-1 text-sm text-stone-600">{{ source.data }}</p>
+                    {% if source.licence %}
+                        <p class="mt-2 text-xs text-stone-500">Licence : <a href="{{ source.licence_url }}" class="underline" rel="noopener">{{ source.licence }}</a></p>
+                    {% endif %}
+                </li>
+            {% endfor %}
+        </ul>
+
+        <p class="mt-6 max-w-2xl text-sm text-stone-600">
+            Les chiffres affichés sont recalculés par Pondeo à partir de ces sources (agrégation par unité urbaine, moyennes, comparaisons) :
+            ils peuvent différer des chiffres publiés par leurs producteurs.
+            Le code de Pondeo est publié sous licence MIT sur <a href="https://github.com/odolbeau/pondeo" class="underline" rel="noopener">GitHub</a>.
+        </p>
+    </div>
+</main>
+{% endblock %}
