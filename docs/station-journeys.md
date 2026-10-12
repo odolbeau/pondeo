@@ -4,7 +4,7 @@ For each railway station (see `docs/poi-stations.md`) and each destination
 city, the app stores how well the station is connected on a reference day:
 how many trains a day, how long they take, and how many transfers it takes.
 Destinations today: **Nantes**, **Paris**, **Lyon**, **Marseille**, **Bordeaux**,
-**Toulouse**, **Lille** and **Rennes**.
+**Toulouse**, **Lille**, **Rennes** and **Strasbourg**.
 
 ## What is stored
 
@@ -24,24 +24,18 @@ For one station and one destination, over the reference day:
 When the destination cannot be reached with at most 3 transfers, or the
 station is unknown to the API, the three figures are empty.
 
-A station inside the destination has no journey to it: no line for Paris
-stations towards Paris, nor for the stations of Lyon or Lille towards their
-city, nor for the main station of Nantes, Marseille, Bordeaux, Toulouse
-or Rennes towards its city. The other stations of Nantes (Pirmil, Chantenay...) are
-genuine origins.
+A station inside the destination has no journey to it, so it gets no line for
+it (see the definitions below). The other stations of a destination city
+(Nantes Pirmil and Chantenay, Marseille Blancarde...) are genuine origins.
 
 ## Definitions to keep in mind
 
-- **Paris** is any Paris station: the duration is to the first Paris station
-  reached, whichever it is.
-- **Nantes** is the main Nantes station only; **Marseille** is Saint-Charles
-  only (Blancarde is a genuine origin); **Bordeaux** is Saint-Jean only;
-  **Toulouse** is Matabiau only; **Rennes** is
-  the Rennes station.
-- **Lyon** is any station of the city (Part-Dieu, Perrache, Vaise...), like
-  Paris: the duration is to the first one reached. Lyon-Saint-Exupéry TGV is
-  outside the city, so it is a genuine origin. Likewise **Lille** is any
-  station of the city (Flandres, Europe...).
+- **Whole-city destinations** (Paris, Lyon, Lille): any station of the city
+  counts, and the duration is to the first one reached, whichever it is.
+  Lyon-Saint-Exupéry TGV is outside Lyon, so it is a genuine origin.
+- **Single-station destinations** (Nantes, Marseille Saint-Charles, Bordeaux
+  Saint-Jean, Toulouse Matabiau, Rennes, Strasbourg): the city's main station
+  only.
 - The whole day counts, 00:00 to 24:00, including very early and very late
   trains.
 - The figures are a **snapshot of one day** (the reference day is stored with
