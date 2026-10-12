@@ -20,9 +20,22 @@ install: serve assets-install ## Start the docker stack and prepare the applicat
 	@echo -e "\n"
 	@echo -e "\033[32m🥳 EVERYTHING IS RUNNING! 🥳\033[0m"
 
+# The compose project is named after the directory (see compose.yaml).
+DEV_PROXY_DIR ?= $(HOME)/.local/share/dev-proxy
+PROJECT = $(shell docker compose config --format json | python3 -c 'import json,sys; print(json.load(sys.stdin)["name"])')
+
+# Prerequisites run in order: this target is not meant for `make -j`.
 .PHONY: serve
-serve: ## Start this worktree's stack on demand (installs/seeds only what's missing) and print its URL
-	bin/serve
+serve: check-dev-proxy $(DEV_PROXY_DIR)/certs/pondeo.crt var/.images-built start vendor/autoload.php db-update ## Start this worktree's stack on demand (installs/updates only what's needed) and print its URL
+	@echo ""
+	@echo -e "\033[32mhttps://$(PROJECT).pondeo.localhost\033[0m"
+
+.PHONY: check-dev-proxy
+check-dev-proxy:
+	@bin/check-dev-proxy
+
+$(DEV_PROXY_DIR)/certs/pondeo.crt:
+	bin/certs
 
 .PHONY: vendors-install
 vendors-install: ## Install vendors
@@ -37,10 +50,15 @@ vendors-update: ## Update all vendors
 .PHONY: build
 build: ## Build docker stack
 	docker compose build
+	@mkdir -p var && touch var/.images-built
+
+# Images are rebuilt only when what they are built from changes.
+var/.images-built: compose.yaml $(wildcard .docker/php/*)
+	@$(MAKE) build
 
 .PHONY: start
 start: ## Start the whole docker stack
-	docker compose up --detach --remove-orphans
+	docker compose up --detach --remove-orphans --wait
 
 .PHONY: stop
 stop: ## Stop the docker stack
@@ -49,6 +67,7 @@ stop: ## Stop the docker stack
 .PHONY: destroy
 destroy: ## Destroy all containers, volumes, networks, ... (run by Orca when archiving a worktree, see orca.yaml)
 	docker compose down --remove-orphans --volumes --rmi=local
+	@rm -f var/.images-built
 
 .PHONY: bash
 bash: ## Enter in the application container directly

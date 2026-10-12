@@ -1,0 +1,16 @@
+#!/bin/bash
+#
+# Fails with an explanation when the machine-wide dev proxy isn't running.
+
+if docker network inspect dev-proxy >/dev/null 2>&1 \
+    && [ -n "$(docker ps --quiet --filter label=com.docker.compose.project=dev-proxy)" ]; then
+    exit 0
+fi
+
+echo -e "\033[31mThe dev proxy isn't running (network \`dev-proxy\`).\033[0m" >&2
+echo "It is machine-wide infrastructure, not part of this project: see docs/local-environment.md." >&2
+if [ -n "$(docker ps --quiet --filter publish=443)" ]; then
+    echo "Something else owns port 443:" >&2
+    docker ps --filter publish=443 --format '  {{.Names}}' >&2
+fi
+exit 1
