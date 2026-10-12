@@ -29,7 +29,8 @@ Turbo, served through Docker Compose.
 The data is imported from the files committed under `resources/geo`, which are
 derived from public sources (INSEE, data.gouv.fr, Open-Meteo, SNCF, ...). Each
 criterion's source and import are described in [`docs/`](docs/), starting with
-[`docs/criteria-import.md`](docs/criteria-import.md).
+[`docs/criteria-import.md`](docs/criteria-import.md). Licences are listed in
+[`docs/data-sources.md`](docs/data-sources.md).
 
 ## Deployment
 
@@ -44,4 +45,4 @@ See [`CONTRIBUTING.md`](CONTRIBUTING.md).
 
 The code is released under the [MIT License](LICENSE). The data under
 `resources/geo` stays under the licence of its original source, see the
-documentation of each criterion in [`docs/`](docs/).
+[`docs/data-sources.md`](docs/data-sources.md).
