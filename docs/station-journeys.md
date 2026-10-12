@@ -3,7 +3,7 @@
 For each railway station (see `docs/poi-stations.md`) and each destination
 city, the app stores how well the station is connected on a reference day:
 how many trains a day, how long they take, and how many transfers it takes.
-Destinations today: **Nantes** and **Paris**.
+Destinations today: **Nantes**, **Paris** and **Lyon**.
 
 ## What is stored
 
@@ -24,14 +24,18 @@ When the destination cannot be reached with at most 3 transfers, or the
 station is unknown to the API, the three figures are empty.
 
 A station inside the destination has no journey to it: no line for Paris
-stations towards Paris, nor for Nantes's main station towards Nantes. The
-other stations of Nantes (Pirmil, Chantenay...) are genuine origins.
+stations towards Paris, nor for Nantes's main station towards Nantes, nor for
+Lyon's stations towards Lyon. The other stations of
+Nantes (Pirmil, Chantenay...) are genuine origins.
 
 ## Definitions to keep in mind
 
 - **Paris** is any Paris station: the duration is to the first Paris station
   reached, whichever it is.
 - **Nantes** is the main Nantes station only.
+- **Lyon** is any station of the city (Part-Dieu, Perrache, Vaise...), like
+  Paris: the duration is to the first one reached. Lyon-Saint-Exupéry TGV is
+  outside the city, so it is a genuine origin.
 - The whole day counts, 00:00 to 24:00, including very early and very late
   trains.
 - The figures are a **snapshot of one day** (the reference day is stored with
@@ -59,7 +63,7 @@ line per station and destination:
 | Column           | Content                                                              |
 |------------------|----------------------------------------------------------------------|
 | `id_gare`        | the station's id in `gares-voyageurs.csv`                            |
-| `destination`    | `nantes` or `paris`                                                  |
+| `destination`    | `nantes`, `paris` or `lyon`                                          |
 | `reference_date` | the day read, `YYYY-MM-DD`                                           |
 | `transfers`      | the fewest transfers; empty when out of reach                        |
 | `departures`     | the day's departures at that level, `HHMM:minutes` separated by `;`   |

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Tests\Service\Import;
 
+use App\Enum\JourneyDestination;
 use App\Service\Import\CsvReader;
 use App\Service\Import\StationJourneySourceDownloader;
 use App\Service\Sncf\SncfApiClient;
@@ -159,7 +160,7 @@ final class StationJourneySourceDownloaderTest extends TestCase
 
             return new MockResponse(self::DIRECT_ONLY);
         });
-        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock('2026-10-10 10:00:00'), 'token', 0.0), new CsvReader());
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock('2026-10-10 10:00:00'), 'token', 0.0), new CsvReader(), [JourneyDestination::Nantes, JourneyDestination::Paris]);
         $messages = [];
         $linesWhenPausing = null;
 
@@ -188,7 +189,7 @@ final class StationJourneySourceDownloaderTest extends TestCase
             // Station 2's first request is refused for good.
             return ++$calls >= 3 ? new MockResponse('', ['http_code' => 429]) : new MockResponse(self::DIRECT_ONLY);
         });
-        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock('2026-10-10 10:00:00'), 'token', 0.0), new CsvReader());
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock('2026-10-10 10:00:00'), 'token', 0.0), new CsvReader(), [JourneyDestination::Nantes, JourneyDestination::Paris]);
 
         $result = $downloader->download($this->dir, new \DateTimeImmutable('2026-10-13'), static function (string $line) use (&$downloader): void {
             if (str_contains($line, 'pausing')) {
@@ -216,7 +217,7 @@ final class StationJourneySourceDownloaderTest extends TestCase
     {
         $this->writeStations(['s1,A,46.2,1.4,23176,87000001']);
         $http = new MockHttpClient(static fn (): MockResponse => new MockResponse('not json', ['http_code' => 500]));
-        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader());
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader(), [JourneyDestination::Nantes, JourneyDestination::Paris]);
         $messages = [];
 
         $result = $downloader->download($this->dir, new \DateTimeImmutable('2026-10-13'), static function (string $line) use (&$messages): void {
@@ -237,7 +238,7 @@ final class StationJourneySourceDownloaderTest extends TestCase
     {
         $this->writeStations(['s1,A,46.2,1.4,23176,87000001', 's2,B,46.3,1.5,23177,87000002']);
         $http = new MockHttpClient(new MockResponse('', ['http_code' => 401]));
-        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader());
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader(), [JourneyDestination::Nantes, JourneyDestination::Paris]);
 
         $this->expectException(SncfAuthenticationException::class);
 
@@ -276,7 +277,7 @@ final class StationJourneySourceDownloaderTest extends TestCase
     {
         $this->writeStations(['s1,A,46.2,1.4,23176,87000001', 's2,B,46.3,1.5,23177,87000002']);
         $http = new MockHttpClient(static fn (): MockResponse => new MockResponse(self::DIRECT_ONLY));
-        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader());
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader(), [JourneyDestination::Nantes, JourneyDestination::Paris]);
 
         $result = $downloader->download(
             $this->dir,
@@ -312,7 +313,7 @@ final class StationJourneySourceDownloaderTest extends TestCase
 
             return new MockResponse($responses[$key] ?? self::NO_SOLUTION);
         });
-        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader());
+        $downloader = new StationJourneySourceDownloader(new SncfApiClient($http, new MockClock(), 'token', 0.0), new CsvReader(), [JourneyDestination::Nantes, JourneyDestination::Paris]);
 
         return $downloader->download($this->dir, new \DateTimeImmutable($day), static function (): void {
         }, static function (): void {
