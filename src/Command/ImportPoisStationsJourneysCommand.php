@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\Import\ImportSource;
 use App\Service\Import\StationJourneyImporter;
 use App\Service\Import\StationJourneySourceDownloader;
 use App\Service\Sncf\DateOutOfBoundsException;
@@ -39,6 +40,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
         Run one download at a time: two would overwrite each other's progress.
         HELP,
 )]
+#[ImportSource('trajets-gares.csv', 'gares-voyageurs.csv')]
 final class ImportPoisStationsJourneysCommand extends Command
 {
     /** A Tuesday outside school holidays: the day the figures are comparable on. */
