@@ -244,6 +244,24 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         self::assertSame(['00001'], $this->codes($client, ['trainMaxMinutes' => ['paris' => '90', 'lyon' => '90']]));
     }
 
+    public function testDataEndpointCanCapTheTransfersOfTheTrainLimits(): void
+    {
+        $client = self::createClient();
+        [$direct, $oneChange, $twoChanges] = $this->createUnitesUrbaines(3);
+
+        $this->addAccess($direct, 10, 'paris', 60);
+        $this->setTransfers($this->lastStation, 0);
+        $this->addAccess($oneChange, 10, 'paris', 60);
+        $this->setTransfers($this->lastStation, 1);
+        $this->addAccess($twoChanges, 10, 'paris', 60);
+        $this->setTransfers($this->lastStation, 2);
+
+        $limit = ['paris' => '120'];
+        self::assertSame(['00001', '00002', '00003'], $this->codes($client, ['trainMaxMinutes' => $limit]));
+        self::assertSame(['00001', '00002'], $this->codes($client, ['trainMaxMinutes' => $limit, 'trainMaxTransfers' => '1']));
+        self::assertSame(['00001'], $this->codes($client, ['trainMaxMinutes' => $limit, 'trainMaxTransfers' => '0']));
+    }
+
     public function testDataEndpointRejectsAnUnknownTrainDestination(): void
     {
         $client = self::createClient();
@@ -327,6 +345,14 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         if (null !== $destination) {
             $this->addJourney($station, $destination, $trainMinutes);
         }
+    }
+
+    private function setTransfers(?Poi $station, int $transfers): void
+    {
+        \assert(null !== $station);
+        $connection = self::getContainer()->get(Connection::class);
+        \assert($connection instanceof Connection);
+        $connection->update('station_journey', ['transfers' => $transfers], ['station_id' => $station->getId()->toRfc4122()]);
     }
 
     private function addJourney(?Poi $station, string $destination, ?int $trainMinutes): void

@@ -49,6 +49,6 @@ stations the source no longer lists. Import the zones first
 
 ## Map filter
 
-"Garder les villes qui ont une gare" keeps only the urban units that contain
+"Exclure les villes sans gare" keeps only the urban units that contain
 at least one station. Without it, every unit is shown. See
 `docs/criteria-station-access.md` for the stations *near* a unit.

@@ -123,6 +123,8 @@ unit with no station of its own is therefore judged on its nearest ones.
   the destination city itself always qualifies.
 - A station that cannot reach the destination does not count; a unit left
   with no usable station is excluded, since it cannot be said to meet the limit.
+- An optional maximum number of transfers drops the stations whose fewest
+  transfers to a destination exceed it (`0`: direct trains only).
 - Car times are theoretical and the train figures are the one-day snapshot
   above: good to compare cities, not to plan a trip.
 
