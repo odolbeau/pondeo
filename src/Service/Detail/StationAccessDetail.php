@@ -10,6 +10,8 @@ final readonly class StationAccessDetail
         public string $name,
         public int $distanceMeters,
         public int $durationSeconds,
+        /** @var list<StationJourneyDetail> */
+        public array $journeys = [],
     ) {
     }
 

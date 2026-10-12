@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Service\Detail;
 
 use App\Entity\UniteUrbaine;
+use App\Enum\JourneyDestination;
+use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 
 /** The closest railway stations of an unité urbaine, fastest first (see docs/criteria-station-access.md). */
@@ -19,10 +21,10 @@ final readonly class UniteUrbaineStationAccessProvider
      */
     public function find(UniteUrbaine $uniteUrbaine): array
     {
-        /** @var list<array{name: string, distance_meters: int, duration_seconds: int}> $rows */
+        /** @var list<array{station_id: string, name: string, distance_meters: int, duration_seconds: int}> $rows */
         $rows = $this->connection->fetchAllAssociative(
             <<<'SQL'
-                SELECT p.name, sa.distance_meters, sa.duration_seconds
+                SELECT p.id AS station_id, p.name, sa.distance_meters, sa.duration_seconds
                 FROM station_access sa
                 INNER JOIN poi p ON p.id = sa.station_id
                 WHERE sa.unite_urbaine_id = :id
@@ -31,6 +33,39 @@ final readonly class UniteUrbaineStationAccessProvider
             ['id' => $uniteUrbaine->getId()->toRfc4122()],
         );
 
-        return array_map(static fn (array $row): StationAccessDetail => new StationAccessDetail($row['name'], $row['distance_meters'], $row['duration_seconds']), $rows);
+        $journeys = $this->findJourneys(array_column($rows, 'station_id'));
+
+        return array_map(static fn (array $row): StationAccessDetail => new StationAccessDetail($row['name'], $row['distance_meters'], $row['duration_seconds'], $journeys[$row['station_id']] ?? []), $rows);
+    }
+
+    /**
+     * @param list<string> $stationIds
+     *
+     * @return array<string, list<StationJourneyDetail>> by station id, in destination order
+     */
+    private function findJourneys(array $stationIds): array
+    {
+        if ([] === $stationIds) {
+            return [];
+        }
+
+        /** @var list<array{station_id: string, destination: string, reference_date: string, transfers: ?int, trains_per_day: ?int, median_duration_minutes: ?int}> $rows */
+        $rows = $this->connection->fetchAllAssociative(
+            'SELECT station_id, destination, reference_date, transfers, trains_per_day, median_duration_minutes FROM station_journey WHERE station_id IN (:ids)',
+            ['ids' => $stationIds],
+            ['ids' => ArrayParameterType::STRING],
+        );
+
+        $journeys = [];
+        foreach ($rows as $row) {
+            $journeys[$row['station_id']][] = new StationJourneyDetail(JourneyDestination::from($row['destination']), $row['transfers'], $row['trains_per_day'], $row['median_duration_minutes'], new \DateTimeImmutable($row['reference_date']));
+        }
+
+        $order = array_flip(array_map(static fn (JourneyDestination $destination): string => $destination->value, JourneyDestination::cases()));
+        foreach ($journeys as &$stationJourneys) {
+            usort($stationJourneys, static fn (StationJourneyDetail $a, StationJourneyDetail $b): int => $order[$a->destination->value] <=> $order[$b->destination->value]);
+        }
+
+        return $journeys;
     }
 }
