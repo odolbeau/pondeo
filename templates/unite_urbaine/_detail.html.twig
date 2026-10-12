@@ -32,6 +32,10 @@
         </div>
     {% endif %}
 
+    {% if not inFrame %}
+        <a href="{{ path('app_compare', {villes: uniteUrbaine.code}) }}" class="text-sm text-emerald-700 hover:underline">Comparer avec d'autres villes →</a>
+    {% endif %}
+
     {% if inFrame %}
         <a href="{{ path('app_unite_urbaine_detail', {code: uniteUrbaine.code}) }}" data-turbo-frame="_top"
            class="mt-4 inline-block text-sm text-emerald-700 hover:underline">Voir la fiche complète →</a>

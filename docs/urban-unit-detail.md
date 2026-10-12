@@ -16,6 +16,8 @@ a full page.
   (`/carte?unite=<code>`, alongside the population filter), so a refresh or a
   shared link reopens it.
 
+See also [comparison.md](comparison.md) to put several units side by side.
+
 ## Content
 
 - **Header:** name, département and région, its category in the [aires d'attraction](urban-unit-attraction.md) (e.g. "Couronne · aire d'attraction de Vannes"), population with its rank.
