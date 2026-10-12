@@ -25,7 +25,7 @@ final class UniteUrbaineScoreControllerTest extends WebTestCase
         $client->request('GET', '/mon-classement');
 
         self::assertResponseIsSuccessful();
-        self::assertSelectorExists('input[type=range][name="w[population]"]');
+        self::assertSelectorExists('input[type=range][name="w[taux_chomage]"]');
         self::assertSelectorTextContains('turbo-frame#score-results', 'Réglez au moins un critère');
         self::assertSelectorNotExists('tbody');
     }
@@ -33,25 +33,37 @@ final class UniteUrbaineScoreControllerTest extends WebTestCase
     public function testUnitsAreRankedByTheirWeightedScore(): void
     {
         $client = self::createClient();
-        $this->createValues('population', ['Petite' => 100, 'Grande' => 300, 'Moyenne' => 200]);
+        $this->createValues('taux_activite', ['Petite' => 60.0, 'Grande' => 80.0, 'Moyenne' => 70.0]);
         $this->createValues('taux_chomage', ['Petite' => 5.0, 'Grande' => 12.0, 'Moyenne' => 8.0], rankFromLowest: true);
 
-        $client->request('GET', '/mon-classement?w[population]=5&w[taux_chomage]=1');
+        $client->request('GET', '/mon-classement?w[taux_activite]=5&w[taux_chomage]=1');
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('tbody tr:first-child', 'Grande');
-        self::assertSelectorTextContains('tbody tr:first-child', 'Points forts : les plus peuplées');
+        self::assertSelectorTextContains('tbody tr:first-child', 'Points forts : les plus actives');
         self::assertSelectorTextContains('tbody tr:last-child', 'Petite');
 
-        $client->request('GET', '/mon-classement?w[population]=1&w[taux_chomage]=5');
+        $client->request('GET', '/mon-classement?w[taux_activite]=1&w[taux_chomage]=5');
         self::assertSelectorTextContains('tbody tr:first-child', 'Petite');
+    }
+
+    public function testCheapPricesScoreHigherAndPopulationIsNotAnOption(): void
+    {
+        $client = self::createClient();
+        $this->createValues('prix_m2', ['Chere' => 5000, 'Abordable' => 1500]);
+
+        $client->request('GET', '/mon-classement?w[prix_m2]=3');
+
+        self::assertSelectorTextContains('tbody tr:first-child', 'Abordable');
+        self::assertSelectorTextContains('tbody tr:first-child', 'Points forts : des prix au m² bas');
+        self::assertSelectorNotExists('input[name="w[population]"]');
     }
 
     public function testZeroWeightsAndUnknownCriteriaAreIgnored(): void
     {
         $client = self::createClient();
-        $this->createValues('population', ['Petite' => 100, 'Grande' => 300]);
+        $this->createValues('taux_chomage', ['Petite' => 5.0, 'Grande' => 12.0]);
 
-        $client->request('GET', '/mon-classement?w[population]=0&w[inconnu]=3');
+        $client->request('GET', '/mon-classement?w[taux_chomage]=0&w[inconnu]=3');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorNotExists('tbody');
@@ -61,7 +73,7 @@ final class UniteUrbaineScoreControllerTest extends WebTestCase
     {
         $client = self::createClient();
 
-        $client->request('GET', '/mon-classement?w[population]=9');
+        $client->request('GET', '/mon-classement?w[taux_chomage]=9');
 
         self::assertResponseStatusCodeSame(404);
     }

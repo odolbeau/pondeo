@@ -35,6 +35,15 @@ final class WeightedScoreProviderTest extends KernelTestCase
         self::assertEqualsWithDelta(83.3, $sunny['rows'][0]['score'], 0.01);
     }
 
+    public function testInvertedCriterionRewardsTheLowestValues(): void
+    {
+        $this->createValues('price', ['A' => 1000, 'B' => 2000, 'C' => 3000]);
+
+        $scores = $this->provider()->findScores(['price' => 1], 10, 0, ['price']);
+
+        self::assertSame(['A', 'B', 'C'], array_column($scores['rows'], 'name'));
+    }
+
     public function testNoWeightMeansNoRanking(): void
     {
         $this->createValues('sun', ['A' => 100]);

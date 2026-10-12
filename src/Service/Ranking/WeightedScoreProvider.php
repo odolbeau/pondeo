@@ -31,17 +31,18 @@ final readonly class WeightedScoreProvider
     }
 
     /**
-     * @param array<string, int> $weights importance by criterion code, each above 0
+     * @param array<string, int> $weights  importance by criterion code, each above 0
+     * @param list<string>       $inverted codes whose lower values are the better ones, against the criterion's own ranking
      *
      * @return array{total: int, rows: list<ScoreRow>}
      */
-    public function findScores(array $weights, int $limit, int $offset = 0): array
+    public function findScores(array $weights, int $limit, int $offset = 0, array $inverted = []): array
     {
         if ([] === $weights) {
             return ['total' => 0, 'rows' => []];
         }
 
-        [$cte, $params] = $this->scoresQuery($weights);
+        [$cte, $params] = $this->scoresQuery($weights, $inverted);
 
         /** @var list<array{rank: int, code: string, name: string, departement: ?string, score: string|float, population: ?int, total: int}> $rows */
         $rows = $this->connection->fetchAllAssociative(
@@ -130,18 +131,20 @@ final readonly class WeightedScoreProvider
      * per-criterion `percentiles` they come from.
      *
      * @param array<string, int> $weights
+     * @param list<string>       $inverted
      *
      * @return array{string, array<string, mixed>}
      */
-    private function scoresQuery(array $weights): array
+    private function scoresQuery(array $weights, array $inverted): array
     {
         $values = [];
         $params = ['minShare' => self::MIN_COVERED_WEIGHT_SHARE];
         $index = 0;
         foreach ($weights as $code => $weight) {
-            $values[] = "(CAST(:code{$index} AS text), CAST(:weight{$index} AS integer))";
+            $values[] = "(CAST(:code{$index} AS text), CAST(:weight{$index} AS integer), CAST(:inverted{$index} AS boolean))";
             $params["code{$index}"] = $code;
             $params["weight{$index}"] = $weight;
+            $params["inverted{$index}"] = \in_array($code, $inverted, true) ? 'true' : 'false';
             ++$index;
         }
 
@@ -149,16 +152,16 @@ final readonly class WeightedScoreProvider
 
         // The best value gets the highest percentile, whichever way the criterion ranks.
         $cte = <<<SQL
-            WITH weights(code, weight) AS (VALUES {$values}),
+            WITH weights(code, weight, inverted) AS (VALUES {$values}),
             criterion_period AS (
-                SELECT c.id, c.code, c.rank_from_lowest, w.weight, MAX(cv.period) AS period
+                SELECT c.id, c.code, (c.rank_from_lowest <> w.inverted) AS lower_is_better, w.weight, MAX(cv.period) AS period
                 FROM weights w
                 INNER JOIN criterion c ON c.code = w.code AND c.comparable
                 INNER JOIN criterion_value cv ON cv.criterion_id = c.id
-                GROUP BY c.id, w.weight
+                GROUP BY c.id, w.weight, w.inverted
             ),
             scoped AS (
-                SELECT cv.unite_urbaine_id, cp.code, cp.weight, cp.rank_from_lowest,
+                SELECT cv.unite_urbaine_id, cp.code, cp.weight, cp.lower_is_better,
                        COALESCE(cv.value_integer, cv.value_decimal) AS value
                 FROM criterion_value cv
                 INNER JOIN criterion_period cp ON cp.id = cv.criterion_id AND cp.period = cv.period
@@ -166,7 +169,7 @@ final readonly class WeightedScoreProvider
             ),
             percentiles AS (
                 SELECT s.*,
-                       PERCENT_RANK() OVER (PARTITION BY s.code ORDER BY CASE WHEN s.rank_from_lowest THEN -s.value ELSE s.value END) AS percentile
+                       PERCENT_RANK() OVER (PARTITION BY s.code ORDER BY CASE WHEN s.lower_is_better THEN -s.value ELSE s.value END) AS percentile
                 FROM scoped s
             ),
             scores AS (

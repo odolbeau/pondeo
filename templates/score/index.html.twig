@@ -22,7 +22,7 @@
                                 {% set id = 'w-' ~ ranking.code %}
                                 <li>
                                     <label for="{{ id }}" class="flex items-baseline justify-between gap-2 text-sm text-stone-800">
-                                        <span>{{ ranking.title }}</span>
+                                        <span>{{ ranking.scoreLabel }}</span>
                                         <output for="{{ id }}" data-score-target="output" class="w-4 shrink-0 text-right font-semibold tabular-nums text-emerald-700">{{ weights[ranking.code] ?? 0 }}</output>
                                     </label>
                                     <input type="range" id="{{ id }}" name="w[{{ ranking.code }}]" min="0" max="{{ maxWeight }}" step="1" value="{{ weights[ranking.code] ?? 0 }}"
@@ -60,7 +60,7 @@
                                         <a href="{{ path('app_unite_urbaine_detail', {code: row.code}) }}" data-turbo-frame="_top" class="font-medium text-stone-900 hover:text-emerald-700">{{ row.name }}</a>
                                         {% if row.departement %}<span class="ml-1 text-stone-500">{{ row.departement.label }}</span>{% endif %}
                                         {% if row.strengths %}
-                                            <p class="mt-0.5 text-xs text-stone-500">Points forts : {{ row.strengths|map(code => rankings[code].title|lower)|join(' · ') }}</p>
+                                            <p class="mt-0.5 text-xs text-stone-500">Points forts : {{ row.strengths|map(code => rankings[code].scoreLabel|lower)|join(' · ') }}</p>
                                         {% endif %}
                                         <div class="mt-1 h-1.5 rounded-full bg-stone-200"><div class="h-1.5 rounded-full bg-emerald-500/70" style="width: {{ row.score|round(1) }}%"></div></div>
                                     </td>
