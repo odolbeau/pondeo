@@ -19,9 +19,10 @@ by itself, so no DNS or `/etc/hosts` entry is needed.
 ## Database
 
 Each worktree has its own database (its own Compose volume): branches with
-different migrations never step on each other. `make serve` seeds it the first
-time, when the schema doesn't exist yet, and otherwise only applies pending
-migrations. `make db-reset` rebuilds it from scratch.
+different migrations never step on each other. `make serve` brings it up to date
+(`make db-update`): pending migrations, then the imports whose sources changed,
+which on a new volume means all of them. Nothing is dropped. `make db-reset`
+rebuilds it from scratch.
 
 ## Dev proxy
 
