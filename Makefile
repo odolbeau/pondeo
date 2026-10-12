@@ -110,6 +110,11 @@ assets-install: ## Download assets dependencies
 	docker compose run --rm node npm install
 
 ##@ Quality commands
+# The Twig templates read the Vite manifest, so the functional tests need a build.
+public/build/entrypoints.json: node_modules/.package-lock.json vite.config.js package.json $(shell find assets -type f)
+	docker compose run --rm node npm run build
+	@touch $@
+
 # Installed on demand, and again when the lock files change.
 vendor/autoload.php: composer.lock
 	$(MAKE) vendors-install
@@ -127,7 +132,7 @@ ts-check: node_modules/.package-lock.json ## Type-check the TypeScript frontend 
 	docker compose run --rm node npm run check-types
 
 .PHONY: test
-test: vendor/autoload.php var/.test-db-ready ## Run all tests
+test: vendor/autoload.php var/.test-db-ready public/build/entrypoints.json ## Run all tests
 	docker compose run --rm php bin/console cache:clear --env=test --no-debug
 	docker compose run --rm php rm -f var/cache/bab_tested_routes_checker_bundle_route_storage
 	docker compose run --rm php bin/phpunit
