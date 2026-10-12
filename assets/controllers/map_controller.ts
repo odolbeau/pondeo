@@ -11,7 +11,7 @@ const ZONES_SOURCE_ID = 'unites-urbaines';
 const SELECTED_LAYER_ID = `${ZONES_SOURCE_ID}-selected`;
 const UNITE_CODE_PATTERN = /^[0-9A-Za-z]{5}$/;
 // Query params making up the filter — in the page URL and in localStorage.
-const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation'];
+const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'trainMaxTransfers'];
 // One param per destination city: trainMaxMinutes[paris]=120.
 const TRAIN_PARAM_PREFIX = 'trainMaxMinutes[';
 const PLANTS_SOURCE_ID = 'nuclear-plants';
@@ -30,7 +30,7 @@ const STORAGE_KEY = 'pondeo:map:population';
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'trainCity', 'trainHours', 'panel', 'frame'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'panel', 'frame'];
     static values = {
         dataUrl: String,
         plantsUrl: String,
@@ -52,6 +52,7 @@ export default class extends Controller {
     declare readonly withStationTarget: HTMLInputElement;
     declare readonly trainCityTargets: HTMLSelectElement[];
     declare readonly trainHoursTargets: HTMLInputElement[];
+    declare readonly trainMaxTransfersTarget: HTMLInputElement;
     declare readonly panelTarget: HTMLElement;
     declare readonly frameTarget: HTMLElement & { src: string | null };
     declare readonly dataUrlValue: string;
@@ -154,6 +155,7 @@ export default class extends Controller {
         this.nuclearExclusionKmTarget.value = params.get('nuclearExclusionKm') ?? '';
         this.priceMaxTarget.value = params.get('priceMax') ?? '';
         this.applyTrainParams(params);
+        this.trainMaxTransfersTarget.value = params.get('trainMaxTransfers') ?? '';
         this.writeInputs(min, max);
         this.syncRanges(min, max);
     }
@@ -500,6 +502,10 @@ export default class extends Controller {
         const priceMax = this.priceMax();
         if (null !== priceMax) {
             params.set('priceMax', String(priceMax));
+        }
+        const transfers = this.trainMaxTransfersTarget.value.trim();
+        if ('' !== transfers && Number.isInteger(Number(transfers)) && Number(transfers) >= 0) {
+            params.set('trainMaxTransfers', transfers);
         }
         for (const [destination, minutes] of this.trainLimits()) {
             params.set(`${TRAIN_PARAM_PREFIX}${destination}]`, String(minutes));

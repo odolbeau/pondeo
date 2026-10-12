@@ -59,17 +59,7 @@
             </span>
         </label>
 
-        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Gares</h2>
-
-        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
-            <input type="checkbox" data-map-target="withStation" data-action="change->map#onToggleChange"
-                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
-            <span>Garder les villes qui ont une gare
-                <span class="block text-xs text-stone-500">Au moins une gare voyageurs dans l'agglomération</span>
-            </span>
-        </label>
-
-        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Trajet en train</h2>
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Gares et trains</h2>
 
         <div class="mt-4 flex items-center gap-2 text-sm text-stone-700">
             <select aria-label="Ville de destination, trajet 1" data-map-target="trainCity" data-action="change->map#onTrainInput"
@@ -104,6 +94,27 @@
         </div>
 
         <p class="mt-2 text-xs text-stone-500">Voiture jusqu'à la gare la plus pratique, puis train (durée médiane un jour de semaine). Temps de voiture théoriques, sans trafic.</p>
+
+        <label class="mt-4 block text-sm text-stone-700">
+            Exclure les trajets à plus de
+            <span class="mt-2 flex items-center gap-2">
+                <input type="number" inputmode="numeric" step="1" min="0" placeholder="∞"
+                       aria-label="Nombre maximum de changements"
+                       data-map-target="trainMaxTransfers"
+                       data-action="input->map#onTrainInput"
+                       class="w-16 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+                <span>changements</span>
+            </span>
+            <span class="mt-1 block text-xs text-stone-500">0 pour un train direct ; s'applique aux villes choisies ci-dessus</span>
+        </label>
+
+        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
+            <input type="checkbox" data-map-target="withStation" data-action="change->map#onToggleChange"
+                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
+            <span>Exclure les villes sans gare
+                <span class="block text-xs text-stone-500">Au moins une gare voyageurs dans l'agglomération</span>
+            </span>
+        </label>
 
         <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Commerces</h2>
 

@@ -79,14 +79,15 @@ final readonly class UniteUrbaineMapDataProvider
      * the car ride plus the train to the destination fits in the minutes. A
      * station without a journey row is inside the destination (train: 0); a
      * station that cannot reach it does not count, nor does an unité urbaine
-     * without access stations.
+     * without access stations. A transfers maximum also discards the stations
+     * whose fewest transfers to the destination exceed it.
      *
      * @param list<AttractionCategory> $excludedAttractionCategories
      * @param array<string, int>       $trainLimits                  maximum minutes by JourneyDestination value
      *
      * @return list<array{id: string, code: string, name: string, population: int, geometryJson: string}>
      */
-    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null, ?float $priceMax = null, bool $withStation = false, array $trainLimits = []): array
+    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null, ?float $priceMax = null, bool $withStation = false, array $trainLimits = [], ?int $trainMaxTransfers = null): array
     {
         $criterionId = $this->populationCriterionId();
         $excludedCategoryValues = array_map(static fn (AttractionCategory $category): string => $category->value, $excludedAttractionCategories);
@@ -102,7 +103,7 @@ final readonly class UniteUrbaineMapDataProvider
                       FROM station_access sa
                       LEFT JOIN station_journey sj ON sj.station_id = sa.station_id AND sj.destination = :trainDestination{$i}
                       WHERE sa.unite_urbaine_id = uu.id
-                        AND (sj.id IS NULL OR sj.median_duration_minutes IS NOT NULL)
+                        AND (sj.id IS NULL OR (sj.median_duration_minutes IS NOT NULL AND (CAST(:trainTransfers AS integer) IS NULL OR sj.transfers <= CAST(:trainTransfers AS integer))))
                         AND sa.duration_seconds / 60.0 + COALESCE(sj.median_duration_minutes, 0) <= :trainMinutes{$i}
                   )
                 SQL;
@@ -164,7 +165,7 @@ final readonly class UniteUrbaineMapDataProvider
                         AND station.unite_urbaine_id = uu.id
                   ))
                 SQL.$trainClauses,
-            $trainParams + [
+            $trainParams + ['trainTransfers' => $trainMaxTransfers] + [
                 'criterionId' => $criterionId,
                 'period' => $period,
                 'min' => $populationMin,

@@ -37,6 +37,9 @@ final readonly class UniteUrbaineMapDataInput
         /** @var array<string, int> destination value => maximum minutes (car to the station + train) */
         #[Assert\All([new Assert\Positive()])]
         public array $trainMaxMinutes = [],
+        /** Applies to the train limits above: 0 means direct trains only. */
+        #[Assert\PositiveOrZero]
+        public ?int $trainMaxTransfers = null,
     ) {
     }
 

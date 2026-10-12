@@ -30,7 +30,7 @@ final class UniteUrbaineMapDataController extends AbstractController
         $min = $filters->populationMin ?? $bounds['min'];
         $max = $filters->populationMax ?? $bounds['max'];
 
-        $unitesUrbaines = $this->mapDataProvider->findFeatures($period, $min, $max, $filters->excludedAttractionCategories(), $filters->commerceDensityMin, $filters->nuclearExclusionKm, $filters->priceMax, $filters->withStation, $filters->trainMaxMinutes);
+        $unitesUrbaines = $this->mapDataProvider->findFeatures($period, $min, $max, $filters->excludedAttractionCategories(), $filters->commerceDensityMin, $filters->nuclearExclusionKm, $filters->priceMax, $filters->withStation, $filters->trainMaxMinutes, $filters->trainMaxTransfers);
 
         return JsonResponse::fromJsonString($this->mapDataProvider->toFeatureCollectionJson($unitesUrbaines));
     }
