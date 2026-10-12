@@ -40,7 +40,7 @@ final class RankingCatalog
         $rankings = [
             new Ranking('population', 'Démographie', 'Les plus peuplées', 'Des métropoles aux villes moyennes.', new RankingNote([
                 'Le nombre d\'habitants de l\'agglomération, c\'est-à-dire de toutes les communes qui forment une même zone bâtie continue, pas seulement de la commune centre.',
-            ], self::SOURCE_POPULATION)),
+            ], self::SOURCE_POPULATION), scorable: false),
             new Ranking('population_croissance_annuelle_moyenne', 'Démographie', 'Les plus dynamiques', 'Où la population progresse le plus vite depuis 2006.', new RankingNote([
                 'Chaque année, de combien de % la population a-t-elle augmenté en moyenne depuis 2006 ? Une valeur de 1 % signifie qu\'une agglomération de 100 000 habitants en gagne environ 1 000 chaque année ; une valeur négative, qu\'elle en perd.',
                 'Une petite agglomération peut afficher un fort pourcentage pour quelques centaines d\'habitants seulement : ce classement dit la dynamique, pas le poids.',
@@ -48,7 +48,7 @@ final class RankingCatalog
             new Ranking('densite', 'Démographie', 'Les plus denses', 'Le nombre d\'habitants au kilomètre carré.', new RankingNote([
                 'Le nombre d\'habitants qui vivent, en moyenne, sur un kilomètre carré de l\'agglomération.',
                 'Le calcul inclut aussi les espaces non construits (parcs, champs, forêts) des communes concernées : une grande agglomération étalée peut ainsi sembler moins dense qu\'une petite ville compacte.',
-            ], self::SOURCE_POPULATION.' ; contours des communes (IGN)')),
+            ], self::SOURCE_POPULATION.' ; contours des communes (IGN)'), scorable: false),
             new Ranking('taux_chomage', 'Économie', 'Le moins de chômage', 'Les agglomérations où l\'on trouve le plus facilement un emploi.', new RankingNote([
                 'Parmi les habitants de 15 à 64 ans qui travaillent ou cherchent un emploi, quelle part est sans emploi ? Pour 100 personnes actives, un taux de 8 % signifie que 8 cherchent du travail.',
                 'Il s\'agit du chômage tel que les habitants le déclarent au recensement : il peut différer du taux officiel publié chaque trimestre et du nombre d\'inscrits à France Travail. Les chiffres ne sont disponibles que les années de recensement.',
@@ -72,15 +72,15 @@ final class RankingCatalog
             new Ranking('prix_m2', 'Immobilier', 'Le prix au m²', 'Tous biens confondus.', new RankingNote([
                 'Combien coûte un mètre carré de logement à l\'achat, appartements et maisons mélangés. Pour un 60 m² à 3 000 €/m², il faut compter 180 000 €.',
                 self::TEXT_DVF,
-            ], self::SOURCE_DVF)),
+            ], self::SOURCE_DVF), invertedInScore: true, scoreTitle: 'Des prix au m² bas'),
             new Ranking('prix_m2_appartement', 'Immobilier', 'Le prix au m² des appartements', 'Pour les achats en ville.', new RankingNote([
                 'Le prix moyen d\'un mètre carré d\'appartement acheté dans l\'agglomération : un bon reflet de la pression immobilière en centre-ville.',
                 self::TEXT_DVF,
-            ], self::SOURCE_DVF)),
+            ], self::SOURCE_DVF), invertedInScore: true, scoreTitle: 'Des appartements abordables'),
             new Ranking('prix_m2_maison', 'Immobilier', 'Le prix au m² des maisons', 'Pour les achats avec jardin.', new RankingNote([
                 'Le prix moyen d\'un mètre carré de maison acheté dans l\'agglomération. Il porte sur la surface habitable : le terrain n\'est pas compté, mais il pèse dans le prix.',
                 self::TEXT_DVF,
-            ], self::SOURCE_DVF)),
+            ], self::SOURCE_DVF), invertedInScore: true, scoreTitle: 'Des maisons abordables'),
             new Ranking('part_logements_vacants', 'Immobilier', 'Le moins de logements vacants', 'Un marché tendu ou une ville qui se vide ?', new RankingNote([
                 'Sur 100 logements de l\'agglomération, combien sont vides, c\'est-à-dire ni habités ni utilisés comme résidence secondaire ? Les logements en vente, en location ou en attente de travaux en font partie.',
                 'Peu de vacance signifie qu\'il est difficile de se loger : le marché est tendu. Beaucoup de vacance peut indiquer une ville qui perd des habitants. À l\'inverse, une station balnéaire pleine de résidences secondaires affichera peu de logements vacants sans être pour autant tendue.',

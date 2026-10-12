@@ -15,8 +15,10 @@ rows) and the address can be shared as is.
 ## Score
 
 Each criterion is turned into a **percentile** among all unités urbaines: 1 for
-the best, 0 for the worst, the best end being the one that criterion's ranking
-already uses (low unemployment, high living standard...). The score is the
+the best, 0 for the worst. The best end is the one the criterion's ranking
+uses (low unemployment, high living standard...), except for prices, where
+cheap is what people want. The population and the density are left out: whether
+big or small is better is a matter of taste, which one importance cannot say. The score is the
 average of a unit's percentiles weighted by the importance, scaled to 0-100.
 Ranks are shared on ties, as in the single-criterion rankings.
 
