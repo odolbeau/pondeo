@@ -69,7 +69,7 @@ db-reset: ## Reset DB
 
 .PHONY: db-update
 db-update: ## Apply migrations and re-run the imports, keeping existing data
-	docker compose run --rm -e FORCE_IMPORT php bin/import-data
+	docker compose run --rm php bin/import-data
 
 .PHONY: db-reset-test
 db-reset-test: ## Reset test DB

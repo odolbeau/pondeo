@@ -29,7 +29,7 @@ on the migrated schema, so migrations must stay backward compatible.
 An import whose source files, and the zones it depends on, are unchanged since
 its last successful run is skipped, so a deployment that does not touch the
 data only pays for the migrations. Changing the import code re-runs them all.
-`FORCE_IMPORT=1` runs them regardless, and so does `--download`.
+`--download` runs an import regardless, and `make db-reset` rebuilds everything.
 
 ## Server side
 

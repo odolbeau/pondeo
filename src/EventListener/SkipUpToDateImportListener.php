@@ -13,7 +13,7 @@ use Symfony\Component\EventDispatcher\Attribute\AsEventListener;
 
 /**
  * Skips an import command whose sources have not changed since its last
- * successful run. `--download` and FORCE_IMPORT=1 always run it.
+ * successful run. `--download` always runs it.
  */
 final readonly class SkipUpToDateImportListener
 {
@@ -26,7 +26,7 @@ final readonly class SkipUpToDateImportListener
     {
         $command = $event->getCommand();
         $source = null === $command ? null : $this->sourceOf($command);
-        if (null === $command || null === $source || $this->isForced($event)) {
+        if (null === $command || null === $source || $this->isDownloading($event)) {
             return;
         }
 
@@ -37,7 +37,7 @@ final readonly class SkipUpToDateImportListener
 
         $output = $event->getOutput();
         $command->setCode(static function () use ($output, $name): int {
-            $output->writeln(\sprintf('%s: sources unchanged since the last import, skipped (FORCE_IMPORT=1 to run anyway).', $name));
+            $output->writeln(\sprintf('%s: sources unchanged since the last import, skipped.', $name));
 
             return Command::SUCCESS;
         });
@@ -65,10 +65,10 @@ final readonly class SkipUpToDateImportListener
         return [] === $attributes ? null : $attributes[0]->newInstance();
     }
 
-    private function isForced(ConsoleCommandEvent $event): bool
+    private function isDownloading(ConsoleCommandEvent $event): bool
     {
         $input = $event->getInput();
 
-        return '1' === getenv('FORCE_IMPORT') || ($input->hasOption('download') && (bool) $input->getOption('download'));
+        return $input->hasOption('download') && (bool) $input->getOption('download');
     }
 }
