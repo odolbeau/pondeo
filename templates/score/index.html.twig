@@ -1,0 +1,90 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mon classement — Pondeo{% endblock %}
+
+{% block meta_description %}Dites ce qui compte pour vous (emploi, prix de l'immobilier, climat, risques…) et obtenez le classement des agglomérations françaises qui vous correspondent le mieux.{% endblock %}
+
+{% block body %}
+<main class="min-h-[calc(100vh-3.5rem)] bg-transparent px-6 py-12 text-stone-900">
+    <div class="mx-auto max-w-5xl">
+        <h1 class="text-4xl font-bold tracking-tight">Mon classement</h1>
+        <p class="mt-3 max-w-2xl text-stone-600">
+            Donnez de l'importance aux critères qui comptent pour vous, de 0 (ignoré) à {{ maxWeight }} (essentiel) : les agglomérations sont classées selon le score que vous obtenez. L'adresse de la page garde vos réglages, vous pouvez la partager.
+        </p>
+
+        <div class="mt-8 grid gap-8 lg:grid-cols-[20rem_1fr]">
+            <form method="get" action="{{ path('app_score') }}" data-turbo-frame="score-results" data-controller="score" data-score-target="form" class="space-y-6">
+                {% for theme, themeRankings in themes %}
+                    <fieldset>
+                        <legend class="text-xs font-medium uppercase tracking-wider text-emerald-700">{{ theme }}</legend>
+                        <ul class="mt-2 space-y-3">
+                            {% for ranking in themeRankings %}
+                                {% set id = 'w-' ~ ranking.code %}
+                                <li>
+                                    <label for="{{ id }}" class="flex items-baseline justify-between gap-2 text-sm text-stone-800">
+                                        <span>{{ ranking.title }}</span>
+                                        <output for="{{ id }}" data-score-target="output" class="w-4 shrink-0 text-right font-semibold tabular-nums text-emerald-700">{{ weights[ranking.code] ?? 0 }}</output>
+                                    </label>
+                                    <input type="range" id="{{ id }}" name="w[{{ ranking.code }}]" min="0" max="{{ maxWeight }}" step="1" value="{{ weights[ranking.code] ?? 0 }}"
+                                           aria-describedby="{{ id }}-hint" data-action="input->score#update"
+                                           class="mt-1 w-full accent-emerald-600">
+                                    <p id="{{ id }}-hint" class="text-xs text-stone-500">{{ ranking.tagline }}</p>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    </fieldset>
+                {% endfor %}
+                <button type="submit" class="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Calculer mon classement</button>
+            </form>
+
+            <turbo-frame id="score-results" data-turbo-action="advance">
+                {% if weights is empty %}
+                    <p class="rounded-xl border border-dashed border-stone-300 p-6 text-stone-600">Réglez au moins un critère au-dessus de 0 pour voir apparaître votre classement.</p>
+                {% elseif rows is empty %}
+                    <p class="text-stone-500">Aucune agglomération n'a assez de données pour ces critères.</p>
+                {% else %}
+                    <p class="text-sm text-stone-600">{{ total|fr_number }} agglomérations classées. Le score va de 0 à 100 : 100 signifierait d'être la meilleure sur tous les critères choisis.</p>
+                    <table class="mt-4 w-full text-left text-sm">
+                        <thead class="text-xs uppercase tracking-wider text-stone-500">
+                            <tr>
+                                <th class="w-12 py-2 font-medium">#</th>
+                                <th class="py-2 font-medium">Unité urbaine</th>
+                                <th class="py-2 text-right font-medium">Score</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for row in rows %}
+                                <tr class="border-t border-stone-200">
+                                    <td class="py-3 font-semibold text-emerald-700">{{ row.rank }}</td>
+                                    <td class="py-3">
+                                        <a href="{{ path('app_unite_urbaine_detail', {code: row.code}) }}" data-turbo-frame="_top" class="font-medium text-stone-900 hover:text-emerald-700">{{ row.name }}</a>
+                                        {% if row.departement %}<span class="ml-1 text-stone-500">{{ row.departement.label }}</span>{% endif %}
+                                        {% if row.strengths %}
+                                            <p class="mt-0.5 text-xs text-stone-500">Points forts : {{ row.strengths|map(code => rankings[code].title|lower)|join(' · ') }}</p>
+                                        {% endif %}
+                                        <div class="mt-1 h-1.5 rounded-full bg-stone-200"><div class="h-1.5 rounded-full bg-emerald-500/70" style="width: {{ row.score|round(1) }}%"></div></div>
+                                    </td>
+                                    <td class="py-3 text-right font-semibold tabular-nums">{{ row.score|number_format(1, ',') }}</td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+
+                    {% if pages > 1 %}
+                        {% set query = {w: weights} %}
+                        <nav class="mt-6 flex items-center justify-between text-sm" aria-label="Pagination">
+                            {% if page > 1 %}
+                                <a href="{{ path('app_score', query|merge({page: page - 1})) }}" class="text-emerald-700 hover:underline">← Précédent</a>
+                            {% else %}<span></span>{% endif %}
+                            <span class="text-stone-600">Page {{ page }} sur {{ pages }}</span>
+                            {% if page < pages %}
+                                <a href="{{ path('app_score', query|merge({page: page + 1})) }}" class="text-emerald-700 hover:underline">Suivant →</a>
+                            {% else %}<span></span>{% endif %}
+                        </nav>
+                    {% endif %}
+                {% endif %}
+            </turbo-frame>
+        </div>
+    </div>
+</main>
+{% endblock %}
