@@ -281,7 +281,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         $entityManager->flush();
 
         $connection = $entityManager->getConnection();
-        foreach ([['nantes', 0, 7, 77], ['paris', null, null, null], ['lyon', 1, 4, 135], ['marseille', 0, 3, 190], ['bordeaux', 0, 5, 95], ['toulouse', 1, 6, 150]] as [$destination, $transfers, $trains, $minutes]) {
+        foreach ([['nantes', 0, 7, 77], ['paris', null, null, null], ['lyon', 1, 4, 135], ['marseille', 0, 3, 190], ['bordeaux', 0, 5, 95], ['toulouse', 1, 6, 150], ['lille', 0, 12, 45]] as [$destination, $transfers, $trains, $minutes]) {
             $connection->insert('station_journey', [
                 'id' => Uuid::v7()->toRfc4122(),
                 'station_id' => $auray->getId()->toRfc4122(),
@@ -304,6 +304,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "direct · 3\u{a0}trains/j · 3\u{a0}h\u{a0}10");
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "direct · 5\u{a0}trains/j · 1\u{a0}h\u{a0}35");
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "1 correspondance · 6\u{a0}trains/j · 2\u{a0}h\u{a0}30");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "direct · 12\u{a0}trains/j · 45\u{a0}min");
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', '13/10/2026');
     }
 

@@ -30,6 +30,9 @@ final class JourneyDestinationTest extends TestCase
         yield 'Bordeaux Cenon' => [JourneyDestination::Bordeaux, '87581595', '33119', false];
         yield 'Toulouse Matabiau' => [JourneyDestination::Toulouse, '87611004', '31555', true];
         yield 'Colomiers' => [JourneyDestination::Toulouse, '87611467', '31149', false];
+        yield 'Lille Flandres' => [JourneyDestination::Lille, '87286005', '59350', true];
+        yield 'Lille Europe' => [JourneyDestination::Lille, '87223263', '59350', true];
+        yield 'Loos lez Lille' => [JourneyDestination::Lille, '87286112', '59360', false];
         yield 'Lyon Part-Dieu' => [JourneyDestination::Lyon, '87723197', '69383', true];
         yield 'Lyon Vaise' => [JourneyDestination::Lyon, '87721001', '69389', true];
         yield 'Lyon Saint-Exupéry TGV' => [JourneyDestination::Lyon, '87762906', '69299', false];
