@@ -103,7 +103,7 @@ final class UniteUrbaineDetailController extends AbstractController
         }
 
         if ([] !== $stations) {
-            $cardsBySection[DetailSection::CadreDeVie->value][] = new DetailCard(DetailCard::STATIONS, 2.0 + \count($stations) * 1.2);
+            $cardsBySection[DetailSection::CadreDeVie->value][] = new DetailCard(DetailCard::STATIONS, 2.0 + array_sum(array_map(static fn (StationAccessDetail $station): float => 1.2 + \count($station->journeys) * 0.8, $stations)));
         }
 
         if ([] !== $poiCategories) {

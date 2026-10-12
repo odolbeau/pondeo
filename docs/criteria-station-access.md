@@ -16,6 +16,9 @@ stations). It is not a criterion: nothing is ranked or compared, it is a list.
   list.
 - The year the routes were computed is stored with them.
 
+Each listed station also shows its train connections to Nantes and Paris (see
+`docs/station-journeys.md`).
+
 ## Source
 
 Routes come from the IGN Géoplateforme routing service (`bdtopo-osrm`, car

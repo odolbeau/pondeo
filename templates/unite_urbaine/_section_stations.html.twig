@@ -1,13 +1,39 @@
+{% macro duration(minutes) %}{% if minutes >= 60 %}{{ minutes // 60 }}&nbsp;h&nbsp;{{ '%02d'|format(minutes % 60) }}{% else %}{{ minutes }}&nbsp;min{% endif %}{% endmacro %}
     <section class="{{ card }}">
         <h2 class="{{ title }}">{{ stations|length > 1 ? 'Gares les plus proches' : 'Gare la plus proche' }}</h2>
         <ul class="mt-2 divide-y divide-stone-200 text-sm">
             {% for station in stations %}
-                <li class="flex items-baseline justify-between gap-4 py-2">
-                    <span class="text-stone-900">{{ station.name }}</span>
-                    <span class="shrink-0 text-stone-600">
-                        {% if station.inside %}dans l'agglomération{% else %}~{{ station.minutes }}&nbsp;min · {{ station.kilometers|number_format(1, ',') }}&nbsp;km{% endif %}
-                    </span>
+                <li class="py-2">
+                    <div class="flex items-baseline justify-between gap-4">
+                        <span class="text-stone-900">{{ station.name }}</span>
+                        <span class="shrink-0 text-stone-600">
+                            {% if station.inside %}dans l'agglomération{% else %}~{{ station.minutes }}&nbsp;min · {{ station.kilometers|number_format(1, ',') }}&nbsp;km{% endif %}
+                        </span>
+                    </div>
+                    {% if station.journeys %}
+                        <dl class="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs text-stone-600">
+                            {% for journey in station.journeys %}
+                                <dt class="font-medium text-stone-700">{{ journey.destination.label }}</dt>
+                                <dd>
+                                    {% if journey.reachable %}
+                                        {{ journey.transfers ? journey.transfers ~ (journey.transfers > 1 ? ' correspondances' : ' correspondance') : 'direct' }}
+                                        · {{ journey.trainsPerDay }}&nbsp;train{{ journey.trainsPerDay > 1 ? 's' : '' }}/j
+                                        · {{ _self.duration(journey.medianDurationMinutes) }}
+                                    {% else %}
+                                        pas de liaison (3 correspondances max)
+                                    {% endif %}
+                                </dd>
+                            {% endfor %}
+                        </dl>
+                    {% endif %}
                 </li>
             {% endfor %}
         </ul>
+        {% set referenceDate = null %}
+        {% for station in stations %}
+            {% if null == referenceDate and station.journeys %}{% set referenceDate = (station.journeys|first).referenceDate %}{% endif %}
+        {% endfor %}
+        {% if referenceDate %}
+            <p class="mt-3 text-xs text-stone-500">Trajets vers Nantes et Paris d'après les horaires théoriques du {{ referenceDate|date('d/m/Y') }} : durée médiane, avec le moins de correspondances possible.</p>
+        {% endif %}
     </section>

@@ -16,6 +16,7 @@ use App\Factory\PoiFactory;
 use App\Factory\UniteUrbaineFactory;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\WebTestCase;
+use Symfony\Component\Uid\Uuid;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
 
@@ -264,6 +265,42 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', 'Questembert');
         // Stations have their own block: they are not repeated among the points of interest.
         self::assertSelectorTextNotContains('turbo-frame#unite-urbaine-detail', "Points d'intérêt");
+    }
+
+    public function testStationsShowTheirJourneysToNantesAndParis(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $category = PoiCategoryFactory::createOne(['code' => 'railway_station']);
+        $auray = PoiFactory::createOne(['category' => $category, 'name' => 'Auray']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new StationAccess($vannes, $auray, 1, 12_300, 1_500, 2026));
+        $entityManager->flush();
+
+        $connection = $entityManager->getConnection();
+        foreach ([['nantes', 0, 7, 77], ['paris', null, null, null]] as [$destination, $transfers, $trains, $minutes]) {
+            $connection->insert('station_journey', [
+                'id' => Uuid::v7()->toRfc4122(),
+                'station_id' => $auray->getId()->toRfc4122(),
+                'destination' => $destination,
+                'reference_date' => '2026-10-13',
+                'transfers' => $transfers,
+                'trains_per_day' => $trains,
+                'median_duration_minutes' => $minutes,
+                'created_at' => '2026-10-10 10:00:00',
+                'updated_at' => '2026-10-10 10:00:00',
+            ]);
+        }
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', "direct · 7\u{a0}trains/j · 1\u{a0}h\u{a0}17");
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', 'pas de liaison');
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', '13/10/2026');
     }
 
     public function testPageListsPoisByCategoryAndCommunes(): void

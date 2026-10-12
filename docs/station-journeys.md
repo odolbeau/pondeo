@@ -96,6 +96,15 @@ Without `--download`, the command only imports the vendored file, offline. The
 database mirrors the file: lines that are not in it, e.g. after a `--limit`
 pilot on a fresh file, are removed.
 
+## Where it is shown
+
+The "closest stations" card of an urban unit (map side panel and full page, see
+`docs/criteria-station-access.md`) lists, under each station, one line per
+destination: transfers ("direct" or "1 correspondance"), trains per day and
+median duration, or "no connection" when the destination is out of reach. A
+station inside the destination has no line for it. A footnote gives the
+reference day, since the figures are a snapshot.
+
 ## Adding a destination
 
 A destination is a city the SNCF API can route to (a station or a whole city).
