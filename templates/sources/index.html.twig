@@ -49,6 +49,14 @@
         licence_url: null,
     },
     {
+        producer: 'Subverti',
+        data: 'Annuaire des clubs de jeux, ludothèques et associations de jeux de société',
+        url: 'https://subverti.com/fr/maps/associations/',
+        licence: null,
+        licence_url: null,
+        note: 'Données utilisées avec l\'autorisation de Subverti.',
+    },
+    {
         producer: 'Open-Meteo',
         data: 'Données météo : climat 1991-2020 et projections 2041-2050',
         url: 'https://open-meteo.com/',
@@ -85,6 +93,9 @@
                     <p class="mt-1 text-sm text-stone-600">{{ source.data }}</p>
                     {% if source.licence %}
                         <p class="mt-2 text-xs text-stone-500">Licence : <a href="{{ source.licence_url }}" class="underline" rel="noopener">{{ source.licence }}</a></p>
+                    {% endif %}
+                    {% if source.note is defined %}
+                        <p class="mt-2 text-xs text-stone-500">{{ source.note }}</p>
                     {% endif %}
                 </li>
             {% endfor %}

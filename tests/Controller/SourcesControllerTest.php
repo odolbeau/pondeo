@@ -18,6 +18,8 @@ final class SourcesControllerTest extends WebTestCase
         self::assertAnySelectorTextContains('h2', 'Insee');
         self::assertAnySelectorTextContains('h2', 'Open-Meteo');
         self::assertAnySelectorTextContains('li p', 'CC BY 4.0');
+        self::assertAnySelectorTextContains('h2', 'Subverti');
+        self::assertAnySelectorTextContains('li p', "avec l'autorisation de Subverti");
     }
 
     public function testTheFooterLinksToTheSourcesPage(): void
