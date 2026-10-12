@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Service\Import\ClimateImporter;
 use App\Service\Import\ClimateSourceDownloader;
+use App\Service\Import\ImportSource;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -25,6 +26,7 @@ use Symfony\Component\Console\Style\SymfonyStyle;
         <comment>--max-calls</comment> in total, ledger included.
         HELP,
 )]
+#[ImportSource('climat-normales.csv')]
 final class ImportCriteriaClimateCommand extends Command
 {
     public function __construct(

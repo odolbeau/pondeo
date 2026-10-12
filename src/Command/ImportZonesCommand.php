@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\Import\ImportSource;
 use App\Service\Import\ZoneImporter;
 use App\Service\Import\ZoneSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -23,6 +24,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         also list the ~27 000 communes outside any unité urbaine, and overseas territories).
         HELP,
 )]
+#[ImportSource('communes-unites-urbaines.csv', 'communes-aires-attraction.csv', 'communes.geojson')]
 final class ImportZonesCommand extends Command
 {
     public function __construct(

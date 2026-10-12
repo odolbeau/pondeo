@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\Import\ImportSource;
 use App\Service\Import\NuclearPlantImporter;
 use App\Service\Import\NuclearPlantSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -23,6 +24,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         production nucléaire" dataset (opendata.edf.fr, Licence Ouverte).
         HELP,
 )]
+#[ImportSource('centrales-nucleaires.csv', 'communes.geojson')]
 final class ImportPoisNuclearPlantsCommand extends Command
 {
     public function __construct(

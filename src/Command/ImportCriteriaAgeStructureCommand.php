@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Service\Import\AgeStructureImporter;
 use App\Service\Import\AgeStructureSourceDownloader;
+use App\Service\Import\ImportSource;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -22,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         (a few dozen paged requests, throttled).
         HELP,
 )]
+#[ImportSource('structure-age-recensement.csv')]
 final class ImportCriteriaAgeStructureCommand extends Command
 {
     public function __construct(

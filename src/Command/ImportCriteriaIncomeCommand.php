@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\Import\ImportSource;
 use App\Service\Import\IncomeImporter;
 use App\Service\Import\IncomeSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -22,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         (a few dozen paged requests, throttled).
         HELP,
 )]
+#[ImportSource('revenus-filosofi.csv')]
 final class ImportCriteriaIncomeCommand extends Command
 {
     public function __construct(

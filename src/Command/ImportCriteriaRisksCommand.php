@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Service\Import\CsvCriterionImporter;
+use App\Service\Import\ImportSource;
 use App\Service\Import\RiskCriteria;
 use App\Service\Import\RiskSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -24,6 +25,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         An interrupted download is resumable: re-run it and communes already fetched this year are skipped.
         HELP,
 )]
+#[ImportSource('risques-communes.csv')]
 final class ImportCriteriaRisksCommand extends Command
 {
     public function __construct(

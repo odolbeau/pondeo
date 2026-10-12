@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\Import\ImportSource;
 use App\Service\Import\TaxIncomeImporter;
 use App\Service\Import\TaxIncomeSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -22,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         data.gouv.fr (one 18 MB archive: the latest income year published is kept).
         HELP,
 )]
+#[ImportSource('revenus-fiscaux.csv')]
 final class ImportCriteriaTaxIncomeCommand extends Command
 {
     public function __construct(

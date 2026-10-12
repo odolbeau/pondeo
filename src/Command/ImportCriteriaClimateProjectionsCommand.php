@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Service\Import\ClimateProjectionImporter;
 use App\Service\Import\ClimateProjectionSourceDownloader;
+use App\Service\Import\ImportSource;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -24,6 +25,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         archived. Set OPENMETEO_API_KEY to use the paid API; the free quota is far smaller than the run needs.
         HELP,
 )]
+#[ImportSource('climat-projections.csv')]
 final class ImportCriteriaClimateProjectionsCommand extends Command
 {
     public function __construct(

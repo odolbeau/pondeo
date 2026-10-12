@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\Import\ImportSource;
 use App\Service\Import\RealEstatePriceImporter;
 use App\Service\Import\RealEstatePriceSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -22,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         "Statistiques DVF" monthly file on data.gouv.fr (one download of about 270 MB).
         HELP,
 )]
+#[ImportSource('prix-immobilier.csv')]
 final class ImportCriteriaRealEstatePricesCommand extends Command
 {
     public function __construct(

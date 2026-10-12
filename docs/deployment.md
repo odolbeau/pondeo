@@ -21,10 +21,15 @@ to) an image already built.
 
 The data is the heart of the project and is entirely derived from the files
 committed under `resources/geo`. Each deployment applies the pending
-migrations, then re-runs every import (`bin/import-data`). The imports are
+migrations, then re-runs the imports (`bin/import-data`). The imports are
 idempotent upserts: existing rows are updated, missing ones added, and nothing
 is dropped. The site stays up meanwhile, still running the previous release
 on the migrated schema, so migrations must stay backward compatible.
+
+An import whose source files, and the zones it depends on, are unchanged since
+its last successful run is skipped, so a deployment that does not touch the
+data only pays for the migrations. Changing the import code re-runs them all.
+`FORCE_IMPORT=1` runs them regardless, and so does `--download`.
 
 ## Server side
 

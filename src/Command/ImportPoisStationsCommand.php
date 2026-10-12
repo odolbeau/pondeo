@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\Import\ImportSource;
 use App\Service\Import\StationImporter;
 use App\Service\Import\StationSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -23,6 +24,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         dataset (SNCF Gares & Connexions, data.gouv.fr, ODbL).
         HELP,
 )]
+#[ImportSource('gares-voyageurs.csv', 'communes.geojson')]
 final class ImportPoisStationsCommand extends Command
 {
     public function __construct(

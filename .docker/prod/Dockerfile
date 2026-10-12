@@ -55,7 +55,10 @@ FROM php-base AS php
 LABEL org.opencontainers.image.source=https://github.com/odolbeau/pondeo
 LABEL org.opencontainers.image.description="Pondeo (PHP-FPM)"
 
-COPY --from=vendors /var/www /var/www
+# The data in its own layer, first: it changes rarely, so a deployment only
+# pulls it again when it did (the rest of the application changes every time).
+COPY resources/geo /var/www/resources/geo
+COPY --from=vendors --exclude=resources/geo /var/www /var/www
 COPY --from=front-build /var/www/public/build /var/www/public/build
 RUN mkdir -p var && chown -R www-data:www-data var
 

@@ -6,6 +6,7 @@ namespace App\Command;
 
 use App\Service\Import\EmploymentImporter;
 use App\Service\Import\EmploymentSourceDownloader;
+use App\Service\Import\ImportSource;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
 use Symfony\Component\Console\Command\Command;
@@ -22,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         (a few dozen paged requests, throttled: expect a couple of minutes).
         HELP,
 )]
+#[ImportSource('emploi-recensement.csv')]
 final class ImportCriteriaEmploymentCommand extends Command
 {
     public function __construct(

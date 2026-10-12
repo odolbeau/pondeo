@@ -7,6 +7,7 @@ namespace App\Command;
 use App\Enum\CriterionValueType;
 use App\Service\Import\CriterionCsvSpec;
 use App\Service\Import\CsvCriterionImporter;
+use App\Service\Import\ImportSource;
 use App\Service\Import\PopulationSourceDownloader;
 use App\Service\Import\PopulationTrendDeriver;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -25,6 +26,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         (about 70 paged requests, throttled: expect a few minutes).
         HELP,
 )]
+#[ImportSource('population-historique.csv')]
 final class ImportCriteriaPopulationCommand extends Command
 {
     public function __construct(

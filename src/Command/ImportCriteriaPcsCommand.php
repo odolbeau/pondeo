@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Command;
 
+use App\Service\Import\ImportSource;
 use App\Service\Import\SocioProfessionalImporter;
 use App\Service\Import\SocioProfessionalSourceDownloader;
 use Symfony\Component\Console\Attribute\AsCommand;
@@ -22,6 +23,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         (a hundred or so paged requests, throttled: expect several minutes).
         HELP,
 )]
+#[ImportSource('pcs-recensement.csv')]
 final class ImportCriteriaPcsCommand extends Command
 {
     public function __construct(
