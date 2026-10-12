@@ -88,6 +88,8 @@
             <p class="mt-8 text-stone-500">Aucune donnée pour ce critère.</p>
         {% endif %}
 
+        <p class="mt-12 text-sm text-stone-600">Plusieurs critères comptent pour vous ? <a href="{{ path('app_score', {w: {(ranking.code): 5}}) }}" class="text-emerald-700 hover:underline">Pondérez-les dans votre propre classement →</a></p>
+
         {% if siblings %}
             <section class="mt-12 border-t border-stone-200 pt-6">
                 <h2 class="text-sm font-medium text-stone-600">Dans la même catégorie</h2>
