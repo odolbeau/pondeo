@@ -122,6 +122,7 @@ ts-check: node_modules/.package-lock.json ## Type-check the TypeScript frontend 
 
 .PHONY: test
 test: vendor/autoload.php var/.test-db-ready ## Run all tests
+	docker compose run --rm php bin/console cache:clear --env=test --no-debug
 	docker compose run --rm php rm -f var/cache/bab_tested_routes_checker_bundle_route_storage
 	docker compose run --rm php bin/phpunit
 	docker compose run --rm php bin/console bab:tested-routes-checker:check
