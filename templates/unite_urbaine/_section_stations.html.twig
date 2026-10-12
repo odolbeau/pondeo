@@ -34,6 +34,6 @@
             {% if null == referenceDate and station.journeys %}{% set referenceDate = (station.journeys|first).referenceDate %}{% endif %}
         {% endfor %}
         {% if referenceDate %}
-            <p class="mt-3 text-xs text-stone-500">Trajets vers Nantes et Paris d'après les horaires théoriques du {{ referenceDate|date('d/m/Y') }} : durée médiane, avec le moins de correspondances possible.</p>
+            <p class="mt-3 text-xs text-stone-500">Trajets en train vers les grandes villes d'après les horaires théoriques du {{ referenceDate|date('d/m/Y') }} : durée médiane, avec le moins de correspondances possible.</p>
         {% endif %}
     </section>

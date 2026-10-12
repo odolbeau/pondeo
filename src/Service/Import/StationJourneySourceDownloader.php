@@ -43,6 +43,8 @@ final class StationJourneySourceDownloader
     public function __construct(
         private readonly SncfApiClient $apiClient,
         private readonly CsvReader $csvReader,
+        /** @var ?list<JourneyDestination> null for every destination */
+        private readonly ?array $destinations = null,
     ) {
     }
 
@@ -116,7 +118,7 @@ final class StationJourneySourceDownloader
 
                 $onStation($index, \count($pending), $current['name']);
 
-                foreach (JourneyDestination::cases() as $destination) {
+                foreach ($this->destinations() as $destination) {
                     $key = $current['id_gare'].'|'.$destination->value;
                     if ($destination->isInside($current['code_uic'], $current['code_commune']) || $this->isDone($rows[$key] ?? null, $day)) {
                         ++$skipped;
@@ -237,7 +239,7 @@ final class StationJourneySourceDownloader
      */
     private function hasPendingPair(array $station, array $rows, \DateTimeImmutable $day): bool
     {
-        return array_any(JourneyDestination::cases(), fn (JourneyDestination $destination): bool => !$destination->isInside($station['code_uic'], $station['code_commune'])
+        return array_any($this->destinations(), fn (JourneyDestination $destination): bool => !$destination->isInside($station['code_uic'], $station['code_commune'])
             && !$this->isDone($rows[$station['id_gare'].'|'.$destination->value] ?? null, $day));
     }
 
@@ -296,7 +298,7 @@ final class StationJourneySourceDownloader
     {
         $ordered = [];
         foreach ($stations as $station) {
-            foreach (JourneyDestination::cases() as $destination) {
+            foreach ($this->destinations() as $destination) {
                 $row = $rows[$station['id_gare'].'|'.$destination->value] ?? null;
                 if (null !== $row) {
                     $ordered[] = $row;
@@ -330,5 +332,13 @@ final class StationJourneySourceDownloader
         }
 
         rename($temporary, $path);
+    }
+
+    /**
+     * @return list<JourneyDestination>
+     */
+    private function destinations(): array
+    {
+        return $this->destinations ?? JourneyDestination::cases();
     }
 }

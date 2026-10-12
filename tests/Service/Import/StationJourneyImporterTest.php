@@ -69,7 +69,7 @@ final class StationJourneyImporterTest extends KernelTestCase
         $path = $this->writeTempFile(self::HEADER
             .'s-a,paris,2026-10-13,0,0536:175'."\n"
             .'s-unknown,paris,2026-10-13,0,0536:175'."\n"
-            .'s-a,lyon,2026-10-13,0,0536:175'."\n");
+            .'s-a,tokyo,2026-10-13,0,0536:175'."\n");
 
         self::assertSame(['imported' => 1, 'skipped' => 2], $this->importer()->import($path));
 
