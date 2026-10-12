@@ -110,10 +110,11 @@ assets-install: ## Download assets dependencies
 	docker compose run --rm node npm install
 
 ##@ Quality commands
-# The Twig templates read the Vite manifest, so the functional tests need a build.
-public/build/entrypoints.json: node_modules/.package-lock.json vite.config.js package.json $(shell find assets -type f)
+# The Twig templates read the Vite manifest, so the functional tests need one.
+# Only built when missing: the dev server writes its own at startup (`make
+# serve`), and rebuilding would replace it with hashed files it does not serve.
+public/build/entrypoints.json: | node_modules/.package-lock.json
 	docker compose run --rm node npm run build
-	@touch $@
 
 # Installed on demand, and again when the lock files change.
 vendor/autoload.php: composer.lock
