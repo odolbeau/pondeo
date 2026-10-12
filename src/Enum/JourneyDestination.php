@@ -16,6 +16,7 @@ enum JourneyDestination: string
     case Marseille = 'marseille';
     case Bordeaux = 'bordeaux';
     case Toulouse = 'toulouse';
+    case Lille = 'lille';
 
     /** Identifier of the destination in the SNCF API. */
     public function navitiaId(): string
@@ -33,6 +34,8 @@ enum JourneyDestination: string
             self::Bordeaux => 'stop_area:SNCF:87581009',
             // The Matabiau station only.
             self::Toulouse => 'stop_area:SNCF:87611004',
+            // The whole city: Flandres and Europe.
+            self::Lille => 'admin:fr:59350',
         };
     }
 
@@ -45,12 +48,13 @@ enum JourneyDestination: string
             self::Marseille => 'Marseille',
             self::Bordeaux => 'Bordeaux',
             self::Toulouse => 'Toulouse',
+            self::Lille => 'Lille',
         };
     }
 
     /**
      * Whether a station is in the destination itself, so has no journey to
-     * it. Paris and Lyon are whole cities; Nantes, Marseille, Bordeaux and Toulouse
+     * it. Paris, Lyon and Lille are whole cities; Nantes, Marseille, Bordeaux and Toulouse
      * only their main station, the others (Pirmil, Blancarde...) are genuine origins.
      *
      * @param string $uicCodes the station's UIC codes, ";"-separated
@@ -65,6 +69,7 @@ enum JourneyDestination: string
             self::Paris => str_starts_with($inseeCommuneCode, '75'),
             // The 9 arrondissements, 69381 to 69389.
             self::Lyon => str_starts_with($inseeCommuneCode, '6938'),
+            self::Lille => '59350' === $inseeCommuneCode,
         };
     }
 }
