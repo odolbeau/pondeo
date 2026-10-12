@@ -24,6 +24,13 @@ different migrations never step on each other. `make serve` brings it up to date
 which on a new volume means all of them. Nothing is dropped. `make db-reset`
 rebuilds it from scratch.
 
+## Without the dev proxy
+
+`make serve-standalone` starts the same stack without the proxy, published on
+<http://localhost:8080> (`compose.standalone.yaml`). It suits a single
+checkout, or anyone who doesn't want to set the proxy up. Two stacks can't
+run in this mode at once, as they would compete for the port.
+
 ## Dev proxy
 
 HTTPS is terminated by a reverse proxy (Traefik) that is **machine-wide

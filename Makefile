@@ -30,6 +30,12 @@ serve: check-dev-proxy $(DEV_PROXY_DIR)/certs/pondeo.crt var/.images-built start
 	@echo ""
 	@echo -e "\033[32mhttps://$(PROJECT).pondeo.localhost\033[0m"
 
+.PHONY: serve-standalone
+serve-standalone: export COMPOSE_FILE = compose.yaml:compose.override.yaml:compose.standalone.yaml
+serve-standalone: var/.images-built start vendor/autoload.php db-update ## Same as serve, without the dev proxy: http://localhost:8080
+	@echo ""
+	@echo -e "\033[32mhttp://localhost:8080\033[0m"
+
 .PHONY: check-dev-proxy
 check-dev-proxy:
 	@bin/check-dev-proxy

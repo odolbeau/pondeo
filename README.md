@@ -5,19 +5,27 @@ to multiple criteria: income, housing, real estate prices, climate, risks,
 commerces, access to train stations, and more. Everything is built from public
 data.
 
-## Installation
+Live site: <https://pondeo.bbnt.me>.
 
-**Requirements:** run `bin/doctor` to check.
+![Pondeo's home page](docs/images/home.png)
+
+## Getting started
+
+**Requirements:** Docker with Compose, `make` and [Git LFS](https://git-lfs.com/)
+(the data under `resources/geo` is stored with it).
 
 ```bash
-make install
+make serve-standalone
 ```
 
-Then visit `https://<directory name>.pondeo.localhost`, printed at the end.
+The first run builds the images, installs the dependencies and imports all
+the data, which takes a few minutes. Then visit <http://localhost:8080>.
+Re-running it is safe: it only applies what changed.
 
-Each git worktree runs its own stack: `make serve` starts the current one.
-See [`docs/local-environment.md`](docs/local-environment.md), including the
-machine-wide dev proxy it requires. Run `make help` to list the other commands.
+If you work on several branches at once, `make serve` gives each git worktree
+its own HTTPS hostname (`https://<directory name>.pondeo.localhost`) behind a
+machine-wide dev proxy. See [`docs/local-environment.md`](docs/local-environment.md).
+Run `make help` to list the other commands.
 
 ## Stack
 
