@@ -85,9 +85,9 @@ imports what is already vendored.
 `make db-reset` rebuilds the database from scratch: schema, then every import.
 `make db-update` keeps the existing data: it applies the pending migrations and
 re-runs the imports whose sources changed, which are idempotent upserts that
-never duplicate (`FORCE_IMPORT=1 make db-update` re-runs them all).
+never duplicate.
 
-To re-run only the zones import:
+To run only the zones import (skipped when its sources are unchanged since the last run):
 
 ```
 bin/console app:import:zones
