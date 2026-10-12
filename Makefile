@@ -85,36 +85,44 @@ assets-install: ## Download assets dependencies
 	docker compose run --rm node npm install
 
 ##@ Quality commands
+# Installed on demand, and again when the lock files change.
+vendor/autoload.php: composer.lock
+	$(MAKE) vendors-install
+
+node_modules/.package-lock.json: package-lock.json
+	$(MAKE) assets-install
+	@touch $@
+
 .PHONY: sanitize-and-check
 sanitize-and-check: phpstan rector-fix cs-fix ts-check test ## Run Rector, PHP-CS-fixer, PHPStan, TypeScript & tests
 	docker compose run --rm php composer dump-autoload --optimize --strict-psr --strict-ambiguous
 
 .PHONY: ts-check
-ts-check: ## Type-check the TypeScript frontend code
+ts-check: node_modules/.package-lock.json ## Type-check the TypeScript frontend code
 	docker compose run --rm node npm run check-types
 
 .PHONY: test
-test: var/.test-db-ready ## Run all tests
+test: vendor/autoload.php var/.test-db-ready ## Run all tests
 	docker compose run --rm php rm -f var/cache/bab_tested_routes_checker_bundle_route_storage
 	docker compose run --rm php bin/phpunit
 	docker compose run --rm php bin/console bab:tested-routes-checker:check
 
 .PHONY: phpstan
-phpstan: ## Run PHPStan
+phpstan: vendor/autoload.php ## Run PHPStan
 	docker compose run --rm php vendor/bin/phpstan  --memory-limit=512M analyse
 
 .PHONY: cs-lint
-cs-lint: ## Lint all files
+cs-lint: vendor/autoload.php ## Lint all files
 	docker compose run --rm php bin/console lint:twig templates/
 	docker compose run --rm php bin/console lint:yaml config/ .github/
 	docker compose run --rm php vendor/bin/php-cs-fixer fix --dry-run --diff
 	docker compose run --rm php vendor/bin/twig-cs-fixer lint
 
 .PHONY: cs-fix
-cs-fix: ## Fix CS using PHP-CS
+cs-fix: vendor/autoload.php ## Fix CS using PHP-CS
 	docker compose run --rm php vendor/bin/php-cs-fixer fix
 	docker compose run --rm php vendor/bin/twig-cs-fixer fix
 
 .PHONY: rector-fix
-rector-fix: ## Launch Rector to fix files
+rector-fix: vendor/autoload.php ## Launch Rector to fix files
 	docker compose run --rm php vendor/bin/rector process
