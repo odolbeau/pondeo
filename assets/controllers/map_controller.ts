@@ -11,7 +11,7 @@ const ZONES_SOURCE_ID = 'unites-urbaines';
 const SELECTED_LAYER_ID = `${ZONES_SOURCE_ID}-selected`;
 const UNITE_CODE_PATTERN = /^[0-9A-Za-z]{5}$/;
 // Query params making up the filter — in the page URL and in localStorage.
-const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'trainMaxTransfers'];
+const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'withBoardGameAssociation', 'trainMaxTransfers'];
 // One param per destination city: trainMaxMinutes[paris]=120.
 const TRAIN_PARAM_PREFIX = 'trainMaxMinutes[';
 const PLANTS_SOURCE_ID = 'nuclear-plants';
@@ -30,7 +30,7 @@ const STORAGE_KEY = 'pondeo:map:population';
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'panel', 'frame'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'panel', 'frame'];
     static values = {
         dataUrl: String,
         plantsUrl: String,
@@ -50,6 +50,7 @@ export default class extends Controller {
     declare readonly priceMaxTarget: HTMLInputElement;
     declare readonly nuclearExclusionKmTarget: HTMLInputElement;
     declare readonly withStationTarget: HTMLInputElement;
+    declare readonly withBoardGameAssociationTarget: HTMLInputElement;
     declare readonly trainCityTargets: HTMLSelectElement[];
     declare readonly trainHoursTargets: HTMLInputElement[];
     declare readonly trainMaxTransfersTarget: HTMLInputElement;
@@ -151,6 +152,7 @@ export default class extends Controller {
         this.excludeCouronneTarget.checked = '1' === params.get('excludeCouronne');
         this.excludePolesSecondairesTarget.checked = '1' === params.get('excludePolesSecondaires');
         this.withStationTarget.checked = '1' === params.get('withStation');
+        this.withBoardGameAssociationTarget.checked = '1' === params.get('withBoardGameAssociation');
         this.commerceDensityMinTarget.value = params.get('commerceDensityMin') ?? '';
         this.nuclearExclusionKmTarget.value = params.get('nuclearExclusionKm') ?? '';
         this.priceMaxTarget.value = params.get('priceMax') ?? '';
@@ -490,6 +492,9 @@ export default class extends Controller {
         }
         if (this.withStationTarget.checked) {
             params.set('withStation', '1');
+        }
+        if (this.withBoardGameAssociationTarget.checked) {
+            params.set('withBoardGameAssociation', '1');
         }
         const density = this.commerceDensityMin();
         if (null !== density) {

@@ -204,6 +204,30 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         self::assertSame(['00001'], $this->codes($client, ['withStation' => '1']));
     }
 
+    public function testDataEndpointKeepsOnlyUnitesUrbainesWithABoardGameAssociation(): void
+    {
+        $client = self::createClient();
+
+        $with = UniteUrbaineFactory::createOne(['inseeCode' => '00001', 'boundary' => 'SRID=4326;MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))']);
+        $without = UniteUrbaineFactory::createOne(['inseeCode' => '00002', 'boundary' => 'SRID=4326;MULTIPOLYGON(((1 0,1 1,2 1,2 0,1 0)))']);
+
+        $population = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ([$with, $without] as $uniteUrbaine) {
+            $entityManager->persist(new CriterionValue($population, $uniteUrbaine, 10_000, 2023));
+        }
+
+        $entityManager->flush();
+
+        PoiFactory::createOne(['category' => PoiCategoryFactory::createOne(['code' => 'board_game_association']), 'uniteUrbaine' => $with]);
+        // Another kind of POI is not an association.
+        PoiFactory::createOne(['category' => PoiCategoryFactory::createOne(['code' => 'railway_station']), 'uniteUrbaine' => $without]);
+
+        self::assertSame(['00001', '00002'], $this->codes($client, []));
+        self::assertSame(['00001'], $this->codes($client, ['withBoardGameAssociation' => '1']));
+    }
+
     public function testDataEndpointKeepsUnitesUrbainesWithinCarPlusTrainTime(): void
     {
         $client = self::createClient();

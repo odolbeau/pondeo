@@ -163,6 +163,16 @@
             </span>
             <span class="mt-1 block text-xs text-stone-500">Distance mesurée depuis le centre de la ville ; le rayon est tracé sur la carte</span>
         </label>
+
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Loisirs</h2>
+
+        <label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
+            <input type="checkbox" data-map-target="withBoardGameAssociation" data-action="change->map#onToggleChange"
+                   class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
+            <span>Exclure les villes sans association de jeux
+                <span class="block text-xs text-stone-500">Au moins un club, une ludothèque ou une association de jeux de société dans l'agglomération</span>
+            </span>
+        </label>
     </aside>
 
     <div class="relative flex-1" data-map-target="mapContainer"></div>
