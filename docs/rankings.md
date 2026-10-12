@@ -43,3 +43,5 @@ the population get one sentence. The text lives with the ranking in the catalog.
 
 Add the criterion code to the catalog with its theme, title, tagline and note: the
 label, unit and direction come from the criterion itself.
+
+To weigh several criteria at once, see `docs/personal-ranking.md`.
