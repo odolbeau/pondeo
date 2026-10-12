@@ -4,7 +4,7 @@ For each railway station (see `docs/poi-stations.md`) and each destination
 city, the app stores how well the station is connected on a reference day:
 how many trains a day, how long they take, and how many transfers it takes.
 Destinations today: **Nantes**, **Paris**, **Lyon**, **Marseille**, **Bordeaux**,
-**Toulouse** and **Lille**.
+**Toulouse**, **Lille** and **Rennes**.
 
 ## What is stored
 
@@ -26,8 +26,9 @@ station is unknown to the API, the three figures are empty.
 
 A station inside the destination has no journey to it: no line for Paris
 stations towards Paris, nor for the stations of Lyon or Lille towards their
-city, nor for the main station of Nantes, Marseille, Bordeaux or Toulouse
-towards its city. The other stations of Nantes (Pirmil, Chantenay...) are genuine origins.
+city, nor for the main station of Nantes, Marseille, Bordeaux, Toulouse
+or Rennes towards its city. The other stations of Nantes (Pirmil, Chantenay...) are
+genuine origins.
 
 ## Definitions to keep in mind
 
@@ -35,7 +36,8 @@ towards its city. The other stations of Nantes (Pirmil, Chantenay...) are genuin
   reached, whichever it is.
 - **Nantes** is the main Nantes station only; **Marseille** is Saint-Charles
   only (Blancarde is a genuine origin); **Bordeaux** is Saint-Jean only;
-  **Toulouse** is Matabiau only.
+  **Toulouse** is Matabiau only; **Rennes** is
+  the Rennes station.
 - **Lyon** is any station of the city (Part-Dieu, Perrache, Vaise...), like
   Paris: the duration is to the first one reached. Lyon-Saint-Exupéry TGV is
   outside the city, so it is a genuine origin. Likewise **Lille** is any
