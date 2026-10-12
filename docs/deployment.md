@@ -1,6 +1,6 @@
 # Deployment
 
-Pondeo runs at <https://pondeo.bbnt.me>, on the `fourzitou` server. Every
+Pondeo runs at <https://pondeo.bbnt.me>. Every
 merge to `main` deploys it (`.github/workflows/deploy.yml`).
 
 ## Pipeline
@@ -33,10 +33,10 @@ data only pays for the migrations. Changing the import code re-runs them all.
 
 ## Server side
 
-The server only holds what is specific to it, managed in the `fourzitou`
-repository with Ansible: a restricted `pondeo-deploy` user whose SSH key is
-the CI one, the production `.env`, and a `compose.override.yaml` that attaches
-the web container to the reverse proxy (Traefik), which handles TLS.
+The server only holds what is specific to it: a restricted `pondeo-deploy`
+user whose SSH key is the CI one, the production `.env`, and a
+`compose.override.yaml` that attaches the web container to the reverse proxy
+in front, which handles TLS.
 
 ## GitHub configuration
 
