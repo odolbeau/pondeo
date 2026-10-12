@@ -1,0 +1,38 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Erreur {{ status_code }} — Pondeo{% endblock %}
+
+{% block meta_description %}{% block error_message %}Un problème est survenu de notre côté. Réessayez dans quelques instants.{% endblock %}{% endblock %}
+
+{# A server error must not depend on routing or search to render its own page. #}
+{% block navigation %}
+    {% if status_code >= 500 %}
+        <nav class="flex h-14 items-center border-b border-stone-200 bg-white px-6">
+            <a href="/" class="flex items-center gap-2 text-lg font-bold tracking-tight text-emerald-800"><span aria-hidden="true">🌳</span>Pondeo</a>
+        </nav>
+    {% else %}
+        {{ parent() }}
+    {% endif %}
+{% endblock %}
+
+{% block body %}
+<main class="relative overflow-hidden bg-gradient-to-b from-sky-100 via-amber-50 to-stone-50 px-6 py-24 sm:py-32">
+    <div class="pointer-events-none absolute -right-16 top-8 h-56 w-56 rounded-full bg-amber-300/60 blur-2xl"></div>
+    <div class="relative mx-auto max-w-2xl text-center">
+        <p class="text-8xl font-extrabold tracking-tight sm:text-9xl">
+            <span class="bg-gradient-to-r from-emerald-600 to-lime-500 bg-clip-text text-transparent">{{ status_code }}</span>
+        </p>
+        <h1 class="mt-6 text-3xl font-extrabold tracking-tight sm:text-4xl">
+            <span aria-hidden="true">{% block error_emoji %}🌧️{% endblock %}</span>
+            {% block error_title %}Oups, c'est de notre côté{% endblock %}
+        </h1>
+        <p class="mx-auto mt-4 max-w-md text-lg text-stone-700">{{ block('error_message') }}</p>
+        <div class="mt-10 flex flex-col items-center justify-center gap-3 sm:flex-row">
+            <a href="/" class="rounded-full bg-emerald-600 px-6 py-3 font-semibold text-white shadow-md shadow-emerald-600/30 transition hover:bg-emerald-700">Retour à l'accueil</a>
+            {% if status_code < 500 %}
+                <a href="{{ path('app_rankings') }}" class="rounded-full border border-stone-300 bg-white px-6 py-3 font-semibold text-stone-800 transition hover:border-emerald-600 hover:text-emerald-700">Voir les classements</a>
+            {% endif %}
+        </div>
+    </div>
+</main>
+{% endblock %}
