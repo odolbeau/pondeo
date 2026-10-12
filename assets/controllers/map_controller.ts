@@ -12,6 +12,8 @@ const SELECTED_LAYER_ID = `${ZONES_SOURCE_ID}-selected`;
 const UNITE_CODE_PATTERN = /^[0-9A-Za-z]{5}$/;
 // Query params making up the filter — in the page URL and in localStorage.
 const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation'];
+// One param per destination city: trainMaxMinutes[paris]=120.
+const TRAIN_PARAM_PREFIX = 'trainMaxMinutes[';
 const PLANTS_SOURCE_ID = 'nuclear-plants';
 const PLANTS_RADIUS_SOURCE_ID = `${PLANTS_SOURCE_ID}-radius`;
 const PLANT_ICON_ID = 'nuclear-plant-icon';
@@ -28,7 +30,7 @@ const STORAGE_KEY = 'pondeo:map:population';
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'panel', 'frame'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'trainCity', 'trainHours', 'panel', 'frame'];
     static values = {
         dataUrl: String,
         plantsUrl: String,
@@ -48,6 +50,8 @@ export default class extends Controller {
     declare readonly priceMaxTarget: HTMLInputElement;
     declare readonly nuclearExclusionKmTarget: HTMLInputElement;
     declare readonly withStationTarget: HTMLInputElement;
+    declare readonly trainCityTargets: HTMLSelectElement[];
+    declare readonly trainHoursTargets: HTMLInputElement[];
     declare readonly panelTarget: HTMLElement;
     declare readonly frameTarget: HTMLElement & { src: string | null };
     declare readonly dataUrlValue: string;
@@ -149,8 +153,23 @@ export default class extends Controller {
         this.commerceDensityMinTarget.value = params.get('commerceDensityMin') ?? '';
         this.nuclearExclusionKmTarget.value = params.get('nuclearExclusionKm') ?? '';
         this.priceMaxTarget.value = params.get('priceMax') ?? '';
+        this.applyTrainParams(params);
         this.writeInputs(min, max);
         this.syncRanges(min, max);
+    }
+
+    // The rows are filled in order with the destinations the params mention.
+    applyTrainParams(params: { get(name: string): string | null }) {
+        const destinations = [...this.trainCityTargets[0].options].map((option) => option.value).filter((value) => '' !== value);
+        const limits = destinations
+            .map((destination): [string, string | null] => [destination, params.get(`${TRAIN_PARAM_PREFIX}${destination}]`)])
+            .filter((limit): limit is [string, string] => null !== limit[1]);
+
+        this.trainCityTargets.forEach((select, row) => {
+            const limit = limits[row];
+            select.value = limit?.[0] ?? '';
+            this.trainHoursTargets[row].value = limit ? String(Number(limit[1]) / 60) : '';
+        });
     }
 
     uniteFromUrl(): string | null {
@@ -248,6 +267,10 @@ export default class extends Controller {
         this.scheduleRefresh();
     }
 
+    onTrainInput() {
+        this.scheduleRefresh();
+    }
+
     onNuclearInput() {
         this.drawPlantRadii();
         this.scheduleRefresh();
@@ -264,6 +287,20 @@ export default class extends Controller {
 
     nuclearExclusionKm(): number | null {
         return this.positiveNumber(this.nuclearExclusionKmTarget.value);
+    }
+
+    // Rows left empty are off; a city picked twice keeps its strictest limit.
+    trainLimits(): [string, number][] {
+        const limits: Record<string, number> = {};
+        this.trainCityTargets.forEach((select, row) => {
+            const hours = this.positiveNumber(this.trainHoursTargets[row].value);
+            if ('' === select.value || null === hours) {
+                return;
+            }
+            limits[select.value] = Math.min(limits[select.value] ?? Infinity, Math.round(hours * 60));
+        });
+
+        return Object.entries(limits);
     }
 
     positiveNumber(raw: string): number | null {
@@ -464,6 +501,9 @@ export default class extends Controller {
         if (null !== priceMax) {
             params.set('priceMax', String(priceMax));
         }
+        for (const [destination, minutes] of this.trainLimits()) {
+            params.set(`${TRAIN_PARAM_PREFIX}${destination}]`, String(minutes));
+        }
 
         return params;
     }
@@ -472,7 +512,7 @@ export default class extends Controller {
     // last filter from this browser is restored, then the defaults.
     initialParams(): { get(name: string): string | null } {
         const params = new URLSearchParams(window.location.search);
-        if (FILTER_PARAMS.some((name) => params.has(name))) {
+        if ([...params.keys()].some((name) => FILTER_PARAMS.includes(name) || name.startsWith(TRAIN_PARAM_PREFIX))) {
             return params;
         }
 

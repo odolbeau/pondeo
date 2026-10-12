@@ -69,6 +69,42 @@
             </span>
         </label>
 
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Trajet en train</h2>
+
+        <div class="mt-4 flex items-center gap-2 text-sm text-stone-700">
+            <select aria-label="Ville de destination, trajet 1" data-map-target="trainCity" data-action="change->map#onTrainInput"
+                    class="w-full rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+                <option value="">—</option>
+                {% for destination in journeyDestinations %}
+                    <option value="{{ destination.value }}">{{ destination.label }}</option>
+                {% endfor %}
+            </select>
+            <span class="shrink-0">à moins de</span>
+            <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="∞"
+                   aria-label="Durée maximale du trajet 1, en heures"
+                   data-map-target="trainHours" data-action="input->map#onTrainInput"
+                   class="w-16 shrink-0 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+            <span>h</span>
+        </div>
+
+        <div class="mt-4 flex items-center gap-2 text-sm text-stone-700">
+            <select aria-label="Ville de destination, trajet 2" data-map-target="trainCity" data-action="change->map#onTrainInput"
+                    class="w-full rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+                <option value="">—</option>
+                {% for destination in journeyDestinations %}
+                    <option value="{{ destination.value }}">{{ destination.label }}</option>
+                {% endfor %}
+            </select>
+            <span class="shrink-0">à moins de</span>
+            <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="∞"
+                   aria-label="Durée maximale du trajet 2, en heures"
+                   data-map-target="trainHours" data-action="input->map#onTrainInput"
+                   class="w-16 shrink-0 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+            <span>h</span>
+        </div>
+
+        <p class="mt-2 text-xs text-stone-500">Voiture jusqu'à la gare la plus pratique, puis train (durée médiane un jour de semaine). Temps de voiture théoriques, sans trafic.</p>
+
         <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Commerces</h2>
 
         <label class="mt-4 block text-sm text-stone-700">
