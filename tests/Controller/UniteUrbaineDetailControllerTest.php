@@ -312,6 +312,8 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', '13/10/2026');
 
         $labels = $client->getCrawler()->filter('turbo-frame#unite-urbaine-detail dt')->each(static fn ($node): string => $node->text());
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail details summary', 'Voir les 7 autres destinations');
+        self::assertCount(4, $client->getCrawler()->filter('turbo-frame#unite-urbaine-detail section li > dl > dt'));
         self::assertSame(['Lille', 'Nantes', 'Strasbourg', 'Bordeaux', 'Rennes', 'Montpellier', 'Lyon', 'Toulouse', 'Marseille', 'Nice', 'Paris'], $labels);
     }
 

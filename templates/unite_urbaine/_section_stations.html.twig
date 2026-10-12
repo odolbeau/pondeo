@@ -1,4 +1,20 @@
 {% macro duration(minutes) %}{% if minutes >= 60 %}{{ minutes // 60 }}&nbsp;h&nbsp;{{ '%02d'|format(minutes % 60) }}{% else %}{{ minutes }}&nbsp;min{% endif %}{% endmacro %}
+{% macro journeys(journeys) %}
+    <dl class="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs text-stone-600">
+        {% for journey in journeys %}
+            <dt class="font-medium text-stone-700">{{ journey.destination.label }}</dt>
+            <dd>
+                {% if journey.reachable %}
+                    <span class="font-semibold text-stone-900">{{ _self.duration(journey.medianDurationMinutes) }}</span>
+                    · {{ journey.trainsPerDay }}&nbsp;train{{ journey.trainsPerDay > 1 ? 's' : '' }}/j
+                    · {{ journey.transfers ? journey.transfers ~ (journey.transfers > 1 ? ' correspondances' : ' correspondance') : 'direct' }}
+                {% else %}
+                    pas de liaison (3 correspondances max)
+                {% endif %}
+            </dd>
+        {% endfor %}
+    </dl>
+{% endmacro %}
     <section class="{{ card }}">
         <h2 class="{{ title }}">{{ stations|length > 1 ? 'Gares les plus proches' : 'Gare la plus proche' }}</h2>
         <ul class="mt-2 divide-y divide-stone-200 text-sm">
@@ -11,20 +27,13 @@
                         </span>
                     </div>
                     {% if station.journeys %}
-                        <dl class="mt-1 grid grid-cols-[auto_1fr] gap-x-3 gap-y-0.5 text-xs text-stone-600">
-                            {% for journey in station.journeys %}
-                                <dt class="font-medium text-stone-700">{{ journey.destination.label }}</dt>
-                                <dd>
-                                    {% if journey.reachable %}
-                                        <span class="font-semibold text-stone-900">{{ _self.duration(journey.medianDurationMinutes) }}</span>
-                                        · {{ journey.trainsPerDay }}&nbsp;train{{ journey.trainsPerDay > 1 ? 's' : '' }}/j
-                                        · {{ journey.transfers ? journey.transfers ~ (journey.transfers > 1 ? ' correspondances' : ' correspondance') : 'direct' }}
-                                    {% else %}
-                                        pas de liaison (3 correspondances max)
-                                    {% endif %}
-                                </dd>
-                            {% endfor %}
-                        </dl>
+                        {{ _self.journeys(station.journeys|slice(0, 4)) }}
+                        {% if station.journeys|length > 4 %}
+                            <details class="mt-1">
+                                <summary class="cursor-pointer text-xs text-emerald-700 hover:underline">Voir les {{ station.journeys|length - 4 }} autres destinations</summary>
+                                {{ _self.journeys(station.journeys|slice(4)) }}
+                            </details>
+                        {% endif %}
                     {% endif %}
                 </li>
             {% endfor %}
