@@ -13,6 +13,7 @@ enum JourneyDestination: string
     case Nantes = 'nantes';
     case Paris = 'paris';
     case Lyon = 'lyon';
+    case Marseille = 'marseille';
 
     /** Identifier of the destination in the SNCF API. */
     public function navitiaId(): string
@@ -24,6 +25,8 @@ enum JourneyDestination: string
             self::Paris => 'admin:fr:75056',
             // The whole city: Part-Dieu, Perrache, Vaise...
             self::Lyon => 'admin:fr:69123',
+            // The Saint-Charles station only, not Blancarde.
+            self::Marseille => 'stop_area:SNCF:87751008',
         };
     }
 
@@ -33,13 +36,14 @@ enum JourneyDestination: string
             self::Nantes => 'Nantes',
             self::Paris => 'Paris',
             self::Lyon => 'Lyon',
+            self::Marseille => 'Marseille',
         };
     }
 
     /**
      * Whether a station is in the destination itself, so has no journey to
-     * it. Paris and Lyon are whole cities; Nantes only its main station, the others
-     * (Pirmil, Chantenay...) are genuine origins.
+     * it. Paris and Lyon are whole cities; Nantes and Marseille only their main
+     * station, the others (Pirmil, Blancarde...) are genuine origins.
      *
      * @param string $uicCodes the station's UIC codes, ";"-separated
      */
@@ -47,6 +51,7 @@ enum JourneyDestination: string
     {
         return match ($this) {
             self::Nantes => \in_array('87481002', explode(';', $uicCodes), true),
+            self::Marseille => \in_array('87751008', explode(';', $uicCodes), true),
             self::Paris => str_starts_with($inseeCommuneCode, '75'),
             // The 9 arrondissements, 69381 to 69389.
             self::Lyon => str_starts_with($inseeCommuneCode, '6938'),
