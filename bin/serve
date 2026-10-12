@@ -1,9 +1,9 @@
 #!/bin/bash
 #
 # Starts this worktree's stack on demand and prints its URL. Idempotent:
-# only installs dependencies that changed, seeds the database when it's
-# empty (no schema yet, whether the volume is new or not) and otherwise just
-# applies the pending migrations, so it's safe to re-run anytime.
+# only installs dependencies that changed and brings the database up to date
+# (migrations, then the imports whose sources changed; a new volume gets
+# everything), so it's safe to re-run anytime.
 
 set -euo pipefail
 
@@ -32,19 +32,10 @@ fi
 docker compose up --detach --build --remove-orphans
 docker compose run --rm php composer install
 
-PSQL=(docker compose exec -T database psql -U "${POSTGRES_USER:-app}" -d "${POSTGRES_DB:-app}" -Atc)
+# Postgres may still be starting: wait for it, or the update would fail.
+until docker compose exec -T database psql -U "${POSTGRES_USER:-app}" -d "${POSTGRES_DB:-app}" -Atc "SELECT 1" >/dev/null 2>&1; do sleep 1; done
 
-# Postgres may still be starting: wait for it, so a failed query is never
-# mistaken for an empty database (the reset below drops it).
-until "${PSQL[@]}" "SELECT 1" >/dev/null 2>&1; do sleep 1; done
-
-# Only an explicit "f" seeds: a volume can outlive a failed first run and
-# stay empty.
-if [ "$("${PSQL[@]}" "SELECT to_regclass('public.unite_urbaine') IS NOT NULL")" = f ]; then
-    make db-reset
-else
-    docker compose run --rm php bin/console doctrine:migrations:migrate -n --no-debug
-fi
+make db-update
 
 echo ""
 echo -e "\033[32mhttps://${PROJECT}.pondeo.localhost\033[0m"
