@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
-{% for route in ['app_home', 'app_map', 'app_rankings', 'app_criteria', 'app_sources', 'app_unite_urbaine_list'] %}
+{% for route in ['app_home', 'app_map', 'app_rankings', 'app_criteria', 'app_sources', 'app_legal_notice', 'app_unite_urbaine_list'] %}
     <url><loc>{{ url(route) }}</loc></url>
 {% endfor %}
 {% for code in rankingCodes %}

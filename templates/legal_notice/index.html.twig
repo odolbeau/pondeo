@@ -1,0 +1,63 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}Mentions légales — Pondeo{% endblock %}
+
+{% block meta_description %}Éditeur, hébergeur, propriété intellectuelle et données personnelles du site Pondeo.{% endblock %}
+
+{% block body %}
+<main class="min-h-[calc(100vh-3.5rem)] bg-transparent px-6 py-12 text-stone-900">
+    <div class="mx-auto max-w-3xl">
+        <h1 class="text-4xl font-bold tracking-tight">Mentions légales</h1>
+
+        <section class="mt-8">
+            <h2 class="text-xl font-semibold">Éditeur</h2>
+            <p class="mt-2 text-stone-700">
+                Pondeo est édité à titre non professionnel par Olivier Dolbeau, qui en est le directeur de la publication.
+                Contact : <a href="mailto:olivier@bbnt.me" class="underline">olivier@bbnt.me</a>.
+            </p>
+        </section>
+
+        <section class="mt-8">
+            <h2 class="text-xl font-semibold">Hébergeur</h2>
+            <p class="mt-2 text-stone-700">
+                Scaleway SAS (Dedibox), 8 rue de la Ville-l'Évêque, 75008 Paris, France.
+                Ses <a href="https://www.scaleway.com/fr/mentions-legales/" class="underline" rel="noopener">mentions légales</a> détaillent ses coordonnées.
+            </p>
+        </section>
+
+        <section class="mt-8">
+            <h2 class="text-xl font-semibold">Propriété intellectuelle</h2>
+            <p class="mt-2 text-stone-700">
+                Le code de Pondeo est publié sous <a href="https://github.com/odolbeau/pondeo/blob/main/LICENSE" class="underline" rel="noopener">licence MIT</a>.
+                Les données affichées appartiennent à leurs producteurs et restent soumises à leurs licences :
+                voir les <a href="{{ path('app_sources') }}" class="underline">sources des données</a>.
+            </p>
+        </section>
+
+        <section class="mt-8">
+            <h2 class="text-xl font-semibold">Données personnelles</h2>
+            <p class="mt-2 text-stone-700">
+                Pondeo ne demande aucun compte, n'utilise aucun traceur ni outil de mesure d'audience, et ne dépose aucun cookie.
+                Les filtres de la carte sont mémorisés dans le stockage local de votre navigateur : ils restent sur votre appareil.
+            </p>
+            <p class="mt-2 text-stone-700">
+                Les journaux techniques du serveur (adresse IP, page demandée) servent uniquement à assurer le bon fonctionnement et la sécurité du site.
+                Le fond de carte est fourni par <a href="https://openfreemap.org/" class="underline" rel="noopener">OpenFreeMap</a> :
+                votre navigateur le contacte directement pour l'afficher, ce qui lui transmet votre adresse IP.
+            </p>
+            <p class="mt-2 text-stone-700">
+                Vous disposez d'un droit d'accès, de rectification et de suppression sur les données vous concernant :
+                écrivez à <a href="mailto:olivier@bbnt.me" class="underline">olivier@bbnt.me</a>.
+            </p>
+        </section>
+
+        <section class="mt-8">
+            <h2 class="text-xl font-semibold">Responsabilité</h2>
+            <p class="mt-2 text-stone-700">
+                Les chiffres sont calculés à partir de données publiques et fournis à titre indicatif, sans garantie d'exactitude ni d'actualité.
+                Ils ne remplacent pas les publications officielles de leurs producteurs.
+            </p>
+        </section>
+    </div>
+</main>
+{% endblock %}
