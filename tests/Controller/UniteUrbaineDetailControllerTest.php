@@ -408,6 +408,25 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Raffinerie de Dunkerque · Cokéfaction et raffinage');
         self::assertSelectorTextContains('body', '59140 Dunkerque');
         self::assertSelectorTextContains('body', 'Dépôt de gaz');
+    public function testPageListsTheHospitalsAndTheirEmergencyDepartmentsApart(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $other = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $general = PoiCategoryFactory::createOne(['code' => 'hospital_general', 'label' => 'Centre hospitalier']);
+        $emergency = PoiCategoryFactory::createOne(['code' => 'hospital_emergency', 'label' => "Service d'urgences"]);
+        PoiFactory::createOne(['name' => 'CH CHUBERT', 'address' => "1 RUE DE L'HOPITAL, 56000 VANNES", 'category' => $general, 'uniteUrbaine' => $vannes]);
+        PoiFactory::createOne(['name' => 'CH CHUBERT', 'category' => $emergency, 'uniteUrbaine' => $vannes]);
+        PoiFactory::createOne(['name' => 'CH DE NANTES', 'category' => $general, 'uniteUrbaine' => $other]);
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Centre hospitalier (1)');
+        self::assertSelectorTextContains('body', "Service d'urgences (1)");
+        self::assertSelectorTextContains('body', "1 RUE DE L'HOPITAL, 56000 VANNES");
+        self::assertSelectorTextNotContains('body', 'CH DE NANTES');
     }
 
     public function testPageSaysWhichAireDAttractionTheUniteUrbaineDependsOn(): void

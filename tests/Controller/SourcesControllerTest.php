@@ -21,6 +21,8 @@ final class SourcesControllerTest extends WebTestCase
         self::assertAnySelectorTextContains('h2', 'Subverti');
         self::assertAnySelectorTextContains('li p', 'CC BY-SA 4.0');
         self::assertAnySelectorTextContains('li p', 'Export fourni par Subverti');
+        self::assertAnySelectorTextContains('li p', 'CC BY-SA 4.0');
+        self::assertAnySelectorTextContains('h2', 'Agence du Numérique en Santé');
     }
 
     public function testTheFooterLinksToTheSourcesPage(): void
