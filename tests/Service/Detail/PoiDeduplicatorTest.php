@@ -13,13 +13,13 @@ final class PoiDeduplicatorTest extends TestCase
 {
     public function testAnEstablishmentFiledInTwoCategoriesIsListedOnceWithBoth(): void
     {
-        $hospital = $this->poi('CH FALAISE', 'Centre hospitalier', -0.19, 48.89);
-        $emergency = $this->poi('CH FALAISE', "Service d'urgences", -0.19, 48.89);
+        $seveso = $this->poi('Raffinerie de Donges', 'Site Seveso seuil haut', -2.1, 47.3);
+        $polluter = $this->poi('Raffinerie de Donges', 'Établissement pollueur', -2.1, 47.3);
 
-        $result = new PoiDeduplicator()->deduplicate([$hospital, $emergency]);
+        $result = new PoiDeduplicator()->deduplicate([$seveso, $polluter]);
 
-        self::assertSame([$hospital], $result->pois);
-        self::assertSame([$hospital->getId()->toRfc4122() => ["Service d'urgences"]], $result->otherCategoryLabels);
+        self::assertSame([$seveso], $result->pois);
+        self::assertSame([$seveso->getId()->toRfc4122() => ['Établissement pollueur']], $result->otherCategoryLabels);
     }
 
     public function testTheSameNameSpelledAndPlacedSlightlyDifferentlyIsOnePlace(): void

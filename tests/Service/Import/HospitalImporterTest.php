@@ -19,7 +19,7 @@ final class HospitalImporterTest extends KernelTestCase
 
     private const string HEADER = "finess,name,type,lat,lon,address,emergency,emergency_pediatric\n";
 
-    public function testImportCreatesHospitalsAndEmergencyDepartmentsThenIsIdempotent(): void
+    public function testImportCreatesHospitalsFlagsTheOnesWithEmergenciesThenIsIdempotent(): void
     {
         $unit = UniteUrbaineFactory::createOne(['inseeCode' => '56501', 'boundary' => 'SRID=4326;MULTIPOLYGON(((-3 47,-3 48,-2 48,-2 47,-3 47)))']);
         $path = $this->writeTempFile(self::HEADER
@@ -29,23 +29,23 @@ final class HospitalImporterTest extends KernelTestCase
             .'220000001,CH DE LANNION,ch,48.5,-3.5,,1,0'."\n");
 
         self::assertSame(['hospitals' => 3, 'emergencies' => 2], $this->importer()->import($path));
-        self::assertSame(5, $this->poiCount());
+        self::assertSame(3, $this->poiCount());
 
         // Longitude first in EWKT.
         self::assertSame('POINT(-2.5 47.5)', $this->poiValue('ST_AsText(poi.location::geometry)', '560000001', 'hospital_general'));
         self::assertSame("1 RUE DE L'HOPITAL, 56000 VANNES", $this->poiValue('poi.address', '560000001', 'hospital_general'));
         self::assertNull($this->poiValue('poi.address', '220000001', 'hospital_general'));
-        // The emergency department is a POI of its own, in its own category.
-        self::assertSame('{"pediatric": true}', $this->poiValue('poi.attributes', '560000001', 'hospital_emergency'));
-        self::assertNull($this->poiValue('poi.attributes', '220000001', 'hospital_emergency'));
-        self::assertNull($this->poiValue('poi.id', '560000002', 'hospital_emergency'));
+        // An emergency department is a flag on its hospital, not a POI of its own.
+        self::assertSame('{"emergency": true, "pediatric": true}', $this->poiValue('poi.attributes', '560000001', 'hospital_general'));
+        self::assertSame('{"emergency": true}', $this->poiValue('poi.attributes', '220000001', 'hospital_general'));
+        self::assertNull($this->poiValue('poi.attributes', '560000002', 'hospital_clinic'));
         // Each type is a child of the parent category.
         self::assertSame('hospital', $this->scalar("SELECT parent.code FROM poi_category child INNER JOIN poi_category parent ON parent.id = child.parent_id WHERE child.code = 'hospital_clinic'"));
-        self::assertSame($unit->getId()->toRfc4122(), $this->poiValue('poi.unite_urbaine_id', '560000001', 'hospital_emergency'));
+        self::assertSame($unit->getId()->toRfc4122(), $this->poiValue('poi.unite_urbaine_id', '560000001', 'hospital_general'));
         self::assertNull($this->poiValue('poi.unite_urbaine_id', '220000001', 'hospital_general'));
 
         self::assertSame(['hospitals' => 3, 'emergencies' => 2], $this->importer()->import($path));
-        self::assertSame(5, $this->poiCount());
+        self::assertSame(3, $this->poiCount());
 
         unlink($path);
     }

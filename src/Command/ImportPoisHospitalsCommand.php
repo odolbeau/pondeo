@@ -15,7 +15,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 
 #[AsCommand(
     name: 'app:import:pois:hospitals',
-    description: 'Import the hospitals and their emergency departments (resources/geo/hopitaux.csv) as POIs',
+    description: 'Import the hospitals (resources/geo/hopitaux.csv) as POIs',
     help: <<<'HELP'
         Idempotent upsert — safe to re-run. Run <comment>app:import:zones</comment> first so each hospital is
         attached to its unité urbaine.
@@ -56,7 +56,7 @@ final class ImportPoisHospitalsCommand extends Command
 
         $counts = $this->hospitalImporter->import($dir.'/hopitaux.csv');
 
-        $io->success(\sprintf('%d hospitals and %d emergency departments imported.', $counts['hospitals'], $counts['emergencies']));
+        $io->success(\sprintf('%d hospitals imported, %d of them with an emergency department.', $counts['hospitals'], $counts['emergencies']));
 
         return Command::SUCCESS;
     }

@@ -32,7 +32,6 @@ final class PoiCategoryTreeSynchronizerTest extends KernelTestCase
 
         $repository = $this->repository();
         $codes = [
-            HospitalType::EMERGENCY_CATEGORY_CODE,
             NuclearPlantImporter::CATEGORY_CODE,
             StationImporter::CATEGORY_CODE,
             'seveso_high',
@@ -45,9 +44,8 @@ final class PoiCategoryTreeSynchronizerTest extends KernelTestCase
             self::assertSame($code, $repository->getByCode($code)->getCode());
         }
 
-        // Emergency departments and hospitals share an ancestor, and so do Seveso sites and nuclear plants.
+        // Seveso sites and nuclear plants share an ancestor.
         $roots = $repository->findRootsByCode();
-        self::assertSame('health_site', $roots[HospitalType::EMERGENCY_CATEGORY_CODE]['code']);
         self::assertSame('health_site', $roots['hospital_clinic']['code']);
         self::assertSame('risk_site', $roots['seveso_high']['code']);
         self::assertSame('risk_site', $roots[NuclearPlantImporter::CATEGORY_CODE]['code']);

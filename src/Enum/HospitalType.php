@@ -13,9 +13,6 @@ enum HospitalType: string
     case Cancer = 'cancer';
     case Army = 'army';
 
-    /** Code of the POI category of the emergency departments, a category of its own. */
-    public const string EMERGENCY_CATEGORY_CODE = 'hospital_emergency';
-
     /** Code of the POI category of this type. */
     public function categoryCode(): string
     {

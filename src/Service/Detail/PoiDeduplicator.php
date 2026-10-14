@@ -8,8 +8,8 @@ use App\Entity\Poi;
 use Symfony\Component\String\UnicodeString;
 
 /**
- * Merges the POIs that are the same place filed more than once: a hospital and
- * its emergency department, or one plant found in two sources. Two POIs are
+ * Merges the POIs that are the same place filed more than once: one plant
+ * found in two sources, for instance. Two POIs are
  * the same place when they are very close and their names agree, so that two
  * unrelated POIs next to each other stay apart. The first of the POIs
  * is the one kept; the categories of the others are reported.
