@@ -77,6 +77,15 @@ class UniteUrbaine
     private ?array $agePyramid = null;
 
     /**
+     * Shops by type for the detail page (see `docs/criteria-commerces.md`):
+     * `counts` holds, for each BPE type code, one count per year of `years`.
+     *
+     * @var array{years: list<int>, counts: array<string, list<int>>}|null
+     */
+    #[ORM\Column(type: Types::JSON, nullable: true, options: ['jsonb' => true])]
+    private ?array $shopTypes = null;
+
+    /**
      * Generated column, computed by Postgres from `boundary`: read-only for
      * Doctrine (`insertable`/`updatable` false). The `default` option mirrors
      * the generation expression so `doctrine:schema:validate` sees no diff —
@@ -179,6 +188,24 @@ class UniteUrbaine
     public function setAgePyramid(?array $agePyramid): static
     {
         $this->agePyramid = $agePyramid;
+
+        return $this;
+    }
+
+    /**
+     * @return array{years: list<int>, counts: array<string, list<int>>}|null
+     */
+    public function getShopTypes(): ?array
+    {
+        return $this->shopTypes;
+    }
+
+    /**
+     * @param array{years: list<int>, counts: array<string, list<int>>}|null $shopTypes
+     */
+    public function setShopTypes(?array $shopTypes): static
+    {
+        $this->shopTypes = $shopTypes;
 
         return $this;
     }
