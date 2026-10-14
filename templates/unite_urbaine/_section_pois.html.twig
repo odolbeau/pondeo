@@ -7,6 +7,7 @@
                     <li class="py-2">
                         <span class="text-stone-900">{{ poi.name }}</span>
                         {% if poi.brand %}<span class="text-stone-500"> · {{ poi.brand }}</span>{% endif %}
+                        {% if poi.attributes.activity is defined %}<span class="text-stone-500"> · {{ poi.attributes.activity }}</span>{% endif %}
                         {% if poi.address %}<div class="text-xs text-stone-500">{{ poi.address }}</div>{% endif %}
                     </li>
                 {% endfor %}
