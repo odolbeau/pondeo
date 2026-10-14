@@ -132,6 +132,16 @@ class Poi
         return $this;
     }
 
+    public function getLongitude(): float
+    {
+        return $this->coordinates()[0];
+    }
+
+    public function getLatitude(): float
+    {
+        return $this->coordinates()[1];
+    }
+
     public function getAddress(): ?string
     {
         return $this->address;
@@ -184,5 +194,17 @@ class Poi
         $this->attributes = $attributes;
 
         return $this;
+    }
+
+    /**
+     * @return array{float, float} longitude, latitude
+     */
+    private function coordinates(): array
+    {
+        if (1 !== preg_match('/POINT\(\s*(-?\d+(?:\.\d+)?)\s+(-?\d+(?:\.\d+)?)\s*\)/i', $this->location, $matches)) {
+            throw new \LogicException(\sprintf('Cannot read the coordinates of "%s".', $this->location));
+        }
+
+        return [(float) $matches[1], (float) $matches[2]];
     }
 }

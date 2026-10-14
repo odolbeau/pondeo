@@ -27,6 +27,7 @@ enum DetailSection: string
     case SanteSportCulture = 'sante-sport-culture';
     case CadreDeVie = 'cadre-de-vie';
     case Autres = 'autres';
+    case PointsInteret = 'points-interet';
 
     public function label(): string
     {
@@ -37,6 +38,7 @@ enum DetailSection: string
             self::SanteSportCulture => 'Santé, sport et culture',
             self::CadreDeVie => 'Cadre de vie',
             self::Autres => 'Autres',
+            self::PointsInteret => 'Points d\'intérêt',
         };
     }
 
@@ -53,7 +55,7 @@ enum DetailSection: string
             self::Logement => [HousingImporter::GROUP, RealEstatePriceImporter::GROUP],
             self::SanteSportCulture => [EquipmentFamily::GROUP_HEALTH, EquipmentFamily::GROUP_CARE, EquipmentFamily::GROUP_SPORT_CULTURE],
             self::CadreDeVie => [EquipmentFamily::GROUP_SHOPS, EquipmentFamily::GROUP_SERVICES, AssociationsImporter::GROUP],
-            self::Autres => [],
+            self::Autres, self::PointsInteret => [],
         };
     }
 

@@ -115,14 +115,13 @@ final class UniteUrbaineDetailController extends AbstractController
         }
 
         if ([] !== $poiCategories) {
-            $weight = 2.0 + array_sum(array_map(static fn (PoiCategoryDetail $category): float => 2.0 + \count($category->pois) * 1.6, $poiCategories));
-            $cardsBySection[DetailSection::CadreDeVie->value][] = new DetailCard(DetailCard::POIS, $weight);
+            $cardsBySection[DetailSection::PointsInteret->value][] = new DetailCard(DetailCard::POIS, 4.0);
         }
 
         $sections = [];
         foreach (DetailSection::cases() as $section) {
             if (isset($cardsBySection[$section->value])) {
-                $sections[] = ['section' => $section, 'columns' => DetailCard::distribute($cardsBySection[$section->value], $columnCount)];
+                $sections[] = ['section' => $section, 'columns' => DetailCard::distribute($cardsBySection[$section->value], DetailSection::PointsInteret === $section ? 1 : $columnCount)];
             }
         }
 

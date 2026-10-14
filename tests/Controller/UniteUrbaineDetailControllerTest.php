@@ -379,15 +379,81 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         CommuneFactory::createOne(['name' => 'Plescop', 'uniteUrbaine' => $vannes]);
         $category = PoiCategoryFactory::createOne(['code' => 'hardware_store', 'label' => 'Grande surface de bricolage']);
         PoiFactory::createMany(12, ['category' => $category, 'uniteUrbaine' => $vannes]);
-        PoiFactory::createOne(['name' => 'Leroy Merlin Vannes', 'brand' => 'Leroy Merlin', 'category' => $category, 'uniteUrbaine' => $vannes]);
+        PoiFactory::createOne(['name' => 'Leroy Merlin Vannes', 'brand' => 'Leroy Merlin', 'category' => $category, 'uniteUrbaine' => $vannes, 'location' => 'SRID=4326;POINT(-2.75 47.65)']);
 
         $client->request('GET', '/unites-urbaines/56501');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Grande surface de bricolage (13)');
-        self::assertSelectorTextContains('body', 'et 3 autres');
+        self::assertCount(13, $client->getCrawler()->filter('[data-poi-map-target="item"]'));
         self::assertSelectorTextContains('body', 'Communes (2)');
         self::assertSelectorTextContains('body', 'Plescop');
+    }
+
+    public function testPoiListCarriesTheCoordinatesTheMapPlotsAndTheMapPanelOnlyLinksToThem(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $category = PoiCategoryFactory::createOne(['code' => 'hardware_store', 'label' => 'Grande surface de bricolage']);
+        PoiFactory::createOne(['name' => 'Leroy Merlin Vannes', 'category' => $category, 'uniteUrbaine' => $vannes, 'location' => 'SRID=4326;POINT(-2.75 47.65)']);
+        PoiFactory::createOne(['name' => 'Brico Dépôt', 'category' => $category, 'uniteUrbaine' => $vannes]);
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('[data-controller="poi-map"] [data-poi-map-target="map"]');
+        self::assertSelectorExists('input[data-poi-map-target="toggle"][data-code="hardware_store"]');
+        self::assertSelectorExists('ul[data-poi-map-target="group"][data-code="hardware_store"]');
+        self::assertSelectorExists('[data-poi-map-target="item"][data-name="Leroy Merlin Vannes"][data-lon="-2.75"][data-lat="47.65"]');
+
+        $client->request('GET', '/unites-urbaines/56501', server: ['HTTP_TURBO_FRAME' => 'unite-urbaine-detail']);
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('[data-controller="poi-map"]');
+        self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', '2 points d\'intérêt');
+        self::assertSelectorExists('turbo-frame#unite-urbaine-detail a[href="/unites-urbaines/56501#points-interet"]');
+    }
+
+    public function testPoisAreGroupedByTheParentOfTheirCategory(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $parent = PoiCategoryFactory::createOne(['code' => 'hospital', 'label' => 'Hôpital ou clinique']);
+        $general = PoiCategoryFactory::createOne(['code' => 'hospital_general', 'label' => 'Centre hospitalier', 'parent' => $parent]);
+        $emergency = PoiCategoryFactory::createOne(['code' => 'hospital_emergency', 'label' => "Service d'urgences", 'parent' => $parent]);
+        $alone = PoiCategoryFactory::createOne(['code' => 'nuclear_power_plant', 'label' => 'Centrale nucléaire']);
+        PoiFactory::createOne(['name' => 'CH CHUBERT', 'category' => $general, 'uniteUrbaine' => $vannes]);
+        PoiFactory::createOne(['name' => 'CH CHUBERT', 'category' => $emergency, 'uniteUrbaine' => $vannes]);
+        PoiFactory::createOne(['name' => 'Centrale de Vannes', 'category' => $alone, 'uniteUrbaine' => $vannes]);
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(2, $client->getCrawler()->filter('input[data-poi-map-target="toggle"]'));
+        self::assertSelectorTextContains('body', 'Hôpital ou clinique (2)');
+        self::assertSelectorTextContains('ul[data-code="hospital"]', "CH CHUBERT · Service d'urgences");
+        self::assertSelectorTextContains('ul[data-code="hospital"]', 'CH CHUBERT · Centre hospitalier');
+        self::assertSelectorTextNotContains('ul[data-code="nuclear_power_plant"]', 'Centre hospitalier');
+    }
+
+    public function testPoisAreGroupedUnderTheRootWhateverTheDepthOfTheTree(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $root = PoiCategoryFactory::createOne(['code' => 'risk', 'label' => 'Site à risque']);
+        $middle = PoiCategoryFactory::createOne(['code' => 'seveso', 'label' => 'Site Seveso', 'parent' => $root]);
+        $leaf = PoiCategoryFactory::createOne(['code' => 'seveso_high', 'label' => 'Seuil haut', 'parent' => $middle]);
+        PoiFactory::createOne(['name' => 'Raffinerie', 'category' => $leaf, 'uniteUrbaine' => $vannes]);
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertCount(1, $client->getCrawler()->filter('input[data-poi-map-target="toggle"]'));
+        self::assertSelectorTextContains('body', 'Site à risque (1)');
+        self::assertSelectorTextContains('ul[data-code="risk"]', 'Raffinerie · Seuil haut');
     }
 
     public function testPageListsSevesoSitesByLevelWithTheirActivity(): void

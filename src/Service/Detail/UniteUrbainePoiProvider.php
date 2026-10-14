@@ -4,21 +4,24 @@ declare(strict_types=1);
 
 namespace App\Service\Detail;
 
+use App\Entity\PoiCategory;
 use App\Entity\UniteUrbaine;
+use App\Repository\PoiCategoryRepository;
 use App\Repository\PoiRepository;
 use App\Service\Import\StationImporter;
 
 /**
- * The POIs of an unité urbaine by category. Only a few of each category are
- * loaded: the detail page shows the count and a sample, not the full list.
- * Stations are left out: they have their own block, with their access time.
+ * The POIs of an unité urbaine, all of them, grouped by the root of their
+ * category's tree (a category without parent is its own group): the detail page
+ * lists them next to a map. Stations are left out: they have their own
+ * block, with their access time.
  */
 final readonly class UniteUrbainePoiProvider
 {
-    public const int SAMPLE_SIZE = 10;
-
-    public function __construct(private PoiRepository $poiRepository)
-    {
+    public function __construct(
+        private PoiRepository $poiRepository,
+        private PoiCategoryRepository $poiCategoryRepository,
+    ) {
     }
 
     /**
@@ -26,19 +29,31 @@ final readonly class UniteUrbainePoiProvider
      */
     public function findCategories(UniteUrbaine $uniteUrbaine): array
     {
-        $categories = [];
-        foreach ($this->poiRepository->countByCategory($uniteUrbaine) as ['category' => $category, 'total' => $total]) {
+        $roots = $this->poiCategoryRepository->findRootsByCode();
+
+        /** @var array<string, array{label: string, categories: list<PoiCategory>}> $byGroup */
+        $byGroup = [];
+        foreach ($this->poiRepository->findCategories($uniteUrbaine) as $category) {
             if (StationImporter::CATEGORY_CODE === $category->getCode()) {
                 continue;
             }
 
-            $categories[] = new PoiCategoryDetail(
-                $category->getLabel(),
-                $total,
-                $this->poiRepository->findByCategory($uniteUrbaine, $category, self::SAMPLE_SIZE),
-            );
+            $group = $roots[$category->getCode()];
+            $byGroup[$group['code']]['label'] = $group['label'];
+            $byGroup[$group['code']]['categories'][] = $category;
         }
 
-        return $categories;
+        $details = array_map(
+            fn (string $code, array $entry): PoiCategoryDetail => new PoiCategoryDetail(
+                $code,
+                $entry['label'],
+                $this->poiRepository->findByCategories($uniteUrbaine, $entry['categories']),
+            ),
+            array_keys($byGroup),
+            array_values($byGroup),
+        );
+        usort($details, static fn (PoiCategoryDetail $a, PoiCategoryDetail $b): int => $a->label <=> $b->label);
+
+        return $details;
     }
 }
