@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Service\Ranking;
 
 use App\Enum\Departement;
+use App\Service\Detail\CriterionTrend;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -12,7 +13,7 @@ use Doctrine\DBAL\Connection;
  * value of one criterion at its latest period overall, so that every row is
  * compared at the same date.
  *
- * @phpstan-type RankingRow array{rank: int, code: string, name: string, departement: ?Departement, value: int|float, population: ?int}
+ * @phpstan-type RankingRow array{rank: int, code: string, name: string, departement: ?Departement, value: int|float, population: ?int, trend: ?CriterionTrend}
  */
 final readonly class CriterionRankingProvider
 {
@@ -27,18 +28,18 @@ final readonly class CriterionRankingProvider
     {
         $direction = $rankFromLowest ? 'ASC' : 'DESC';
 
-        /** @var list<array{rank: int, code: string, name: string, departement: ?string, value: string|int|float, population: ?int, period: int, total: int, median: string|float, max_value: string|float}> $rows */
+        /** @var list<array{rank: int, code: string, name: string, departement: ?string, value: string|int|float, population: ?int, period: int, total: int, median: string|float, max_value: string|float, unit: ?string, rank_from_lowest: bool, first_period: ?int, first_value: string|int|float|null}> $rows */
         $rows = $this->connection->fetchAllAssociative(
             <<<SQL
                 WITH criterion_period AS (
-                    SELECT c.id, MAX(cv.period) AS period
+                    SELECT c.id, c.code, c.unit, c.rank_from_lowest, MAX(cv.period) AS period
                     FROM criterion c
                     INNER JOIN criterion_value cv ON cv.criterion_id = c.id
                     WHERE c.code = :code AND c.comparable
-                    GROUP BY c.id
+                    GROUP BY c.id, c.code, c.unit, c.rank_from_lowest
                 ),
                 scoped AS (
-                    SELECT cv.unite_urbaine_id, cp.period, COALESCE(cv.value_integer, cv.value_decimal) AS value
+                    SELECT cv.unite_urbaine_id, cp.id AS criterion_id, cp.unit, cp.rank_from_lowest, cp.period, COALESCE(cv.value_integer, cv.value_decimal) AS value
                     FROM criterion_value cv
                     INNER JOIN criterion_period cp ON cp.id = cv.criterion_id AND cp.period = cv.period
                     WHERE cv.value_integer IS NOT NULL OR cv.value_decimal IS NOT NULL
@@ -47,7 +48,8 @@ final readonly class CriterionRankingProvider
                     SELECT s.*, RANK() OVER (ORDER BY s.value {$direction}) AS rank, COUNT(*) OVER () AS total
                     FROM scoped s
                 )
-                SELECT r.rank, uu.insee_code AS code, uu.name, uu.departement, r.value, r.period, r.total,
+                SELECT r.rank, uu.insee_code AS code, uu.name, uu.departement, r.value, r.period, r.total, r.unit, r.rank_from_lowest,
+                       fp.period AS first_period, fp.value AS first_value,
                        (SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY value) FROM scoped) AS median,
                        (SELECT MAX(ABS(value)) FROM scoped) AS max_value,
                        (
@@ -60,6 +62,14 @@ final readonly class CriterionRankingProvider
                        ) AS population
                 FROM ranked r
                 INNER JOIN unite_urbaine uu ON uu.id = r.unite_urbaine_id
+                LEFT JOIN LATERAL (
+                    SELECT f.period, COALESCE(f.value_integer, f.value_decimal) AS value
+                    FROM criterion_value f
+                    WHERE f.criterion_id = r.criterion_id AND f.unite_urbaine_id = r.unite_urbaine_id AND f.period < r.period
+                      AND (f.value_integer IS NOT NULL OR f.value_decimal IS NOT NULL)
+                    ORDER BY f.period
+                    LIMIT 1
+                ) fp ON true
                 ORDER BY r.rank, uu.name
                 LIMIT :limit OFFSET :offset
                 SQL,
@@ -68,13 +78,15 @@ final readonly class CriterionRankingProvider
 
         $result = [];
         foreach ($rows as $row) {
+            $value = \is_string($row['value']) ? (float) $row['value'] : $row['value'];
             $result[] = [
                 'rank' => $row['rank'],
                 'code' => $row['code'],
                 'name' => $row['name'],
                 'departement' => null === $row['departement'] ? null : Departement::tryFrom($row['departement']),
-                'value' => \is_string($row['value']) ? (float) $row['value'] : $row['value'],
+                'value' => $value,
                 'population' => $row['population'],
+                'trend' => $this->trend($criterionCode, $row, $value),
             ];
         }
 
@@ -85,5 +97,19 @@ final readonly class CriterionRankingProvider
             'maxValue' => [] === $rows ? 0.0 : (float) $rows[0]['max_value'],
             'rows' => $result,
         ];
+    }
+
+    /**
+     * @param array{unit: ?string, rank_from_lowest: bool, period: int, first_period: ?int, first_value: string|int|float|null} $row
+     */
+    private function trend(string $criterionCode, array $row, int|float $value): ?CriterionTrend
+    {
+        if (null === $row['first_period'] || null === $row['first_value'] || \in_array($criterionCode, CriterionTrend::NO_TREND_CODES, true)) {
+            return null;
+        }
+
+        $first = \is_string($row['first_value']) ? (float) $row['first_value'] : $row['first_value'];
+
+        return CriterionTrend::fromSeries([$row['first_period'] => $first, $row['period'] => $value], $row['unit'], $row['rank_from_lowest']);
     }
 }

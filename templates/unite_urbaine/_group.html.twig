@@ -30,9 +30,15 @@
                     </div>
                     <div class="flex shrink-0 items-center gap-3">
                         <span class="text-right">
-                            <span class="block text-sm font-medium text-stone-900">
-                                {{ criterion.value|criterion_value }}
-                                {% if criterion.unit %}<span class="text-stone-500">{{ criterion.unit }}</span>{% endif %}
+                            {% set trend = criterion.trend %}
+                            <span class="flex items-center justify-end gap-2">
+                                {% if trend %}
+                                    {{ include('unite_urbaine/_trend.html.twig', {trend: trend, until: criterion.period}) }}
+                                {% endif %}
+                                <span class="text-sm font-medium text-stone-900">
+                                    {{ criterion.value|criterion_value }}
+                                    {% if criterion.unit %}<span class="text-stone-500">{{ criterion.unit }}</span>{% endif %}
+                                </span>
                             </span>
                             {% if criterion.median is not null %}
                                 <span class="block text-xs text-emerald-700">médiane {{ criterion.median|fr_number }}</span>

@@ -36,4 +36,5 @@ for that path.
 | `src/Command`        | `command.md`        | Console command class/file naming from the command name |
 | `src/Controller`     | `controller.md`     | Invokable-only controllers, one action per class          |
 | `src/Controller/Api` | `controller-api.md` | API controllers live here; paired DTO is named `<Name>Input` |
+| `src/Service`        | `service.md`        | Services are named with a verb-derived suffix (`Importer`, `Provider`, …) |
 

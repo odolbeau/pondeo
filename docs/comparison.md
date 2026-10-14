@@ -24,3 +24,9 @@ page, criterion by criterion.
 - A unit with no value for a criterion shows a dash.
 - Distribution charts (income brackets, socio-professional categories) are
   not part of the comparison.
+
+## Trend
+
+Each cell shows the unit's trend next to its value, as on the
+[detail page](urban-unit-detail.md#trend). A unit with a single period for a
+criterion has none.
