@@ -20,7 +20,7 @@ final readonly class CriterionGlossary
     private const array GROUP_ORDER = [
         'Démographie', 'Âge', 'Catégories socioprofessionnelles', 'Diplômes',
         'Revenus', 'Revenus fiscaux', 'Emploi',
-        'Logement', 'Immobilier', 'Commerces', 'Vie associative', 'Services et tourisme', 'Santé et action sociale', 'Sport et culture',
+        'Logement', 'Immobilier', 'Commerces', 'Vie associative', 'Services et tourisme', 'Santé', 'Petite enfance et seniors', 'Sport et culture',
         'Climat', 'Climat 2050', 'Risques',
     ];
 
@@ -45,7 +45,8 @@ final readonly class CriterionGlossary
         'Immobilier' => 'DGFiP, Demandes de valeurs foncières (statistiques DVF, Etalab), ventes de 2021 à 2025',
         'Commerces' => self::BPE,
         'Services et tourisme' => self::BPE,
-        'Santé et action sociale' => self::BPE,
+        'Santé' => self::BPE,
+        'Petite enfance et seniors' => self::BPE,
         'Sport et culture' => self::BPE,
         'Vie associative' => 'Ministère de l\'Intérieur, Répertoire national des associations (RNA), 2026',
         'Climat' => 'Open-Meteo.com, réanalyse ERA5, moyenne 1991-2020 (CC BY 4.0)',

@@ -62,7 +62,7 @@ final class EquipmentImporterTest extends KernelTestCase
         self::assertSame(15, $this->integer('56501', 'pharmacies'));
         self::assertSame(1.2, $this->decimal('56501', 'medecins_generalistes_pour_1000_hab'));
         self::assertSame(0, $this->integer('56501', 'medecins_specialistes'));
-        self::assertSame(['Santé et action sociale', 'Commerces'], $this->groupLabels('medecins_generalistes', 'commerces_total'));
+        self::assertSame(['Santé', 'Commerces'], $this->groupLabels('medecins_generalistes', 'commerces_total'));
 
         // Each year of the file is its own period.
         self::assertSame(40, $this->integer('56501', 'commerces_alimentaires', 2015));

@@ -14,7 +14,9 @@ enum EquipmentFamily: string
 {
     public const string GROUP_SHOPS = 'Commerces';
 
-    public const string GROUP_HEALTH = 'Santé et action sociale';
+    public const string GROUP_HEALTH = 'Santé';
+
+    public const string GROUP_CARE = 'Petite enfance et seniors';
 
     public const string GROUP_SPORT_CULTURE = 'Sport et culture';
 
@@ -100,7 +102,8 @@ enum EquipmentFamily: string
     {
         return match ($this) {
             self::ShopsTotal, self::ShopsLarge, self::ShopsFood, self::ShopsNonFood => self::GROUP_SHOPS,
-            self::GeneralPractitioners, self::Specialists, self::Dentists, self::Paramedics, self::Pharmacies, self::Hospitals, self::Nurseries, self::ElderlyHomes => self::GROUP_HEALTH,
+            self::GeneralPractitioners, self::Specialists, self::Dentists, self::Paramedics, self::Pharmacies, self::Hospitals => self::GROUP_HEALTH,
+            self::Nurseries, self::ElderlyHomes => self::GROUP_CARE,
             self::SportsFacilities, self::CulturalFacilities => self::GROUP_SPORT_CULTURE,
             self::Restaurants, self::EverydayServices, self::TouristAccommodation => self::GROUP_SERVICES,
         };
@@ -120,8 +123,8 @@ enum EquipmentFamily: string
             self::Paramedics => 3,
             self::Pharmacies => 4,
             self::Hospitals => 5,
-            self::Nurseries => 6,
-            self::ElderlyHomes => 7,
+            self::Nurseries => 0,
+            self::ElderlyHomes => 1,
             self::SportsFacilities => 0,
             self::CulturalFacilities => 1,
             self::Restaurants => 0,
