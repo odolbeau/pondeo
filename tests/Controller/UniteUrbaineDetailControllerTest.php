@@ -395,7 +395,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
     {
         $client = self::createClient();
 
-        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501', 'boundary' => 'SRID=4326;MULTIPOLYGON(((-3 47,-3 48,-2 48,-2 47,-3 47)))']);
         $category = PoiCategoryFactory::createOne(['code' => 'hardware_store', 'label' => 'Grande surface de bricolage']);
         PoiFactory::createOne(['name' => 'Leroy Merlin Vannes', 'category' => $category, 'uniteUrbaine' => $vannes, 'location' => 'SRID=4326;POINT(-2.75 47.65)']);
         PoiFactory::createOne(['name' => 'Brico Dépôt', 'category' => $category, 'uniteUrbaine' => $vannes]);
@@ -404,6 +404,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('[data-controller="poi-map"] [data-poi-map-target="map"]');
+        self::assertSelectorExists('[data-controller="poi-map"][data-poi-map-boundary-value*="MultiPolygon"]');
         self::assertSelectorExists('input[data-poi-map-target="toggle"][data-code="hardware_store"]');
         self::assertSelectorExists('ul[data-poi-map-target="group"][data-code="hardware_store"]');
         self::assertSelectorExists('[data-poi-map-target="item"][data-name="Leroy Merlin Vannes"][data-lon="-2.75"][data-lat="47.65"]');
@@ -412,6 +413,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertSelectorNotExists('[data-controller="poi-map"]');
+        self::assertSelectorNotExists('[data-poi-map-boundary-value]');
         self::assertSelectorTextContains('turbo-frame#unite-urbaine-detail', '2 points d\'intérêt');
         self::assertSelectorExists('turbo-frame#unite-urbaine-detail a[href="/unites-urbaines/56501#points-interet"]');
     }

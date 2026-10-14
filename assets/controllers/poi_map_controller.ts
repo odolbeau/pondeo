@@ -5,6 +5,7 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 // See map_controller.ts: the production build can't follow MapLibre's own worker URL.
 setWorkerUrl(workerUrl);
 
+const BOUNDARY_SOURCE_ID = 'boundary';
 const SOURCE_ID = 'pois';
 const LAYER_ID = 'pois-circles';
 const PALETTE = ['#dc2626', '#2563eb', '#d97706', '#059669', '#7c3aed', '#db2777', '#0891b2', '#65a30d'];
@@ -16,12 +17,15 @@ const STORAGE_KEY = 'pondeo:poi:hidden-categories';
 // category's colour. Hovering an item highlights its point, and conversely.
 export default class extends Controller {
     static targets = ['map', 'item', 'dot', 'toggle', 'group'];
+    static values = { boundary: String };
 
     declare readonly mapTarget: HTMLDivElement;
     declare readonly itemTargets: HTMLElement[];
     declare readonly dotTargets: HTMLElement[];
     declare readonly toggleTargets: HTMLInputElement[];
     declare readonly groupTargets: HTMLElement[];
+    declare readonly boundaryValue: string;
+    declare readonly hasBoundaryValue: boolean;
 
     private map!: Map;
     private ready = false;
@@ -50,6 +54,13 @@ export default class extends Controller {
         });
 
         this.map.on('load', () => {
+            // Under the points: the outline of the unité urbaine the POIs belong to.
+            if (this.hasBoundaryValue) {
+                this.map.addSource(BOUNDARY_SOURCE_ID, { type: 'geojson', data: JSON.parse(this.boundaryValue) });
+                this.map.addLayer({ id: `${BOUNDARY_SOURCE_ID}-fill`, type: 'fill', source: BOUNDARY_SOURCE_ID, paint: { 'fill-color': '#059669', 'fill-opacity': 0.08 } });
+                this.map.addLayer({ id: `${BOUNDARY_SOURCE_ID}-line`, type: 'line', source: BOUNDARY_SOURCE_ID, paint: { 'line-color': '#059669', 'line-width': 2.5 } });
+            }
+
             this.map.addSource(SOURCE_ID, { type: 'geojson', data: { type: 'FeatureCollection', features } });
             this.map.addLayer({
                 id: LAYER_ID,
@@ -87,7 +98,7 @@ export default class extends Controller {
         });
 
         this.applyHidden();
-        this.fitVisible(false);
+        this.fitInitial();
     }
 
     disconnect() {
@@ -132,6 +143,33 @@ export default class extends Controller {
         if (this.ready) {
             this.map.setFilter(LAYER_ID, ['!', ['in', ['get', 'category'], ['literal', [...this.hidden]]]]);
         }
+    }
+
+    // The whole unité urbaine when its outline is known, else the points.
+    private fitInitial() {
+        if (!this.hasBoundaryValue) {
+            this.fitVisible(false);
+
+            return;
+        }
+
+        const bounds = new LngLatBounds();
+        const extend = (coordinates: unknown): void => {
+            if (Array.isArray(coordinates) && typeof coordinates[0] === 'number') {
+                bounds.extend(coordinates as [number, number]);
+            } else if (Array.isArray(coordinates)) {
+                coordinates.forEach(extend);
+            }
+        };
+        extend((JSON.parse(this.boundaryValue) as GeoJSON.Geometry & { coordinates: unknown }).coordinates);
+
+        if (bounds.isEmpty()) {
+            this.fitVisible(false);
+
+            return;
+        }
+
+        this.map.fitBounds(bounds, { padding: 40, animate: false });
     }
 
     private fitVisible(animate: boolean) {
