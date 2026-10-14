@@ -21,6 +21,7 @@ final readonly class UniteUrbainePoiProvider
     public function __construct(
         private PoiRepository $poiRepository,
         private PoiCategoryRepository $poiCategoryRepository,
+        private PoiDeduplicator $poiDeduplicator,
     ) {
     }
 
@@ -43,15 +44,12 @@ final readonly class UniteUrbainePoiProvider
             $byGroup[$group['code']]['categories'][] = $category;
         }
 
-        $details = array_map(
-            fn (string $code, array $entry): PoiCategoryDetail => new PoiCategoryDetail(
-                $code,
-                $entry['label'],
-                $this->poiRepository->findByCategories($uniteUrbaine, $entry['categories']),
-            ),
-            array_keys($byGroup),
-            array_values($byGroup),
-        );
+        $details = [];
+        foreach ($byGroup as $code => $entry) {
+            $deduplicated = $this->poiDeduplicator->deduplicate($this->poiRepository->findByCategories($uniteUrbaine, $entry['categories']));
+            $details[] = new PoiCategoryDetail($code, $entry['label'], $deduplicated->pois, $deduplicated->otherCategoryLabels);
+        }
+
         usort($details, static fn (PoiCategoryDetail $a, PoiCategoryDetail $b): int => $a->label <=> $b->label);
 
         return $details;

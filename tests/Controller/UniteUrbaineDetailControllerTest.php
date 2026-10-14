@@ -378,7 +378,8 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         CommuneFactory::createOne(['name' => 'Séné', 'uniteUrbaine' => $vannes]);
         CommuneFactory::createOne(['name' => 'Plescop', 'uniteUrbaine' => $vannes]);
         $category = PoiCategoryFactory::createOne(['code' => 'hardware_store', 'label' => 'Grande surface de bricolage']);
-        PoiFactory::createMany(12, ['category' => $category, 'uniteUrbaine' => $vannes]);
+        // Far apart and unrelated by name: none is taken for another.
+        PoiFactory::createMany(12, static fn (int $i): array => ['name' => \sprintf('Magasin n°%d', $i), 'category' => $category, 'uniteUrbaine' => $vannes, 'location' => \sprintf('SRID=4326;POINT(%F 47.5)', -3.0 + $i * 0.1)]);
         PoiFactory::createOne(['name' => 'Leroy Merlin Vannes', 'brand' => 'Leroy Merlin', 'category' => $category, 'uniteUrbaine' => $vannes, 'location' => 'SRID=4326;POINT(-2.75 47.65)']);
 
         $client->request('GET', '/unites-urbaines/56501');
@@ -432,9 +433,10 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
 
         self::assertResponseIsSuccessful();
         self::assertCount(2, $client->getCrawler()->filter('input[data-poi-map-target="toggle"]'));
-        self::assertSelectorTextContains('body', 'Hôpital ou clinique (2)');
-        self::assertSelectorTextContains('ul[data-code="hospital"]', "CH CHUBERT · Service d'urgences");
-        self::assertSelectorTextContains('ul[data-code="hospital"]', 'CH CHUBERT · Centre hospitalier');
+        self::assertSelectorTextContains('body', 'Hôpital ou clinique (1)');
+        // The hospital and its emergency department are one place: listed once, with both categories.
+        self::assertCount(1, $client->getCrawler()->filter('ul[data-code="hospital"] > li'));
+        self::assertSelectorTextContains('ul[data-code="hospital"]', "CH CHUBERT · Centre hospitalier · Service d'urgences");
         self::assertSelectorTextNotContains('ul[data-code="nuclear_power_plant"]', 'Centre hospitalier');
     }
 

@@ -65,9 +65,11 @@ class PoiRepository extends ServiceEntityRepository
         return $this->createQueryBuilder('poi')
             ->andWhere('poi.uniteUrbaine = :uniteUrbaine')
             ->andWhere('poi.category IN (:categories)')
+            ->innerJoin('poi.category', 'category')
             ->setParameter('uniteUrbaine', $uniteUrbaine)
             ->setParameter('categories', $categories)
             ->orderBy('poi.name')
+            ->addOrderBy('category.label')
             ->getQuery()
             ->getResult();
     }

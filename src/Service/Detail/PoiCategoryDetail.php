@@ -10,12 +10,14 @@ use App\Entity\Poi;
 final readonly class PoiCategoryDetail
 {
     /**
-     * @param list<Poi> $pois
+     * @param list<Poi>                   $pois
+     * @param array<string, list<string>> $otherCategoryLabels by POI id: the categories of the POIs merged into it (same name, same place)
      */
     public function __construct(
         public string $code,
         public string $label,
         public array $pois,
+        public array $otherCategoryLabels = [],
     ) {
     }
 }
