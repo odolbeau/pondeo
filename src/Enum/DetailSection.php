@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Enum;
 
 use App\Service\Import\AgeStructureImporter;
+use App\Service\Import\AssociationsImporter;
 use App\Service\Import\CommercesImporter;
 use App\Service\Import\EducationImporter;
 use App\Service\Import\EmploymentImporter;
@@ -49,7 +50,7 @@ enum DetailSection: string
             self::Population => [PopulationTrendDeriver::GROUP, AgeStructureImporter::GROUP, SocioProfessionalImporter::GROUP, EducationImporter::GROUP],
             self::Economie => [IncomeImporter::GROUP, TaxIncomeImporter::GROUP, EmploymentImporter::GROUP],
             self::Logement => [HousingImporter::GROUP, RealEstatePriceImporter::GROUP],
-            self::CadreDeVie => [CommercesImporter::GROUP],
+            self::CadreDeVie => [CommercesImporter::GROUP, AssociationsImporter::GROUP],
             self::Autres => [],
         };
     }

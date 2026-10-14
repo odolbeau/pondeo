@@ -20,7 +20,7 @@ final readonly class CriterionGlossary
     private const array GROUP_ORDER = [
         'Démographie', 'Âge', 'Catégories socioprofessionnelles', 'Diplômes',
         'Revenus', 'Revenus fiscaux', 'Emploi',
-        'Logement', 'Immobilier', 'Commerces',
+        'Logement', 'Immobilier', 'Commerces', 'Vie associative',
         'Climat', 'Climat 2050', 'Risques',
     ];
 
@@ -42,6 +42,7 @@ final readonly class CriterionGlossary
         'Logement' => self::CENSUS,
         'Immobilier' => 'DGFiP, Demandes de valeurs foncières (statistiques DVF, Etalab), ventes de 2021 à 2025',
         'Commerces' => 'INSEE, Base permanente des équipements, 2025',
+        'Vie associative' => 'Ministère de l\'Intérieur, Répertoire national des associations (RNA), 2026',
         'Climat' => 'Open-Meteo.com, réanalyse ERA5, moyenne 1991-2020 (CC BY 4.0)',
         'Climat 2050' => 'Open-Meteo.com, modèles climatiques CMIP6, période 2041-2050 (CC BY 4.0)',
         'Risques' => 'Géorisques (ministère de la Transition écologique, BRGM)',
@@ -105,6 +106,25 @@ final readonly class CriterionGlossary
         'commerces_alimentaires' => 'Le nombre de commerces alimentaires de l\'agglomération, avant rapport à la population.',
         'commerces_non_alimentaires' => 'Le nombre de commerces non alimentaires de l\'agglomération, avant rapport à la population.',
         'commerces_grandes_surfaces' => 'Le nombre de grandes surfaces de l\'agglomération, avant rapport à la population.',
+
+        'associations_actives_pour_1000_hab' => "Le nombre d'associations actives pour 1 000 habitants. Avec 25 associations pour 1 000 habitants, une ville de 50 000 habitants en compte 1 250.\n\nUne association est active si elle a fait une déclaration (création ou modification) au cours des dix dernières années : le répertoire ne sait pas qu'une association a cessé d'exister tant que personne ne le déclare, et ce filtre écarte une bonne partie des associations dormantes. Sur le territoire, une association compte pour la commune de son siège, pas pour celle où elle agit : les petites villes-centres, dont les associations servent tout le bassin alentour, ressortent donc souvent en tête. Le Bas-Rhin, le Haut-Rhin et la Moselle ne sont pas couverts (associations de droit local).",
+        'associations_total_pour_1000_hab' => 'Le nombre de toutes les associations déclarées pour 1 000 habitants, y compris celles qui ne font plus rien. Comparé aux associations actives, il montre la part du stock qui a cessé de se déclarer.',
+        'associations_sport_pour_1000_hab' => "Le nombre d'associations sportives et de plein air (clubs, chasse, pêche…) actives pour 1 000 habitants.",
+        'associations_culture_pour_1000_hab' => "Le nombre d'associations culturelles et de patrimoine (musique, théâtre, danse, arts, sauvegarde du patrimoine…) actives pour 1 000 habitants.",
+        'associations_loisirs_pour_1000_hab' => "Le nombre d'associations de loisirs, d'amicales et de vie de quartier (clubs, comités des fêtes, centres socioculturels, anciens élèves…) actives pour 1 000 habitants.",
+        'associations_solidarite_pour_1000_hab' => "Le nombre d'associations de solidarité et d'action sociale (aide caritative, humanitaire, services aux familles et aux personnes âgées…) actives pour 1 000 habitants.",
+        'associations_sante_pour_1000_hab' => "Le nombre d'associations de santé et du médico-social actives pour 1 000 habitants.",
+        'associations_education_pour_1000_hab' => "Le nombre d'associations d'éducation, de formation et de recherche (parents d'élèves, soutien scolaire…) actives pour 1 000 habitants.",
+        'associations_environnement_pour_1000_hab' => "Le nombre d'associations d'environnement et de cadre de vie (protection de la nature, quartiers, usagers…) actives pour 1 000 habitants.",
+        'associations_total' => 'Le nombre de toutes les associations déclarées de l\'agglomération. Ce chiffre suit la taille de la ville : il sert à calculer la densité pour 1 000 habitants.',
+        'associations_actives' => 'Le nombre d\'associations actives de l\'agglomération, avant rapport à la population.',
+        'associations_sport' => 'Le nombre d\'associations de cette famille dans l\'agglomération, avant rapport à la population.',
+        'associations_culture' => 'Le nombre d\'associations de cette famille dans l\'agglomération, avant rapport à la population.',
+        'associations_loisirs' => 'Le nombre d\'associations de cette famille dans l\'agglomération, avant rapport à la population.',
+        'associations_solidarite' => 'Le nombre d\'associations de cette famille dans l\'agglomération, avant rapport à la population.',
+        'associations_sante' => 'Le nombre d\'associations de cette famille dans l\'agglomération, avant rapport à la population.',
+        'associations_education' => 'Le nombre d\'associations de cette famille dans l\'agglomération, avant rapport à la population.',
+        'associations_environnement' => 'Le nombre d\'associations de cette famille dans l\'agglomération, avant rapport à la population.',
 
         'temperature_moyenne' => 'La température moyenne sur l\'année, en moyenne sur 1991-2020. Elle décrit un climat sans dire s\'il est meilleur ou moins bon.',
         'jours_plus_30' => 'Le nombre de jours par an où le thermomètre dépasse 30 °C : les journées vraiment chaudes.',

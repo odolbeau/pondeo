@@ -11,6 +11,7 @@ to confirm before relying on it.
 | Files | Source | Terms | Status |
 |-------|--------|-------|--------|
 | `population-historique`, `structure-age-recensement`, `diplomes-recensement`, `emploi-recensement`, `logement-recensement`, `pcs-recensement`, `pyramide-ages`, `revenus-filosofi`, `commerces-bpe` | INSEE, [Mélodi API](https://portail-api.insee.fr/) | Licence Ouverte; credit INSEE and the dataset | OK |
+| `associations-rna` | Ministry of the Interior, [Répertoire national des associations](https://www.data.gouv.fr/datasets/repertoire-national-des-associations), on data.gouv.fr | Licence Ouverte; credit the Ministry of the Interior | OK |
 | `communes-aires-attraction` | INSEE, [aires d'attraction des villes 2020](https://www.insee.fr/fr/information/4803954) | Licence Ouverte; credit INSEE | OK |
 | `revenus-fiscaux` | DGFiP, IRCOM, on data.gouv.fr | Licence Ouverte; credit DGFiP | OK |
 | `prix-immobilier` | DGFiP / Etalab, Statistiques DVF, on data.gouv.fr | Licence Ouverte; credit DGFiP and Etalab | OK |

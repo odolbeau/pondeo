@@ -70,6 +70,10 @@ see [criteria-population.md](criteria-population.md).
 
 See [criteria-commerces.md](criteria-commerces.md): same shape, with a derived density per 1000 inhabitants.
 
+## Associations
+
+See [criteria-associations.md](criteria-associations.md): same shape, with a derived density per 1000 inhabitants.
+
 ## Real estate prices
 
 See [criteria-real-estate.md](criteria-real-estate.md): not additive, so averaged per urban unit with the number of sales as weight.
