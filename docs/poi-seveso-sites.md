@@ -4,7 +4,7 @@ The industrial sites classified Seveso in metropolitan France are stored as
 points of interest (POIs), in two categories by level: "Site Seveso seuil
 haut" (`seveso_high`) and "Site Seveso seuil bas" (`seveso_low`). The high
 level is the one with the larger quantities of dangerous substances, hence the
-stricter obligations.
+stricter obligations. Both are children of the category "Site Seveso" (`seveso`), itself under "Site à risque" (`risk_site`) like the [nuclear plants](poi-nuclear-plants.md), so the detail page lists them under one heading.
 
 ## Source
 

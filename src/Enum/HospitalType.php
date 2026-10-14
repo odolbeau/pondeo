@@ -13,15 +13,8 @@ enum HospitalType: string
     case Cancer = 'cancer';
     case Army = 'army';
 
-    /** Code of the parent POI category of every hospital type. */
-    public const string PARENT_CATEGORY_CODE = 'hospital';
-
-    public const string PARENT_LABEL = 'Hôpital ou clinique';
-
     /** Code of the POI category of the emergency departments, a category of its own. */
     public const string EMERGENCY_CATEGORY_CODE = 'hospital_emergency';
-
-    public const string EMERGENCY_LABEL = "Service d'urgences";
 
     /** Code of the POI category of this type. */
     public function categoryCode(): string
@@ -32,17 +25,6 @@ enum HospitalType: string
             self::Clinic => 'hospital_clinic',
             self::Cancer => 'hospital_cancer',
             self::Army => 'hospital_army',
-        };
-    }
-
-    public function label(): string
-    {
-        return match ($this) {
-            self::University => 'Centre hospitalier régional ou universitaire',
-            self::General => 'Centre hospitalier',
-            self::Clinic => 'Clinique ou autre établissement de soins',
-            self::Cancer => 'Centre de lutte contre le cancer',
-            self::Army => 'Hôpital des armées',
         };
     }
 

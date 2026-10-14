@@ -38,18 +38,4 @@ enum BoardGameType: string
             self::Lodge => 'board_game_lodge',
         };
     }
-
-    public function label(): string
-    {
-        return match ($this) {
-            self::Club => 'Club de jeux',
-            self::Library => 'Ludothèque',
-            self::Network => 'Réseau national de jeux',
-            self::OtherAssociation => 'Autre association ludique',
-            self::Shop => 'Boutique de jeux',
-            self::Cafe => 'Bar à jeux',
-            self::ShopCafe => 'Boutique et bar à jeux',
-            self::Lodge => 'Gîte ludique',
-        };
-    }
 }

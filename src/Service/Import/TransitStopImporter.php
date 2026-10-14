@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Service\Import;
 
 use App\Entity\Poi;
-use App\Entity\PoiCategory;
 use App\Enum\TransitStopMode;
 use App\Repository\PoiCategoryRepository;
 use App\Repository\PoiRepository;
@@ -24,6 +23,7 @@ final readonly class TransitStopImporter
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PoiCategoryRepository $poiCategoryRepository,
+        private PoiCategoryTreeSynchronizer $poiCategoryTreeSynchronizer,
         private PoiRepository $poiRepository,
         private PoiUniteUrbaineResolver $uniteUrbaineResolver,
         private CsvReader $csvReader,
@@ -35,7 +35,11 @@ final readonly class TransitStopImporter
      */
     public function import(string $csvPath): int
     {
-        $categories = $this->findOrCreateCategories();
+        $this->poiCategoryTreeSynchronizer->synchronize();
+        $categories = [];
+        foreach (TransitStopMode::cases() as $mode) {
+            $categories[$mode->value] = $this->poiCategoryRepository->getByCode($mode->categoryCode());
+        }
 
         /** @var array<string, Poi> $stale */
         $stale = [];
@@ -77,26 +81,5 @@ final readonly class TransitStopImporter
         $this->entityManager->clear();
 
         return $count;
-    }
-
-    /**
-     * @return array<string, PoiCategory> by mode value
-     */
-    private function findOrCreateCategories(): array
-    {
-        $categories = [];
-        foreach (TransitStopMode::cases() as $mode) {
-            $category = $this->poiCategoryRepository->findOneBy(['code' => $mode->categoryCode()]);
-            if (null === $category) {
-                $category = new PoiCategory($mode->categoryCode(), $mode->label());
-                $this->entityManager->persist($category);
-            }
-
-            $categories[$mode->value] = $category;
-        }
-
-        $this->entityManager->flush();
-
-        return $categories;
     }
 }

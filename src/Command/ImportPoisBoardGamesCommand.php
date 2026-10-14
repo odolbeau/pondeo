@@ -40,7 +40,7 @@ final class ImportPoisBoardGamesCommand extends Command
         $dir = \dirname(__DIR__, 2).'/resources/geo';
 
         foreach (self::FILES as $file => $group) {
-            $io->success(\sprintf('%d × "%s" imported.', $this->importer->import($dir.'/'.$file, $group), $group->label()));
+            $io->success(\sprintf('%d × "%s" imported.', $this->importer->import($dir.'/'.$file, $group), $group->value));
         }
 
         return Command::SUCCESS;

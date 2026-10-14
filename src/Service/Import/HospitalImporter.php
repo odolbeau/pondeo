@@ -28,6 +28,7 @@ final readonly class HospitalImporter
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PoiCategoryRepository $poiCategoryRepository,
+        private PoiCategoryTreeSynchronizer $poiCategoryTreeSynchronizer,
         private PoiRepository $poiRepository,
         private PoiUniteUrbaineResolver $uniteUrbaineResolver,
         private CsvReader $csvReader,
@@ -39,11 +40,15 @@ final readonly class HospitalImporter
      */
     public function import(string $csvPath): array
     {
-        $hospitalCategories = $this->findOrCreateHospitalCategories();
-        $emergencyCategory = $this->findOrCreate(HospitalType::EMERGENCY_CATEGORY_CODE, HospitalType::EMERGENCY_LABEL, null);
-        $this->entityManager->flush();
+        $this->poiCategoryTreeSynchronizer->synchronize();
+        $byType = [];
+        foreach (HospitalType::cases() as $type) {
+            $byType[$type->value] = $this->poiCategoryRepository->getByCode($type->categoryCode());
+        }
 
-        $staleHospitals = $this->indexByExternalId(array_values($hospitalCategories['byType']));
+        $emergencyCategory = $this->poiCategoryRepository->getByCode(HospitalType::EMERGENCY_CATEGORY_CODE);
+
+        $staleHospitals = $this->indexByExternalId(array_values($byType));
         $staleEmergencies = $this->indexByExternalId([$emergencyCategory]);
 
         $hospitals = 0;
@@ -53,7 +58,7 @@ final readonly class HospitalImporter
             $location = \sprintf('SRID=4326;POINT(%.7F %.7F)', (float) $row['lon'], (float) $row['lat']);
             $finess = $row['finess'];
 
-            $this->upsert($staleHospitals[$finess] ?? null, $row['name'], $hospitalCategories['byType'][HospitalType::from($row['type'])->value], $location, $finess, $row['address'], null);
+            $this->upsert($staleHospitals[$finess] ?? null, $row['name'], $byType[HospitalType::from($row['type'])->value], $location, $finess, $row['address'], null);
             unset($staleHospitals[$finess]);
             ++$hospitals;
 
@@ -111,34 +116,5 @@ final readonly class HospitalImporter
         }
 
         return $pois;
-    }
-
-    /**
-     * @return array{parent: PoiCategory, byType: array<string, PoiCategory>}
-     */
-    private function findOrCreateHospitalCategories(): array
-    {
-        $parent = $this->findOrCreate(HospitalType::PARENT_CATEGORY_CODE, HospitalType::PARENT_LABEL, null);
-
-        $byType = [];
-        foreach (HospitalType::cases() as $type) {
-            $byType[$type->value] = $this->findOrCreate($type->categoryCode(), $type->label(), $parent);
-        }
-
-        return ['parent' => $parent, 'byType' => $byType];
-    }
-
-    private function findOrCreate(string $code, string $label, ?PoiCategory $parent): PoiCategory
-    {
-        $category = $this->poiCategoryRepository->findOneBy(['code' => $code]);
-        if (null === $category) {
-            $category = new PoiCategory($code, $label);
-            $this->entityManager->persist($category);
-        }
-
-        $category->setLabel($label);
-        $category->setParent($parent);
-
-        return $category;
     }
 }

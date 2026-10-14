@@ -10,14 +10,6 @@ enum BoardGameGroup: string
     case Association = 'board_game_association';
     case Store = 'board_game_store';
 
-    public function label(): string
-    {
-        return match ($this) {
-            self::Association => 'Association de jeux de société',
-            self::Store => 'Boutique ou bar à jeux',
-        };
-    }
-
     /**
      * @return list<BoardGameType>
      */

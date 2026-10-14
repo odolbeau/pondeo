@@ -3,6 +3,9 @@
 The passenger railway stations of France are stored as points of interest
 (POIs) of the category "Gare ferroviaire" (`railway_station`). They are what a
 "distance to the nearest station" comparison is computed from.
+The category sits with the [tram and metro stations](poi-transit-stops.md) under
+"Transports" (`transport`). The detail page does not list the stations among the
+points of interest: they have their own block, with their access time.
 
 ## Source
 

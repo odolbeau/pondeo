@@ -28,7 +28,8 @@ on the migrated schema, so migrations must stay backward compatible.
 
 An import whose source files, and the zones it depends on, are unchanged since
 its last successful run is skipped, so a deployment that does not touch the
-data only pays for the migrations. Changing an import's command re-runs that
+data only pays for the migrations. The tree of POI categories is the exception: it
+is cheap, so it is applied every time (see [poi-categories.md](poi-categories.md)). Changing an import's command re-runs that
 import, and only it. The code the command delegates to is not tracked: after
 changing it, touch the command (or rebuild with `make db-reset`) to re-run the import.
 `--download` runs an import regardless, and `make db-reset` rebuilds everything.

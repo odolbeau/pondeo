@@ -49,7 +49,7 @@ final readonly class TransitStopSourceDownloader
 
         foreach (TransitStopMode::cases() as $mode) {
             $stations = $this->mergePlatforms($this->fetchStops($mode));
-            $progress(\sprintf('  %d × %s', \count($stations), $mode->label()));
+            $progress(\sprintf('  %d × %s', \count($stations), $mode->sourceNature()));
 
             foreach ($stations as $station) {
                 fputcsv($out, [$station['id'], $station['name'], $mode->value, \sprintf('%.7F', $station['lat']), \sprintf('%.7F', $station['lon']), $station['commune']], escape: '\\');
