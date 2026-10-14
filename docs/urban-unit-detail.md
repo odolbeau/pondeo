@@ -35,6 +35,7 @@ See also [comparison.md](comparison.md) to put several units side by side.
   socio-professional categories, whose labels are longer (see
   [criteria-pcs.md](criteria-pcs.md)).
 - **Population pyramid**, by sex and five-year age bracket (see [population-pyramid.md](population-pyramid.md)).
+- **Facilities**: health, sport and culture, services and shops each have their section or group of criteria (see [equipements-bpe.md](equipements-bpe.md)).
 - **Shops by type**, in a collapsed block of the "Cadre de vie" section: the count per year and the change (see [criteria-commerces.md](criteria-commerces.md#detail-by-type)).
 - **Points of interest**, by category: the count, plus a sample of each.
 - **Communes** making up the unit.

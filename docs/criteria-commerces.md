@@ -97,7 +97,7 @@ value is kept in the map URL like the other filters.
 ## Refreshing
 
 ```
-bin/console app:import:criteria:commerces --download
+bin/console app:import:criteria:equipements --download
 git diff resources/geo/
 git add resources/geo/ && git commit
 ```

@@ -20,13 +20,15 @@ final readonly class CriterionGlossary
     private const array GROUP_ORDER = [
         'Démographie', 'Âge', 'Catégories socioprofessionnelles', 'Diplômes',
         'Revenus', 'Revenus fiscaux', 'Emploi',
-        'Logement', 'Immobilier', 'Commerces', 'Vie associative',
+        'Logement', 'Immobilier', 'Commerces', 'Vie associative', 'Services et tourisme', 'Santé et action sociale', 'Sport et culture',
         'Climat', 'Climat 2050', 'Risques',
     ];
 
     private const string OTHER_GROUP = 'Autres';
 
     private const string CENSUS = 'INSEE, recensement de la population';
+
+    private const string BPE = 'INSEE, Base permanente des équipements, 2025';
 
     private const string FILOSOFI = 'INSEE, Filosofi (données fiscales et sociales), 2023';
 
@@ -41,7 +43,10 @@ final readonly class CriterionGlossary
         'Emploi' => self::CENSUS,
         'Logement' => self::CENSUS,
         'Immobilier' => 'DGFiP, Demandes de valeurs foncières (statistiques DVF, Etalab), ventes de 2021 à 2025',
-        'Commerces' => 'INSEE, Base permanente des équipements, 2025',
+        'Commerces' => self::BPE,
+        'Services et tourisme' => self::BPE,
+        'Santé et action sociale' => self::BPE,
+        'Sport et culture' => self::BPE,
         'Vie associative' => 'Ministère de l\'Intérieur, Répertoire national des associations (RNA), 2026',
         'Climat' => 'Open-Meteo.com, réanalyse ERA5, moyenne 1991-2020 (CC BY 4.0)',
         'Climat 2050' => 'Open-Meteo.com, modèles climatiques CMIP6, période 2041-2050 (CC BY 4.0)',
@@ -160,6 +165,33 @@ final readonly class CriterionGlossary
         'part_feux_foret' => 'La part des habitants vivant dans une commune où le feu de forêt est un risque recensé.',
         'zone_sismique' => 'Le zonage réglementaire du risque de séisme, de 1 (très faible) à 5 (fort). Pour une agglomération, c\'est la zone la plus élevée de ses communes.',
         'part_radon_fort' => "Le radon est un gaz naturel d'origine souterraine, présent surtout dans les régions granitiques, qui peut s'accumuler dans les logements mal aérés et augmente le risque de cancer du poumon à long terme. Les communes sont classées en trois niveaux de potentiel.\n\nOn compte ici la part des habitants des communes du niveau le plus fort. Cela ne signifie pas que chaque logement est touché : il s'agit d'un classement réglementaire par commune, qui se vérifie par un test dans le logement.",
+
+        'medecins_generalistes_pour_1000_hab' => "Le nombre de médecins généralistes pour 1 000 habitants : l'offre de soins de premier recours. Un médecin qui exerce à plusieurs adresses peut être compté plusieurs fois ; le chiffre ne dit pas si les médecins prennent de nouveaux patients, ni leur âge.",
+        'medecins_generalistes' => "Le nombre de médecins généralistes de l'agglomération, avant rapport à la population.",
+        'medecins_specialistes_pour_1000_hab' => "Le nombre de médecins spécialistes (cardiologues, dermatologues, ophtalmologues, pédiatres, radiologues, psychiatres, gynécologues…) pour 1 000 habitants.\n\nLes spécialistes se concentrent dans les grandes villes et les villes hospitalières. Une petite agglomération en compte peu sans que ses habitants soient forcément mal soignés, s'ils peuvent consulter dans la ville voisine.",
+        'medecins_specialistes' => "Le nombre de médecins spécialistes de l'agglomération, avant rapport à la population.",
+        'dentistes_pour_1000_hab' => 'Le nombre de chirurgiens-dentistes pour 1 000 habitants.',
+        'dentistes' => "Le nombre de chirurgiens-dentistes de l'agglomération, avant rapport à la population.",
+        'paramedicaux_pour_1000_hab' => 'Le nombre de kinésithérapeutes, de pédicures-podologues et de sages-femmes pour 1 000 habitants.',
+        'paramedicaux' => "Le nombre de kinésithérapeutes, pédicures-podologues et sages-femmes de l'agglomération, avant rapport à la population.",
+        'pharmacies_pour_1000_hab' => "Le nombre de pharmacies pour 1 000 habitants. Leur ouverture est encadrée par des seuils de population, ce qui limite l'écart d'une ville à l'autre.",
+        'pharmacies' => "Le nombre de pharmacies de l'agglomération, avant rapport à la population.",
+        'etablissements_sante_pour_1000_hab' => "Le nombre d'établissements de soins (hôpitaux et cliniques, soins de suite, soins de longue durée, établissements psychiatriques) pour 1 000 habitants.\n\nLes valeurs sont petites : une agglomération en compte souvent un ou deux, d'où des écarts qui tiennent plus à la taille qu'à la qualité de l'offre.",
+        'etablissements_sante' => "Le nombre d'établissements de soins de l'agglomération, avant rapport à la population.",
+        'creches_pour_1000_hab' => "Le nombre d'établissements d'accueil du jeune enfant (crèches, haltes-garderies, micro-crèches) pour 1 000 habitants.\n\nOn compte des établissements, pas des places : une grande crèche pèse autant qu'une micro-crèche. Le rapport est fait à la population totale, pas aux enfants de moins de 3 ans.",
+        'creches' => "Le nombre d'établissements d'accueil du jeune enfant de l'agglomération, avant rapport à la population.",
+        'hebergement_personnes_agees_pour_1000_hab' => "Le nombre d'établissements d'hébergement pour personnes âgées (maisons de retraite, résidences autonomie…) pour 1 000 habitants. On compte des établissements, pas des places.",
+        'hebergement_personnes_agees' => "Le nombre d'établissements d'hébergement pour personnes âgées de l'agglomération, avant rapport à la population.",
+        'equipements_sportifs_pour_1000_hab' => "Le nombre d'équipements sportifs pour 1 000 habitants : piscines, courts de tennis, gymnases, terrains de sport, salles de remise en forme, bowlings, skateparks…\n\nChaque installation compte pour une, quelle que soit sa taille.",
+        'equipements_sportifs' => "Le nombre d'équipements sportifs de l'agglomération, avant rapport à la population.",
+        'equipements_culturels_pour_1000_hab' => 'Le nombre de cinémas, de bibliothèques et de conservatoires pour 1 000 habitants. On compte des lieux, pas des séances ni des collections. Les bibliothèques sont de loin les plus nombreuses, y compris dans les petites villes.',
+        'equipements_culturels' => "Le nombre de cinémas, bibliothèques et conservatoires de l'agglomération, avant rapport à la population.",
+        'restaurants_pour_1000_hab' => "Le nombre de restaurants et de lieux de restauration rapide pour 1 000 habitants. La Base permanente des équipements ne distingue pas la table gastronomique de la restauration rapide.\n\nLes villes touristiques sont mécaniquement bien placées : ces établissements servent aussi les visiteurs.",
+        'restaurants' => "Le nombre de restaurants de l'agglomération, avant rapport à la population.",
+        'services_quotidien_pour_1000_hab' => 'Le nombre de banques, bureaux et agences postales, salons de coiffure, instituts de beauté et pressings pour 1 000 habitants : les services de proximité du quotidien. Les salons de coiffure et de beauté sont les plus nombreux et pèsent le plus dans le total.',
+        'services_quotidien' => "Le nombre de services du quotidien de l'agglomération, avant rapport à la population.",
+        'hebergement_touristique_pour_1000_hab' => "Le nombre d'hôtels et de campings pour 1 000 habitants. Une valeur élevée indique une ville à vocation touristique, pas forcément plus agréable à vivre. Les locations de logements entre particuliers ne sont pas comptées.",
+        'hebergement_touristique' => "Le nombre d'hôtels et de campings de l'agglomération, avant rapport à la population.",
     ];
 
     public function __construct(

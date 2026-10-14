@@ -5,20 +5,22 @@ declare(strict_types=1);
 namespace App\Tests\Service\Import;
 
 use App\Enum\CriterionValueType;
+use App\Enum\EquipmentFamily;
 use App\Factory\CriterionFactory;
 use App\Factory\UniteUrbaineFactory;
-use App\Service\Import\CommercesImporter;
+use App\Service\Import\CsvReader;
+use App\Service\Import\EquipmentImporter;
 use Doctrine\ORM\EntityManagerInterface;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
 
-final class CommercesImporterTest extends KernelTestCase
+final class EquipmentImporterTest extends KernelTestCase
 {
     use Factories;
     use ResetDatabase;
 
-    public function testImportSumsCountsPerUniteUrbaineAndDerivesDensities(): void
+    public function testImportSumsTheTypesOfEachFamilyPerUniteUrbaineAndDerivesDensities(): void
     {
         UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
         UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
@@ -36,12 +38,16 @@ final class CommercesImporterTest extends KernelTestCase
             56501,2025,B316,15
             56501,2025,B999,8
             56501,2015,B207,40
+            56501,2025,D265,60
+            56501,2025,D307,15
+            56501,2025,D277,10
+            56501,2025,D999,4
             44701,2025,B201,3
             99999,2025,B207,7
             CSV);
 
-        $importer = self::getContainer()->get(CommercesImporter::class);
-        \assert($importer instanceof CommercesImporter);
+        $importer = self::getContainer()->get(EquipmentImporter::class);
+        \assert($importer instanceof EquipmentImporter);
 
         $importer->import($csvPath);
 
@@ -51,6 +57,13 @@ final class CommercesImporterTest extends KernelTestCase
         self::assertSame(45, $this->integer('56501', 'commerces_non_alimentaires'));
         self::assertSame(2.0, $this->decimal('56501', 'commerces_total_pour_1000_hab'));
         self::assertSame(1.0, $this->decimal('56501', 'commerces_alimentaires_pour_1000_hab'));
+        // The other domains are criteria of their own, outside the shop totals; a type no family counts is ignored.
+        self::assertSame(60, $this->integer('56501', 'medecins_generalistes'));
+        self::assertSame(15, $this->integer('56501', 'pharmacies'));
+        self::assertSame(1.2, $this->decimal('56501', 'medecins_generalistes_pour_1000_hab'));
+        self::assertSame(0, $this->integer('56501', 'medecins_specialistes'));
+        self::assertSame(['Santé et action sociale', 'Commerces'], $this->groupLabels('medecins_generalistes', 'commerces_total'));
+
         // Each year of the file is its own period.
         self::assertSame(40, $this->integer('56501', 'commerces_alimentaires', 2015));
         self::assertSame(0, $this->integer('56501', 'commerces_grandes_surfaces', 2015));
@@ -76,6 +89,18 @@ final class CommercesImporterTest extends KernelTestCase
         unlink($csvPath);
     }
 
+    public function testEveryFamilyTypeIsInTheCatalogueOfTheFile(): void
+    {
+        $catalogue = [];
+        foreach (new CsvReader()->read(\dirname(__DIR__, 3).'/resources/geo/equipements-bpe-types.csv') as $row) {
+            $catalogue[] = $row['type'];
+        }
+
+        foreach (EquipmentFamily::cases() as $family) {
+            self::assertSame([], array_values(array_diff($family->types(), $catalogue)), $family->value);
+        }
+    }
+
     /**
      * @return array<string, mixed>|null
      */
@@ -93,6 +118,24 @@ final class CommercesImporterTest extends KernelTestCase
         $decoded = json_decode($json, true, flags: \JSON_THROW_ON_ERROR);
 
         return $decoded;
+    }
+
+    /**
+     * @return list<string>
+     */
+    private function groupLabels(string ...$codes): array
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+
+        return array_values(array_map(
+            static function (string $code) use ($entityManager): string {
+                $group = $entityManager->getConnection()->fetchOne('SELECT group_label FROM criterion WHERE code = :code', ['code' => $code]);
+
+                return \is_string($group) ? $group : '';
+            },
+            $codes,
+        ));
     }
 
     /**

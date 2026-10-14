@@ -6,7 +6,6 @@ namespace App\Enum;
 
 use App\Service\Import\AgeStructureImporter;
 use App\Service\Import\AssociationsImporter;
-use App\Service\Import\CommercesImporter;
 use App\Service\Import\EducationImporter;
 use App\Service\Import\EmploymentImporter;
 use App\Service\Import\HousingImporter;
@@ -25,7 +24,9 @@ enum DetailSection: string
     case Population = 'population';
     case Economie = 'economie';
     case Logement = 'logement';
+    case Sante = 'sante';
     case CadreDeVie = 'cadre-de-vie';
+    case SportCulture = 'sport-culture';
     case Autres = 'autres';
 
     public function label(): string
@@ -34,7 +35,9 @@ enum DetailSection: string
             self::Population => 'Population',
             self::Economie => 'Économie',
             self::Logement => 'Logement',
+            self::Sante => 'Santé',
             self::CadreDeVie => 'Cadre de vie',
+            self::SportCulture => 'Sport et culture',
             self::Autres => 'Autres',
         };
     }
@@ -50,7 +53,9 @@ enum DetailSection: string
             self::Population => [PopulationTrendDeriver::GROUP, AgeStructureImporter::GROUP, SocioProfessionalImporter::GROUP, EducationImporter::GROUP],
             self::Economie => [IncomeImporter::GROUP, TaxIncomeImporter::GROUP, EmploymentImporter::GROUP],
             self::Logement => [HousingImporter::GROUP, RealEstatePriceImporter::GROUP],
-            self::CadreDeVie => [CommercesImporter::GROUP, AssociationsImporter::GROUP],
+            self::Sante => [EquipmentFamily::GROUP_HEALTH],
+            self::CadreDeVie => [EquipmentFamily::GROUP_SHOPS, EquipmentFamily::GROUP_SERVICES, AssociationsImporter::GROUP],
+            self::SportCulture => [EquipmentFamily::GROUP_SPORT_CULTURE],
             self::Autres => [],
         };
     }
