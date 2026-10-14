@@ -408,6 +408,8 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Raffinerie de Dunkerque · Cokéfaction et raffinage');
         self::assertSelectorTextContains('body', '59140 Dunkerque');
         self::assertSelectorTextContains('body', 'Dépôt de gaz');
+    }
+
     public function testPageListsTheHospitalsAndTheirEmergencyDepartmentsApart(): void
     {
         $client = self::createClient();
@@ -427,6 +429,8 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', "Service d'urgences (1)");
         self::assertSelectorTextContains('body', "1 RUE DE L'HOPITAL, 56000 VANNES");
         self::assertSelectorTextNotContains('body', 'CH DE NANTES');
+    }
+
     public function testPageListsTramAndMetroStationsAmongThePois(): void
     {
         $client = self::createClient();
