@@ -3,6 +3,8 @@
 The nuclear power plants of metropolitan France are stored as points of
 interest (POIs) of the category "Centrale nucléaire" (`nuclear_power_plant`).
 They are shown on the map and drive the "keep away from a plant" filter.
+The category is a child of "Site à risque" (`risk_site`), shared with the
+[Seveso sites](poi-seveso-sites.md), so the detail page lists them together.
 
 ## Source
 

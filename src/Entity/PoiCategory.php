@@ -36,6 +36,7 @@ class PoiCategory
 
     /** @var Collection<int, self> */
     #[ORM\OneToMany(targetEntity: self::class, mappedBy: 'parent')]
+    #[ORM\OrderBy(['label' => 'ASC'])]
     private Collection $children;
 
     public function __construct(string $code, string $label)

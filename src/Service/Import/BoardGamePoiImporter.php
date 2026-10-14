@@ -26,6 +26,7 @@ final readonly class BoardGamePoiImporter
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PoiCategoryRepository $poiCategoryRepository,
+        private PoiCategoryTreeSynchronizer $poiCategoryTreeSynchronizer,
         private PoiRepository $poiRepository,
         private PoiUniteUrbaineResolver $uniteUrbaineResolver,
         private CsvReader $csvReader,
@@ -37,12 +38,17 @@ final readonly class BoardGamePoiImporter
      */
     public function import(string $csvPath, BoardGameGroup $group): int
     {
-        $categories = $this->findOrCreateCategories($group);
+        $this->poiCategoryTreeSynchronizer->synchronize();
+        /** @var array<string, PoiCategory> $categories by type value */
+        $categories = [];
+        foreach ($group->types() as $type) {
+            $categories[$type->value] = $this->poiCategoryRepository->getByCode($type->categoryCode());
+        }
 
         // The parent too: it holds no place of its own, except the ones of an older layout.
         /** @var array<string, Poi> $stale */
         $stale = [];
-        foreach ([...$categories['byType'], $categories['parent']] as $category) {
+        foreach ([...$categories, $this->poiCategoryRepository->getByCode($group->value)] as $category) {
             foreach ($this->poiRepository->findByCategoryWithUniteUrbaine($category) as $poi) {
                 $stale[(string) $poi->getExternalId()] = $poi;
             }
@@ -55,7 +61,7 @@ final readonly class BoardGamePoiImporter
                 throw new \LogicException(\sprintf('The type "%s" does not belong to "%s".', $type->value, $group->value));
             }
 
-            $category = $categories['byType'][$type->value];
+            $category = $categories[$type->value];
 
             // EWKT is longitude first, while the source gives the latitude first.
             $location = \sprintf('SRID=4326;POINT(%.7F %.7F)', (float) $row['lon'], (float) $row['lat']);
@@ -88,36 +94,5 @@ final readonly class BoardGamePoiImporter
         $this->entityManager->clear();
 
         return $count;
-    }
-
-    /**
-     * @return array{parent: PoiCategory, byType: array<string, PoiCategory>}
-     */
-    private function findOrCreateCategories(BoardGameGroup $group): array
-    {
-        $parent = $this->findOrCreate($group->value, $group->label(), null);
-
-        $byType = [];
-        foreach ($group->types() as $type) {
-            $byType[$type->value] = $this->findOrCreate($type->categoryCode(), $type->label(), $parent);
-        }
-
-        $this->entityManager->flush();
-
-        return ['parent' => $parent, 'byType' => $byType];
-    }
-
-    private function findOrCreate(string $code, string $label, ?PoiCategory $parent): PoiCategory
-    {
-        $category = $this->poiCategoryRepository->findOneBy(['code' => $code]);
-        if (null === $category) {
-            $category = new PoiCategory($code, $label);
-            $this->entityManager->persist($category);
-        }
-
-        $category->setLabel($label);
-        $category->setParent($parent);
-
-        return $category;
     }
 }

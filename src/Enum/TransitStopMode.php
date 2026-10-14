@@ -27,9 +27,4 @@ enum TransitStopMode: string
             self::Metro => 'metro_station',
         };
     }
-
-    public function label(): string
-    {
-        return $this->sourceNature();
-    }
 }

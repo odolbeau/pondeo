@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Service\Import;
 
 use App\Entity\Poi;
-use App\Entity\PoiCategory;
 use App\Repository\PoiCategoryRepository;
 use App\Repository\PoiRepository;
 use App\Service\PoiUniteUrbaineResolver;
@@ -26,6 +25,7 @@ final readonly class NuclearPlantImporter
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PoiCategoryRepository $poiCategoryRepository,
+        private PoiCategoryTreeSynchronizer $poiCategoryTreeSynchronizer,
         private PoiRepository $poiRepository,
         private PoiUniteUrbaineResolver $uniteUrbaineResolver,
         private CsvReader $csvReader,
@@ -37,7 +37,8 @@ final readonly class NuclearPlantImporter
      */
     public function import(string $csvPath): int
     {
-        $category = $this->findOrCreateCategory();
+        $this->poiCategoryTreeSynchronizer->synchronize();
+        $category = $this->poiCategoryRepository->getByCode(self::CATEGORY_CODE);
 
         /** @var array<string, Poi> $stale */
         $stale = [];
@@ -77,19 +78,5 @@ final readonly class NuclearPlantImporter
         $this->entityManager->clear();
 
         return $count;
-    }
-
-    private function findOrCreateCategory(): PoiCategory
-    {
-        $category = $this->poiCategoryRepository->findOneBy(['code' => self::CATEGORY_CODE]);
-        if (null !== $category) {
-            return $category;
-        }
-
-        $category = new PoiCategory(self::CATEGORY_CODE, 'Centrale nucléaire');
-        $this->entityManager->persist($category);
-        $this->entityManager->flush();
-
-        return $category;
     }
 }

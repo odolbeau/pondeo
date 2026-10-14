@@ -3,8 +3,7 @@
 The board game clubs, ludothèques and other game associations are stored as
 points of interest (POIs), one category per type, all under the parent category
 "Association de jeux de société" (`board_game_association`). They answer one
-question: is there at least one in a given urban unit, and how many? Shops and
-bars have their own page: `docs/poi-board-game-stores.md`.
+question: is there at least one in a given urban unit, and how many? Their category shares an ancestor, "Jeux de société" (`board_game`), with the shops and bars, which have their own page: `docs/poi-board-game-stores.md`.
 
 ## Source
 

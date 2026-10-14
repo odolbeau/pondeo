@@ -3,7 +3,9 @@
 The stations of the tram and metro lines in service in France are stored as
 points of interest (POIs), one category per mode: "Station de tramway"
 (`tram_stop`) and "Station de métro" (`metro_station`). They show whether an
-urban unit has an urban rail network, and how many stations it has.
+urban unit has an urban rail network, and how many stations it has. Both are
+children of the parent category "Tram et métro" (`urban_rail_stop`), which sits
+with the [railway stations](poi-stations.md) under "Transports" (`transport`).
 
 ## Source
 

@@ -40,7 +40,8 @@ final class TransitStopImporterTest extends KernelTestCase
 
         self::assertSame(3, $this->importer()->import($path));
         self::assertSame(3, $this->poiCount());
-        self::assertSame(2, $this->categoryCount());
+        // Re-importing must not duplicate the categories.
+        self::assertSame(1, $this->categoryCount('tram_stop'));
 
         unlink($path);
     }
@@ -91,9 +92,9 @@ final class TransitStopImporterTest extends KernelTestCase
         return $code;
     }
 
-    private function categoryCount(): int
+    private function categoryCount(string $code): int
     {
-        $count = $this->connection()->fetchOne('SELECT COUNT(*) FROM poi_category');
+        $count = $this->connection()->fetchOne('SELECT COUNT(*) FROM poi_category WHERE code = :code', ['code' => $code]);
         \assert(is_numeric($count));
 
         return (int) $count;

@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Service\Import;
 
 use App\Entity\Poi;
-use App\Entity\PoiCategory;
 use App\Repository\PoiCategoryRepository;
 use App\Repository\PoiRepository;
 use App\Service\PoiUniteUrbaineResolver;
@@ -26,14 +25,15 @@ final readonly class SevesoSiteImporter
 
     public const string LEVEL_LOW = 'low';
 
-    private const array CATEGORIES = [
-        self::LEVEL_HIGH => ['seveso_high', 'Site Seveso seuil haut'],
-        self::LEVEL_LOW => ['seveso_low', 'Site Seveso seuil bas'],
+    private const array CATEGORY_CODES = [
+        self::LEVEL_HIGH => 'seveso_high',
+        self::LEVEL_LOW => 'seveso_low',
     ];
 
     public function __construct(
         private EntityManagerInterface $entityManager,
         private PoiCategoryRepository $poiCategoryRepository,
+        private PoiCategoryTreeSynchronizer $poiCategoryTreeSynchronizer,
         private PoiRepository $poiRepository,
         private PoiUniteUrbaineResolver $uniteUrbaineResolver,
         private CsvReader $csvReader,
@@ -45,7 +45,8 @@ final readonly class SevesoSiteImporter
      */
     public function import(string $csvPath): int
     {
-        $categories = $this->findOrCreateCategories();
+        $this->poiCategoryTreeSynchronizer->synchronize();
+        $categories = array_map($this->poiCategoryRepository->getByCode(...), self::CATEGORY_CODES);
 
         /** @var array<string, Poi> $stale */
         $stale = [];
@@ -93,26 +94,5 @@ final readonly class SevesoSiteImporter
         $this->entityManager->clear();
 
         return $count;
-    }
-
-    /**
-     * @return array<string, PoiCategory> by Seveso level
-     */
-    private function findOrCreateCategories(): array
-    {
-        $categories = [];
-        foreach (self::CATEGORIES as $level => [$code, $label]) {
-            $category = $this->poiCategoryRepository->findOneBy(['code' => $code]);
-            if (null === $category) {
-                $category = new PoiCategory($code, $label);
-                $this->entityManager->persist($category);
-            }
-
-            $categories[$level] = $category;
-        }
-
-        $this->entityManager->flush();
-
-        return $categories;
     }
 }

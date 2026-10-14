@@ -3,7 +3,7 @@
 The shops, bars and lodges specialised in board games are stored as points of
 interest (POIs), one category per type, all under the parent category
 "Boutique ou bar à jeux" (`board_game_store`). They show on the detail page of
-the urban unit that contains them. No map filter uses them yet.
+the urban unit that contains them, grouped with the associations under "Jeux de société" (`board_game`). No map filter uses them yet.
 
 ## Source
 

@@ -1,0 +1,57 @@
+# The tree of POI categories: the single place where their label and place in the
+# hierarchy are set. `code` is what the importers look a category up by, and
+# must not change. Apply with `bin/console app:import:poi-categories`: it
+# updates the categories in place, without touching the POIs.
+#
+# The detail page of an unité urbaine groups its POIs by the root of their
+# category's tree (a category without parent is its own group).
+- code: health_site
+  label: Santé
+  children:
+    - code: hospital
+      label: Hôpital ou clinique
+      children:
+        - { code: hospital_university, label: Centre hospitalier régional ou universitaire }
+        - { code: hospital_general, label: Centre hospitalier }
+        - { code: hospital_clinic, label: Clinique ou autre établissement de soins }
+        - { code: hospital_cancer, label: Centre de lutte contre le cancer }
+        - { code: hospital_army, label: Hôpital des armées }
+    - { code: hospital_emergency, label: "Service d'urgences" }
+
+- code: risk_site
+  label: Site à risque
+  children:
+    - code: seveso
+      label: Site Seveso
+      children:
+        - { code: seveso_high, label: Site Seveso seuil haut }
+        - { code: seveso_low, label: Site Seveso seuil bas }
+    - { code: nuclear_power_plant, label: Centrale nucléaire }
+
+- code: transport
+  label: Transports
+  children:
+    - code: urban_rail_stop
+      label: Tram et métro
+      children:
+        - { code: tram_stop, label: Station de tramway }
+        - { code: metro_station, label: Station de métro }
+    - { code: railway_station, label: Gare ferroviaire }
+
+- code: board_game
+  label: Jeux de société
+  children:
+    - code: board_game_association
+      label: Association de jeux de société
+      children:
+        - { code: board_game_club, label: Club de jeux }
+        - { code: board_game_library, label: Ludothèque }
+        - { code: board_game_network, label: Réseau national de jeux }
+        - { code: board_game_other_association, label: Autre association ludique }
+    - code: board_game_store
+      label: Boutique ou bar à jeux
+      children:
+        - { code: board_game_shop, label: Boutique de jeux }
+        - { code: board_game_cafe, label: Bar à jeux }
+        - { code: board_game_shop_cafe, label: Boutique et bar à jeux }
+        - { code: board_game_lodge, label: Gîte ludique }

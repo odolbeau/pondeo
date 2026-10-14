@@ -35,7 +35,7 @@ An open geographic establishment whose FINESS category is one of these:
 | `hospital_cancer` | Centre de lutte contre le cancer |
 | `hospital_army` | Hôpital des armées |
 
-All are children of the parent category "Hôpital ou clinique" (`hospital`).
+All are children of the parent category "Hôpital ou clinique" (`hospital`), itself under "Santé" (`health_site`) like the emergency departments below.
 Dialysis, psychiatry, rehabilitation, long-stay, home hospitalisation, nursing
 homes and the like are left out: they are not what is meant by "the nearest
 hospital".
@@ -46,7 +46,8 @@ An establishment authorised to run a **"structure des urgences"** (the
 "Médecine d'urgence" activity) gets a second POI, in its own category "Service
 d'urgences" (`hospital_emergency`), at the same place and under the same name.
 A separate category, rather than a flag on the hospital, so that emergency
-departments are counted, listed and, later, filtered or timed on their own.
+departments are counted, listed and, later, filtered or timed on their own. The
+detail page still lists them with the hospitals, under their common parent.
 
 - A department dedicated to children is recognised: its POI carries the
   attribute `pediatric`.
