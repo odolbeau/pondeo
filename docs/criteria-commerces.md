@@ -63,6 +63,16 @@ shop…). Three families are derived from them:
   (or the figure is under statistical secrecy): the count is then taken as
   zero.
 
+## Detail by type
+
+The urban unit detail page lists the shops by type in a collapsed block under
+the "Commerces" group: one row per type, grouped by family, most numerous
+first, with the count of each year and the change over the whole series. The
+block has no rank and no median, unlike the criteria: the count of a single
+type is too small in most urban units for a comparison to mean anything. For
+the same reason the change is given as a percentage only when the type had at
+least ten shops at the start.
+
 ## Evolution
 
 The three years allow reading a trend: a falling number of shops over ten

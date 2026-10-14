@@ -113,6 +113,28 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorNotExists('[role="img"]');
     }
 
+    public function testPageListsTheShopsByTypeWhenKnown(): void
+    {
+        $client = self::createClient();
+
+        UniteUrbaineFactory::createOne(['inseeCode' => '56501', 'shopTypes' => ['years' => [2015, 2025], 'counts' => ['B207' => [40, 30], 'B104' => [2, 3], 'B302' => [4, 9], 'B204' => [20, 10]]]]);
+        UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('details summary', 'Détail des commerces');
+        // The most numerous type of the latest year first, within its family.
+        self::assertSelectorTextContains('details tbody:nth-of-type(2) tr:nth-child(2)', 'Boulangerie-pâtisserie');
+        self::assertSelectorTextContains('details tbody:nth-of-type(2) tr:nth-child(2)', "−10 (−25\u{a0}%)");
+        // No percentage below ten shops at the start: only the difference.
+        self::assertSelectorTextContains('details tbody:nth-of-type(3) tr:nth-child(2)', '+5');
+        self::assertSelectorTextNotContains('details tbody:nth-of-type(3) tr:nth-child(2)', '%');
+
+        $client->request('GET', '/unites-urbaines/44701');
+        self::assertSelectorTextNotContains('body', 'Détail des commerces');
+    }
+
     public function testMapPanelDrawsTheAgePyramidInTenYearBracketsOnly(): void
     {
         $client = self::createClient();

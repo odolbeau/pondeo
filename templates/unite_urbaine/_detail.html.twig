@@ -69,6 +69,8 @@
                             {{ include('unite_urbaine/_section_stations.html.twig') }}
                         {% elseif 'pois' == item.type %}
                             {{ include('unite_urbaine/_section_pois.html.twig') }}
+                        {% elseif 'shops' == item.type %}
+                            {{ include('unite_urbaine/_section_shops.html.twig') }}
                         {% endif %}
                     {% endfor %}
                 </div>

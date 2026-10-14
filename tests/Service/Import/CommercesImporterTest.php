@@ -61,12 +61,38 @@ final class CommercesImporterTest extends KernelTestCase
         // Raw counts are not ranked on the detail page, densities are.
         self::assertSame([false, true], $this->comparableFlags('commerces_total', 'commerces_total_pour_1000_hab'));
 
+        // The detail by type is kept as is, one count per year (zero when the file has no row for it).
+        self::assertSame(
+            ['years' => [2015, 2025], 'counts' => ['B104' => [0, 5], 'B204' => [0, 20], 'B207' => [40, 30], 'B302' => [0, 30], 'B316' => [0, 15]]],
+            $this->shopTypes('56501'),
+        );
+        self::assertNull($this->shopTypes('99999'));
+
         // Idempotent: a second run updates in place.
         $importer->import($csvPath);
         self::assertSame(100, $this->integer('56501', 'commerces_total'));
         self::assertSame(2.0, $this->decimal('56501', 'commerces_total_pour_1000_hab'));
 
         unlink($csvPath);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function shopTypes(string $uniteUrbaineCode): ?array
+    {
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+
+        $json = $entityManager->getConnection()->fetchOne('SELECT shop_types FROM unite_urbaine WHERE insee_code = :code', ['code' => $uniteUrbaineCode]);
+        if (!\is_string($json)) {
+            return null;
+        }
+
+        /** @var array<string, mixed> $decoded */
+        $decoded = json_decode($json, true, flags: \JSON_THROW_ON_ERROR);
+
+        return $decoded;
     }
 
     /**

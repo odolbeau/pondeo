@@ -1,0 +1,31 @@
+    <details class="{{ card }}">
+        <summary class="cursor-pointer {{ title }}">Détail des commerces <span class="ml-1 text-xs font-normal normal-case tracking-normal text-stone-500">({{ shopTypes.years|first }} à {{ shopTypes.years|last }})</span></summary>
+        <table class="mt-3 w-full text-right text-sm tabular-nums">
+            <thead class="text-xs text-stone-500">
+                <tr>
+                    <th scope="col" class="py-1 text-left font-normal">Type</th>
+                    {% for year in shopTypes.years %}
+                        <th scope="col" class="py-1 font-normal">{{ year }}</th>
+                    {% endfor %}
+                    <th scope="col" class="py-1 font-normal">Évolution</th>
+                </tr>
+            </thead>
+            {% for family in shopTypes.families %}
+                <tbody class="border-t border-stone-200 text-stone-700">
+                    <tr><th scope="rowgroup" colspan="{{ shopTypes.years|length + 2 }}" class="pt-3 pb-1 text-left text-xs font-semibold uppercase tracking-wide text-stone-500">{{ family.label }}</th></tr>
+                    {% for row in family.rows %}
+                        <tr>
+                            <th scope="row" class="py-1 text-left font-normal text-stone-600">{{ row.label }}</th>
+                            {% for count in row.counts %}
+                                <td class="py-1{{ loop.last ? ' text-stone-900' : '' }}">{{ count|fr_number }}</td>
+                            {% endfor %}
+                            <td class="py-1 pl-2 text-stone-500">
+                                {{ row.delta > 0 ? '+' : (row.delta < 0 ? '−' : '') }}{{ row.delta|abs|fr_number }}{% if row.percent is not null %} ({{ row.percent > 0 ? '+' : (row.percent < 0 ? '−' : '') }}{{ row.percent|abs }}&nbsp;%){% endif %}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            {% endfor %}
+        </table>
+        <p class="mt-3 text-xs text-stone-500">Nombre d'établissements, pas de surface ni de chiffre d'affaires. Le pourcentage n'est donné qu'à partir de {{ constant('App\\Service\\Detail\\ShopTypeDetail::MIN_COUNT_FOR_PERCENT') }} commerces au départ : en dessous, quelques unités suffisent à le faire bouger.</p>
+    </details>

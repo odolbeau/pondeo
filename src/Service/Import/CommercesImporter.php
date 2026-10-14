@@ -13,8 +13,9 @@ use Symfony\Component\Uid\Uuid;
  * Imports the shop counts of the BPE (see `docs/criteria-commerces.md`): one
  * count criterion for the total and one per sub-domain, each paired with a
  * density per 1000 inhabitants. The file holds the counts per unité urbaine
- * and shop type; the criteria sum them by sub-domain. Densities are derived
- * from the stored counts and population, never summed.
+ * and shop type: the criteria sum them by sub-domain, and the detail by type
+ * is kept on the unité urbaine as is. Densities are derived from the stored
+ * counts and population, never summed.
  */
 final readonly class CommercesImporter
 {
@@ -51,6 +52,7 @@ final readonly class CommercesImporter
     public function import(string $csvPath): int
     {
         $totals = $this->sumPerUniteUrbaine($csvPath);
+        $this->storeTypes($csvPath);
         $count = 0;
 
         foreach (self::COUNTS as $code => ['label' => $label, 'densityLabel' => $densityLabel, 'subDomain' => $subDomain, 'position' => $position]) {
@@ -99,6 +101,40 @@ final readonly class CommercesImporter
         $this->criterionValueWriter->upsertBatch($criterion->getId(), CriterionValueType::Integer->valueColumn(), $batch);
 
         return $count;
+    }
+
+    /**
+     * Keeps the detail by type on each unité urbaine, for the detail page.
+     * The years of the file are shared by all units; a unit with no row for
+     * a type and year has none.
+     */
+    private function storeTypes(string $csvPath): void
+    {
+        /** @var array<string, array<string, array<int, int>>> $byUniteUrbaine shops by unité urbaine code, type, then year */
+        $byUniteUrbaine = [];
+        $years = [];
+        foreach ($this->csvReader->read($csvPath) as $row) {
+            $type = ShopType::tryFrom($row['type']);
+            if (null === $type) {
+                continue;
+            }
+
+            $year = (int) $row['year'];
+            $years[$year] = $year;
+            $byUniteUrbaine[$row['code_unite_urbaine']][$type->value][$year] = (int) $row['count'];
+        }
+
+        sort($years);
+
+        foreach ($byUniteUrbaine as $code => $byType) {
+            ksort($byType);
+            $counts = array_map(static fn (array $byYear): array => array_map(static fn (int $year): int => $byYear[$year] ?? 0, $years), $byType);
+
+            $this->connection->executeStatement(
+                'UPDATE unite_urbaine SET shop_types = :shopTypes WHERE insee_code = :code',
+                ['shopTypes' => json_encode(['years' => $years, 'counts' => $counts], \JSON_THROW_ON_ERROR), 'code' => $code],
+            );
+        }
     }
 
     /**

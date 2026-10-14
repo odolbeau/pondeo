@@ -17,6 +17,8 @@ final readonly class DetailCard
 
     public const string POIS = 'pois';
 
+    public const string SHOPS = 'shops';
+
     public function __construct(
         public string $type,
         public float $weight,

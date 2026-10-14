@@ -12,6 +12,7 @@ use App\Service\Detail\CriterionDetail;
 use App\Service\Detail\CriterionGroupDetail;
 use App\Service\Detail\DetailCard;
 use App\Service\Detail\PoiCategoryDetail;
+use App\Service\Detail\ShopTypeDetail;
 use App\Service\Detail\StationAccessDetail;
 use App\Service\Detail\UniteUrbaineCriteriaProvider;
 use App\Service\Detail\UniteUrbainePoiProvider;
@@ -66,13 +67,16 @@ final class UniteUrbaineDetailController extends AbstractController
 
         $poiCategories = $this->poiProvider->findCategories($uniteUrbaine);
         $stations = $this->stationAccessProvider->find($uniteUrbaine);
+        $storedShopTypes = $uniteUrbaine->getShopTypes();
+        $shopTypes = null === $storedShopTypes ? null : ShopTypeDetail::fromStored($storedShopTypes);
 
         return $this->render('unite_urbaine/detail.html.twig', [
             'uniteUrbaine' => $uniteUrbaine,
-            'sections' => $this->toSections($displayedGroups, $ageGroup, $agePyramids, $stations, $poiCategories, $inFrame ? 1 : self::COLUMNS),
+            'sections' => $this->toSections($displayedGroups, $ageGroup, $agePyramids, $stations, $poiCategories, $shopTypes, $inFrame ? 1 : self::COLUMNS),
             'ageGroup' => $ageGroup,
             'poiCategories' => $poiCategories,
             'stations' => $stations,
+            'shopTypes' => $shopTypes,
             'population' => $this->findPopulation($groups),
             'agePyramids' => $agePyramids,
             'inFrame' => $inFrame,
@@ -89,7 +93,7 @@ final class UniteUrbaineDetailController extends AbstractController
      *
      * @return list<array{section: DetailSection, columns: list<list<DetailCard>>}>
      */
-    private function toSections(array $groups, ?CriterionGroupDetail $ageGroup, array $agePyramids, array $stations, array $poiCategories, int $columnCount): array
+    private function toSections(array $groups, ?CriterionGroupDetail $ageGroup, array $agePyramids, array $stations, array $poiCategories, ?ShopTypeDetail $shopTypes, int $columnCount): array
     {
         $cardsBySection = [];
         foreach ($groups as $group) {
@@ -100,6 +104,10 @@ final class UniteUrbaineDetailController extends AbstractController
         if ([] !== $agePyramids) {
             $weight = 14.0 + (null === $ageGroup ? 0.0 : 3.0 + \count($ageGroup->criteria) * 1.4 + (null === $ageGroup->distribution ? 0.0 : 8.0));
             $cardsBySection[DetailSection::Population->value] = [new DetailCard(DetailCard::PYRAMID, $weight), ...($cardsBySection[DetailSection::Population->value] ?? [])];
+        }
+
+        if (null !== $shopTypes) {
+            $cardsBySection[DetailSection::CadreDeVie->value][] = new DetailCard(DetailCard::SHOPS, 4.0);
         }
 
         if ([] !== $stations) {
