@@ -15,10 +15,9 @@ use Doctrine\ORM\EntityManagerInterface;
 /**
  * Reads the vendored `resources/geo/hopitaux.csv` (see
  * HospitalSourceDownloader) and upserts its establishments as POIs, one
- * category per hospital type under the "hospital" parent category, and one
- * POI more in the "hospital_emergency" category for those with an emergency
- * department. Both are matched on the establishment's FINESS number.
- * Idempotent: re-running updates in place, never duplicates, moves an
+ * category per hospital type under the "hospital" parent category, matched on
+ * the establishment's FINESS number. An establishment with an emergency
+ * department is still one POI, flagged in its attributes. Idempotent: re-running updates in place, never duplicates, moves an
  * establishment whose type changed to its new category, and drops the ones the
  * file no longer lists. Needs the zones imported first, to attach each POI to
  * its unité urbaine.
@@ -46,10 +45,7 @@ final readonly class HospitalImporter
             $byType[$type->value] = $this->poiCategoryRepository->getByCode($type->categoryCode());
         }
 
-        $emergencyCategory = $this->poiCategoryRepository->getByCode(HospitalType::EMERGENCY_CATEGORY_CODE);
-
-        $staleHospitals = $this->indexByExternalId(array_values($byType));
-        $staleEmergencies = $this->indexByExternalId([$emergencyCategory]);
+        $stale = $this->indexByExternalId(array_values($byType));
 
         $hospitals = 0;
         $emergencies = 0;
@@ -58,19 +54,18 @@ final readonly class HospitalImporter
             $location = \sprintf('SRID=4326;POINT(%.7F %.7F)', (float) $row['lon'], (float) $row['lat']);
             $finess = $row['finess'];
 
-            $this->upsert($staleHospitals[$finess] ?? null, $row['name'], $byType[HospitalType::from($row['type'])->value], $location, $finess, $row['address'], null);
-            unset($staleHospitals[$finess]);
-            ++$hospitals;
-
+            $attributes = null;
             if ('1' === $row['emergency']) {
-                $this->upsert($staleEmergencies[$finess] ?? null, $row['name'], $emergencyCategory, $location, $finess, $row['address'], '1' === $row['emergency_pediatric'] ? ['pediatric' => true] : null);
-                unset($staleEmergencies[$finess]);
+                $attributes = '1' === $row['emergency_pediatric'] ? ['emergency' => true, 'pediatric' => true] : ['emergency' => true];
                 ++$emergencies;
             }
+
+            $this->upsert($stale[$finess] ?? null, $row['name'], $byType[HospitalType::from($row['type'])->value], $location, $finess, $row['address'], $attributes);
+            unset($stale[$finess]);
+            ++$hospitals;
         }
 
-        // Both are keyed by FINESS number: list them first, or one would overwrite the other.
-        foreach ([...array_values($staleHospitals), ...array_values($staleEmergencies)] as $stalePoi) {
+        foreach ($stale as $stalePoi) {
             $this->entityManager->remove($stalePoi);
         }
 

@@ -1,10 +1,11 @@
-# Hospitals and emergency departments
+# Hospitals
 
-The hospitals and their emergency departments are stored as points of interest
-(POIs). They show on the detail page of the urban unit that contains them (see
+The hospitals are stored as points of interest (POIs), an establishment being
+one POI whether or not it has an emergency department. They show on the detail
+page of the urban unit that contains them (see
 [urban-unit-detail.md](urban-unit-detail.md)), in the "Points d'intérêt"
-section, each category with its count and a sample. No map filter uses them
-yet.
+section, with "Urgences" next to the name of those with an emergency
+department. No map filter uses them yet.
 
 ## Source
 
@@ -35,7 +36,7 @@ An open geographic establishment whose FINESS category is one of these:
 | `hospital_cancer` | Centre de lutte contre le cancer |
 | `hospital_army` | Hôpital des armées |
 
-All are children of the parent category "Hôpital ou clinique" (`hospital`), itself under "Santé" (`health_site`) like the emergency departments below.
+All are children of the parent category "Hôpital ou clinique" (`hospital`), itself under "Santé" (`health_site`).
 Dialysis, psychiatry, rehabilitation, long-stay, home hospitalisation, nursing
 homes and the like are left out: they are not what is meant by "the nearest
 hospital".
@@ -43,13 +44,10 @@ hospital".
 ## Emergency departments
 
 An establishment authorised to run a **"structure des urgences"** (the
-"Médecine d'urgence" activity) gets a second POI, in its own category "Service
-d'urgences" (`hospital_emergency`), at the same place and under the same name.
-A separate category, rather than a flag on the hospital, so that emergency
-departments are counted, listed and, later, filtered or timed on their own. The
-detail page still lists them with the hospitals, under their common parent.
+"Médecine d'urgence" activity) is flagged `emergency` in the attributes of its
+POI. It is the same POI, not a second one: the place is imported once.
 
-- A department dedicated to children is recognised: its POI carries the
+- A department dedicated to children is recognised: its POI also carries the
   attribute `pediatric`.
 - SAMU, SMUR and "antennes" are not emergency departments and are not kept.
 - The feed has no category for the emergency department itself: it is the

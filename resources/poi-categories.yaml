@@ -16,7 +16,6 @@
         - { code: hospital_clinic, label: Clinique ou autre établissement de soins }
         - { code: hospital_cancer, label: Centre de lutte contre le cancer }
         - { code: hospital_army, label: Hôpital des armées }
-    - { code: hospital_emergency, label: "Service d'urgences" }
 
 - code: risk_site
   label: Site à risque

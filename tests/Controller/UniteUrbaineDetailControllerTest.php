@@ -423,21 +423,39 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
         $parent = PoiCategoryFactory::createOne(['code' => 'hospital', 'label' => 'Hôpital ou clinique']);
         $general = PoiCategoryFactory::createOne(['code' => 'hospital_general', 'label' => 'Centre hospitalier', 'parent' => $parent]);
-        $emergency = PoiCategoryFactory::createOne(['code' => 'hospital_emergency', 'label' => "Service d'urgences", 'parent' => $parent]);
+        $clinic = PoiCategoryFactory::createOne(['code' => 'hospital_clinic', 'label' => 'Clinique', 'parent' => $parent]);
         $alone = PoiCategoryFactory::createOne(['code' => 'nuclear_power_plant', 'label' => 'Centrale nucléaire']);
-        PoiFactory::createOne(['name' => 'CH CHUBERT', 'category' => $general, 'uniteUrbaine' => $vannes]);
-        PoiFactory::createOne(['name' => 'CH CHUBERT', 'category' => $emergency, 'uniteUrbaine' => $vannes]);
+        PoiFactory::createOne(['name' => 'CH CHUBERT', 'category' => $general, 'uniteUrbaine' => $vannes, 'location' => 'SRID=4326;POINT(-2.75 47.65)']);
+        PoiFactory::createOne(['name' => 'Clinique du Golfe', 'category' => $clinic, 'uniteUrbaine' => $vannes, 'location' => 'SRID=4326;POINT(-2.4 47.6)']);
         PoiFactory::createOne(['name' => 'Centrale de Vannes', 'category' => $alone, 'uniteUrbaine' => $vannes]);
 
         $client->request('GET', '/unites-urbaines/56501');
 
         self::assertResponseIsSuccessful();
         self::assertCount(2, $client->getCrawler()->filter('input[data-poi-map-target="toggle"]'));
-        self::assertSelectorTextContains('body', 'Hôpital ou clinique (1)');
-        // The hospital and its emergency department are one place: listed once, with both categories.
-        self::assertCount(1, $client->getCrawler()->filter('ul[data-code="hospital"] > li'));
-        self::assertSelectorTextContains('ul[data-code="hospital"]', "CH CHUBERT · Centre hospitalier · Service d'urgences");
+        self::assertSelectorTextContains('body', 'Hôpital ou clinique (2)');
+        self::assertSelectorTextContains('ul[data-code="hospital"]', 'CH CHUBERT · Centre hospitalier');
+        self::assertSelectorTextContains('ul[data-code="hospital"]', 'Clinique du Golfe · Clinique');
         self::assertSelectorTextNotContains('ul[data-code="nuclear_power_plant"]', 'Centre hospitalier');
+    }
+
+    public function testAPlaceFiledInSeveralCategoriesIsListedOnceWithAllOfThem(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $root = PoiCategoryFactory::createOne(['code' => 'risk_site', 'label' => 'Site à risque']);
+        $seveso = PoiCategoryFactory::createOne(['code' => 'seveso_high', 'label' => 'Site Seveso seuil haut', 'parent' => $root]);
+        $polluter = PoiCategoryFactory::createOne(['code' => 'polluting_plant', 'label' => 'Établissement pollueur', 'parent' => $root]);
+        PoiFactory::createOne(['name' => 'Raffinerie de Donges', 'category' => $seveso, 'uniteUrbaine' => $vannes, 'location' => 'SRID=4326;POINT(-2.1 47.3)']);
+        PoiFactory::createOne(['name' => 'RAFFINERIE DE DONGES', 'category' => $polluter, 'uniteUrbaine' => $vannes, 'location' => 'SRID=4326;POINT(-2.1001 47.3001)']);
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Site à risque (1)');
+        self::assertCount(1, $client->getCrawler()->filter('ul[data-code="risk_site"] > li'));
+        self::assertSelectorTextContains('ul[data-code="risk_site"]', 'Raffinerie de Donges · Site Seveso seuil haut · Établissement pollueur');
     }
 
     public function testPoisAreGroupedUnderTheRootWhateverTheDepthOfTheTree(): void
@@ -478,23 +496,21 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Dépôt de gaz');
     }
 
-    public function testPageListsTheHospitalsAndTheirEmergencyDepartmentsApart(): void
+    public function testPageListsTheHospitalsAndSaysWhichHaveEmergencies(): void
     {
         $client = self::createClient();
 
         $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
         $other = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
         $general = PoiCategoryFactory::createOne(['code' => 'hospital_general', 'label' => 'Centre hospitalier']);
-        $emergency = PoiCategoryFactory::createOne(['code' => 'hospital_emergency', 'label' => "Service d'urgences"]);
-        PoiFactory::createOne(['name' => 'CH CHUBERT', 'address' => "1 RUE DE L'HOPITAL, 56000 VANNES", 'category' => $general, 'uniteUrbaine' => $vannes]);
-        PoiFactory::createOne(['name' => 'CH CHUBERT', 'category' => $emergency, 'uniteUrbaine' => $vannes]);
+        PoiFactory::createOne(['name' => 'CH CHUBERT', 'address' => "1 RUE DE L'HOPITAL, 56000 VANNES", 'category' => $general, 'uniteUrbaine' => $vannes, 'attributes' => ['emergency' => true]]);
         PoiFactory::createOne(['name' => 'CH DE NANTES', 'category' => $general, 'uniteUrbaine' => $other]);
 
         $client->request('GET', '/unites-urbaines/56501');
 
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('body', 'Centre hospitalier (1)');
-        self::assertSelectorTextContains('body', "Service d'urgences (1)");
+        self::assertSelectorTextContains('body', 'CH CHUBERT · Urgences');
         self::assertSelectorTextContains('body', "1 RUE DE L'HOPITAL, 56000 VANNES");
         self::assertSelectorTextNotContains('body', 'CH DE NANTES');
     }
