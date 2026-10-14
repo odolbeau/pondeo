@@ -42,6 +42,29 @@ final class UniteUrbaineCompareControllerTest extends WebTestCase
         self::assertSelectorTextContains('tbody tr:nth-child(2) td.font-semibold', "500\u{a0}000");
     }
 
+    public function testCellsShowTheirTrend(): void
+    {
+        $client = self::createClient();
+
+        $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $nantes = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $price = CriterionFactory::createOne(['code' => 'prix_m2', 'label' => 'Prix au m²', 'unit' => '€/m²', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Immobilier']);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($price, $vannes, 2_000, 2021));
+        $entityManager->persist(new CriterionValue($price, $vannes, 2_500, 2025));
+        $entityManager->persist(new CriterionValue($price, $nantes, 3_000, 2025));
+        $entityManager->flush();
+
+        $client->request('GET', '/comparer?villes=56501,44701');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('tbody tr:nth-child(2) td:nth-of-type(1) .group\\/trend', '+25 %');
+        // Nantes has a single period: no trend.
+        self::assertSelectorNotExists('tbody tr:nth-child(2) td:nth-of-type(2) .group\\/trend');
+    }
+
     public function testASingleUnitAsksForAnother(): void
     {
         $client = self::createClient();

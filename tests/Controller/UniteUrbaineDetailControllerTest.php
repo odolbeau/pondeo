@@ -191,6 +191,37 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('[data-label="Niveau de vie médian"]', '2e sur 2');
     }
 
+    public function testTrendIsColoredByTheRankOrder(): void
+    {
+        $client = self::createClient();
+
+        $unite = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        $other = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
+        $price = CriterionFactory::createOne(['code' => 'prix_m2', 'label' => 'Prix au m²', 'unit' => '€/m²', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Immobilier']);
+        $unemployment = CriterionFactory::createOne(['code' => 'taux_chomage', 'label' => 'Taux de chômage', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Emploi', 'rankFromLowest' => true]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ([$unite, $other] as $uniteUrbaine) {
+            $entityManager->persist(new CriterionValue($price, $uniteUrbaine, 2_000, 2021));
+            $entityManager->persist(new CriterionValue($price, $uniteUrbaine, 2_500, 2025));
+            $entityManager->persist(new CriterionValue($unemployment, $uniteUrbaine, '9.0', 2012));
+            $entityManager->persist(new CriterionValue($unemployment, $uniteUrbaine, '11.5', 2022));
+        }
+
+        $entityManager->flush();
+
+        $client->request('GET', '/unites-urbaines/56501');
+
+        self::assertResponseIsSuccessful();
+        // Higher is better for the price (rank order): a rise is favourable.
+        self::assertSelectorTextContains('[data-label="Prix au m²"] .group\\/trend.text-emerald-700', '+25 % depuis 2021');
+        // The period is in our own instant tooltip, not the browser's delayed title.
+        self::assertSelectorTextContains('[data-label="Prix au m²"] .group\\/trend [aria-hidden].absolute', 'Évolution entre 2021 et 2025');
+        // Lower is better for unemployment: a rise is unfavourable, in points.
+        self::assertSelectorTextContains('[data-label="Taux de chômage"] .group\\/trend.text-rose-700', '+2,5 pt depuis 2012');
+    }
+
     public function testClimateProjectionsAreListedUnderTheirOwnGroup(): void
     {
         $client = self::createClient();

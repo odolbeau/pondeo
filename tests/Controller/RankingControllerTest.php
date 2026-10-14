@@ -46,6 +46,27 @@ final class RankingControllerTest extends WebTestCase
         self::assertSelectorCount(3, 'tbody [title="Médiane"]');
     }
 
+    public function testRowsShowTheirTrendSinceTheFirstPeriod(): void
+    {
+        $client = self::createClient();
+        $criterion = $this->createValues('taux_chomage', ['Haut' => 12.5, 'Bas' => 6.1], rankFromLowest: true);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $haut = $entityManager->getRepository(UniteUrbaine::class)->findOneBy(['name' => 'Haut']);
+        \assert($haut instanceof UniteUrbaine);
+        $entityManager->persist(new CriterionValue($criterion, $haut, 10.0, 2018));
+        $entityManager->flush();
+
+        $client->request('GET', '/classements/taux_chomage?ordre=inverse');
+
+        self::assertResponseIsSuccessful();
+        // Lower is better for unemployment: a rise is unfavourable.
+        self::assertSelectorTextContains('tbody tr:first-child .group\\/trend.text-rose-700', '+25 % depuis 2018');
+        // A unit with a single period has no trend.
+        self::assertSelectorNotExists('tbody tr:last-child .group\\/trend');
+    }
+
     public function testCriterionRankedFromLowestStartsWithTheLowestValue(): void
     {
         $client = self::createClient();

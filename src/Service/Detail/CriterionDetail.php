@@ -28,6 +28,7 @@ final readonly class CriterionDetail
         public ?float $median,
         public ?int $count = null,
         public ?int $position = null,
+        public ?CriterionTrend $trend = null,
     ) {
     }
 }

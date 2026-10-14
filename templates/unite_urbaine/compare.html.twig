@@ -62,6 +62,7 @@
                                             {% if cell is null %}
                                                 <span class="text-stone-400">—</span>
                                             {% else %}
+                                                {% if cell.trend %}{{ include('unite_urbaine/_trend.html.twig', {trend: cell.trend, until: cell.period}) }}{% endif %}
                                                 {{ cell.value|criterion_value }}{% if cell.unit %}<span class="ml-1 text-xs font-normal text-stone-500">{{ cell.unit }}</span>{% endif %}
                                             {% endif %}
                                         </td>

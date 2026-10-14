@@ -63,6 +63,26 @@ period for that criterion:
 
 Text and boolean criteria have no rank or median.
 
+## Trend
+
+A numeric criterion with at least two periods shows, under its latest value,
+how it moved since the first period of its series: a relative change in %, or
+a difference in points for a criterion expressed in %. A change that is
+negligible (under 0.5 %, or 0.1 point) is shown as stable.
+
+The arrow is colored from the criterion's rank order: where a high value is the
+better one (the default) a rise is green and a fall red, and the reverse for a
+criterion ranked from the lowest value. So the color says whether the move is
+favourable under the same convention as the rank, not whether it is good for
+everyone: a rise in prices shows green because the ranking starts from the most
+expensive.
+
+A criterion that is already a rate of change (the average yearly population
+growth) has no trend.
+
+The same badge appears in the [rankings](rankings.md#trend) and in the
+[comparison](comparison.md#trend). Hovering it shows the period it covers.
+
 ## Criterion chart
 
 A numeric criterion with at least two periods unfolds, on a click on its row, a

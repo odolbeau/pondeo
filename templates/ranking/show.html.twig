@@ -67,7 +67,10 @@
                                 {% endif %}
                             </td>
                             <td class="hidden py-3 text-right tabular-nums text-stone-600 sm:table-cell">{{ row.population is not null ? row.population|fr_number : '—' }}</td>
-                            <td class="py-3 text-right font-semibold tabular-nums">{{ row.value|criterion_value }}{% if criterion.unit %}<span class="ml-1 font-normal text-stone-600">{{ criterion.unit }}</span>{% endif %}</td>
+                            <td class="py-3 text-right font-semibold tabular-nums">
+                                {% if row.trend %}{{ include('unite_urbaine/_trend.html.twig', {trend: row.trend, until: period}) }}{% endif %}
+                                {{ row.value|criterion_value }}{% if criterion.unit %}<span class="ml-1 font-normal text-stone-600">{{ criterion.unit }}</span>{% endif %}
+                            </td>
                         </tr>
                     {% endfor %}
                 </tbody>

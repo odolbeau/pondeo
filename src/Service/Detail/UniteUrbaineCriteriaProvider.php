@@ -14,7 +14,7 @@ use Doctrine\DBAL\Connection;
  * computed over all unités urbaines (a window function per criterion is
  * what Doctrine can't express).
  *
- * @phpstan-type ValueRow array{code: string, label: string, unit: ?string, group_label: ?string, position: ?int, period: int, value_integer: ?int, value_decimal: ?string, value_text: ?string, value_boolean: ?bool}
+ * @phpstan-type ValueRow array{code: string, label: string, unit: ?string, group_label: ?string, position: ?int, rank_from_lowest: bool, period: int, value_integer: ?int, value_decimal: ?string, value_text: ?string, value_boolean: ?bool}
  */
 final readonly class UniteUrbaineCriteriaProvider
 {
@@ -92,6 +92,7 @@ final readonly class UniteUrbaineCriteriaProvider
 
             $value = $points[$period];
             $comparison = $comparisons[$code] ?? null;
+            $series = null === $comparison ? [] : array_filter($points, static fn (int|float|string|bool $point): bool => \is_int($point) || \is_float($point));
 
             $criteriaByGroup[$criterion['group_label'] ?? self::DEFAULT_GROUP_LABEL][] = new CriterionDetail(
                 code: $code,
@@ -99,12 +100,13 @@ final readonly class UniteUrbaineCriteriaProvider
                 unit: $criterion['unit'],
                 value: $value,
                 period: $period,
-                series: null === $comparison ? [] : array_filter($points, static fn (int|float|string|bool $point): bool => \is_int($point) || \is_float($point)),
+                series: $series,
                 rank: $comparison['rank'] ?? null,
                 total: $comparison['total'] ?? null,
                 median: $comparison['median'] ?? null,
                 count: $this->pairedCount($code, $byCriterion),
                 position: $criterion['position'],
+                trend: \in_array($code, CriterionTrend::NO_TREND_CODES, true) ? null : CriterionTrend::fromSeries($series, $criterion['unit'], $criterion['rank_from_lowest']),
             );
         }
 
@@ -189,7 +191,7 @@ final readonly class UniteUrbaineCriteriaProvider
         /** @var list<ValueRow> $rows */
         $rows = $this->connection->fetchAllAssociative(
             <<<'SQL'
-                SELECT c.code, c.label, c.unit, c.group_label, c.position, cv.period,
+                SELECT c.code, c.label, c.unit, c.group_label, c.position, c.rank_from_lowest, cv.period,
                        cv.value_integer, cv.value_decimal, cv.value_text, cv.value_boolean
                 FROM criterion_value cv
                 INNER JOIN criterion c ON c.id = cv.criterion_id

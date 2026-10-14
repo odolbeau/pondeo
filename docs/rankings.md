@@ -45,3 +45,10 @@ Add the criterion code to the catalog with its theme, title, tagline and note: t
 label, unit and direction come from the criterion itself.
 
 To weigh several criteria at once, see `docs/personal-ranking.md`.
+
+## Trend
+
+Next to its value, a row shows how that unit moved between its first period and
+the ranking's latest one, as on the [detail page](urban-unit-detail.md#trend)
+(same calculation, same colors). The trend is the unit's own, so it does not
+change with the sort order, and a unit with a single period has none.

@@ -1,0 +1,8 @@
+{# `trend`: a CriterionTrend; `until`: the period it ends at. #}
+<span class="group/trend relative whitespace-nowrap rounded-full px-1.5 py-0.5 text-xs font-medium {{ trend.stable ? 'bg-stone-100 text-stone-600' : (trend.favorable ? 'bg-emerald-50 text-emerald-700' : 'bg-rose-50 text-rose-700') }}">
+    <span aria-hidden="true">{{ trend.stable ? '→' : (trend.rising ? '▲' : '▼') }}</span>
+    <span class="sr-only">{{ trend.stable ? 'Stable' : (trend.rising ? 'En hausse' : 'En baisse') }}</span>
+    {{ trend.rising ? '+' }}{{ trend.change|round(1)|fr_number }}{{ trend.inPoints ? ' pt' : ' %' }}
+    <span class="sr-only">depuis {{ trend.since }}</span>
+    <span aria-hidden="true" class="pointer-events-none invisible absolute right-0 top-full z-20 mt-1 block rounded border border-stone-700 bg-stone-800 px-2 py-1 text-xs font-normal text-white shadow-lg group-hover/trend:visible">Évolution entre {{ trend.since }} et {{ until }}</span>
+</span>
