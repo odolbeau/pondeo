@@ -28,7 +28,9 @@ on the migrated schema, so migrations must stay backward compatible.
 
 An import whose source files, and the zones it depends on, are unchanged since
 its last successful run is skipped, so a deployment that does not touch the
-data only pays for the migrations. Changing the import code re-runs them all.
+data only pays for the migrations. Changing an import's command re-runs that
+import, and only it. The code the command delegates to is not tracked: after
+changing it, touch the command (or rebuild with `make db-reset`) to re-run the import.
 `--download` runs an import regardless, and `make db-reset` rebuilds everything.
 
 ## Server side

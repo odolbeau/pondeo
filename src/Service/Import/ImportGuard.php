@@ -6,7 +6,6 @@ namespace App\Service\Import;
 
 use Doctrine\DBAL\Connection;
 use Symfony\Component\DependencyInjection\Attribute\Autowire;
-use Symfony\Component\Finder\Finder;
 
 final readonly class ImportGuard
 {
@@ -20,22 +19,22 @@ final readonly class ImportGuard
     ) {
     }
 
-    public function isUpToDate(string $name, ImportSource $source): bool
+    public function isUpToDate(string $name, ImportSource $source, string $commandClass): bool
     {
         $storedHash = $this->connection->fetchOne('SELECT source_hash FROM import_state WHERE name = :name', ['name' => $name]);
 
-        return $storedHash === $this->hash($source);
+        return $storedHash === $this->hash($source, $commandClass);
     }
 
-    public function markDone(string $name, ImportSource $source): void
+    public function markDone(string $name, ImportSource $source, string $commandClass): void
     {
         $this->connection->executeStatement(
             'INSERT INTO import_state (name, source_hash, imported_at) VALUES (:name, :hash, NOW()) ON CONFLICT (name) DO UPDATE SET source_hash = EXCLUDED.source_hash, imported_at = EXCLUDED.imported_at',
-            ['name' => $name, 'hash' => $this->hash($source)],
+            ['name' => $name, 'hash' => $this->hash($source, $commandClass)],
         );
     }
 
-    private function hash(ImportSource $source): string
+    private function hash(ImportSource $source, string $commandClass): string
     {
         $files = array_unique([...$source->files, self::ZONES_FILE]);
         sort($files);
@@ -45,13 +44,9 @@ final readonly class ImportGuard
             hash_update($context, $file.':'.$this->hashFile($this->projectDir.'/resources/geo/'.$file));
         }
 
-        // A change to the import logic must re-run the imports too.
-        $codeFiles = Finder::create()->files()->name('*.php')->in([$this->projectDir.'/src/Service/Import', $this->projectDir.'/src/Command'])->sort(static fn (\SplFileInfo $a, \SplFileInfo $b): int => $a->getPathname() <=> $b->getPathname());
-        // The facility families and shop types, which define the criteria, live with the enums.
-        $definitionFiles = Finder::create()->files()->name(['EquipmentFamily.php', 'ShopType.php'])->in($this->projectDir.'/src/Enum')->sort(static fn (\SplFileInfo $a, \SplFileInfo $b): int => $a->getPathname() <=> $b->getPathname());
-        foreach ([...$codeFiles, ...$definitionFiles] as $codeFile) {
-            hash_update($context, $this->hashFile($codeFile->getPathname()));
-        }
+        // A change to the command must re-run it, and only it. The code it
+        // delegates to is not tracked: touching a shared class re-runs nothing.
+        hash_update($context, $this->hashFile($this->projectDir.'/src/'.str_replace('\\', '/', substr($commandClass, \strlen('App\\'))).'.php'));
 
         return hash_final($context);
     }
