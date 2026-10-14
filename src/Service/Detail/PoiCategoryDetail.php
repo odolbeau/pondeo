@@ -6,14 +6,15 @@ namespace App\Service\Detail;
 
 use App\Entity\Poi;
 
+/** A group of POI categories, or a category on its own: what the detail page lists under one heading. */
 final readonly class PoiCategoryDetail
 {
     /**
-     * @param list<Poi> $pois the first few POIs of the category; $total counts them all
+     * @param list<Poi> $pois
      */
     public function __construct(
+        public string $code,
         public string $label,
-        public int $total,
         public array $pois,
     ) {
     }

@@ -1,19 +1,43 @@
+{% set poiCount = poiCategories|reduce((total, category) => total + category.pois|length, 0) %}
     <section class="{{ card }}">
         <h2 class="{{ title }}">Points d'intérêt</h2>
-        {% for category in poiCategories %}
-            <h3 class="mt-4 text-sm text-stone-700">{{ category.label }} <span class="text-stone-500">({{ category.total }})</span></h3>
-            <ul class="mt-1 divide-y divide-stone-200 text-sm">
-                {% for poi in category.pois %}
-                    <li class="py-2">
-                        <span class="text-stone-900">{{ poi.name }}</span>
-                        {% if poi.brand %}<span class="text-stone-500"> · {{ poi.brand }}</span>{% endif %}
-                        {% if poi.attributes.activity is defined %}<span class="text-stone-500"> · {{ poi.attributes.activity }}</span>{% endif %}
-                        {% if poi.address %}<div class="text-xs text-stone-500">{{ poi.address }}</div>{% endif %}
-                    </li>
-                {% endfor %}
-            </ul>
-            {% if category.total > category.pois|length %}
-                <p class="mt-1 text-xs text-stone-500">et {{ category.total - category.pois|length }} autres</p>
-            {% endif %}
-        {% endfor %}
+        {% if inFrame %}
+            <p class="mt-2 text-sm text-stone-700">{{ poiCount }} point{{ poiCount > 1 ? 's' : '' }} d'intérêt</p>
+            <a href="{{ path('app_unite_urbaine_detail', {code: uniteUrbaine.code}) }}#points-interet" data-turbo-frame="_top"
+               class="mt-2 inline-block text-sm text-emerald-700 hover:underline">Voir la carte et le détail →</a>
+        {% else %}
+            <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]" data-controller="poi-map">
+                <div class="max-h-[32rem] overflow-y-auto pr-1">
+                    {% for category in poiCategories %}
+                        {% set categoryIndex = loop.index0 %}
+                        <h3 class="{{ loop.first ? '' : 'mt-4 ' }}text-sm text-stone-700">
+                            <label class="flex cursor-pointer items-center gap-2">
+                                <input type="checkbox" checked class="size-4 shrink-0 accent-emerald-600" aria-label="Afficher : {{ category.label }}"
+                                       data-poi-map-target="toggle" data-code="{{ category.code }}" data-action="change->poi-map#toggle">
+                                <span class="size-2.5 shrink-0 rounded-full" data-poi-map-target="dot" data-category="{{ categoryIndex }}"></span>
+                                <span>{{ category.label }} <span class="text-stone-500">({{ category.pois|length }})</span></span>
+                            </label>
+                        </h3>
+                        <ul class="mt-1 divide-y divide-stone-200 text-sm" data-poi-map-target="group" data-code="{{ category.code }}">
+                            {% for poi in category.pois %}
+                                <li data-poi-map-target="item" data-category="{{ categoryIndex }}" data-code="{{ category.code }}"
+                                    data-lon="{{ poi.longitude }}" data-lat="{{ poi.latitude }}"
+                                    data-name="{{ poi.name }}" data-address="{{ poi.address }}"
+                                    class="data-active:bg-emerald-50">
+                                    <button type="button" class="block w-full cursor-pointer px-1 py-2 text-left"
+                                            data-action="mouseenter->poi-map#highlight mouseleave->poi-map#unhighlight focus->poi-map#highlight blur->poi-map#unhighlight click->poi-map#select">
+                                        <span class="text-stone-900">{{ poi.name }}</span>
+                                        {% if poi.category.code != category.code %}<span class="text-stone-500"> · {{ poi.category.label }}</span>{% endif %}
+                                        {% if poi.brand %}<span class="text-stone-500"> · {{ poi.brand }}</span>{% endif %}
+                                        {% if poi.attributes.activity is defined %}<span class="text-stone-500"> · {{ poi.attributes.activity }}</span>{% endif %}
+                                        {% if poi.address %}<span class="block text-xs text-stone-500">{{ poi.address }}</span>{% endif %}
+                                    </button>
+                                </li>
+                            {% endfor %}
+                        </ul>
+                    {% endfor %}
+                </div>
+                <div class="h-80 overflow-hidden rounded-lg border border-stone-200 lg:h-[32rem]" data-poi-map-target="map"></div>
+            </div>
+        {% endif %}
     </section>

@@ -39,40 +39,35 @@ class PoiRepository extends ServiceEntityRepository
     }
 
     /**
-     * @return list<array{category: PoiCategory, total: int}>
+     * The categories having POIs in the unité urbaine.
+     *
+     * @return list<PoiCategory>
      */
-    public function countByCategory(UniteUrbaine $uniteUrbaine): array
+    public function findCategories(UniteUrbaine $uniteUrbaine): array
     {
-        /** @var list<array{0: PoiCategory, total: int|string}> $rows */
-        $rows = $this->getEntityManager()->createQueryBuilder()
-            ->select('category', 'COUNT(poi.id) AS total')
+        return $this->getEntityManager()->createQueryBuilder()
+            ->select('category')
             ->from(PoiCategory::class, 'category')
-            ->innerJoin(Poi::class, 'poi', 'WITH', 'poi.category = category')
-            ->andWhere('poi.uniteUrbaine = :uniteUrbaine')
+            ->andWhere('EXISTS (SELECT 1 FROM '.Poi::class.' poi WHERE poi.category = category AND poi.uniteUrbaine = :uniteUrbaine)')
             ->setParameter('uniteUrbaine', $uniteUrbaine)
-            ->groupBy('category.id')
             ->orderBy('category.label')
             ->getQuery()
             ->getResult();
-
-        return array_map(
-            static fn (array $row): array => ['category' => $row[0], 'total' => (int) $row['total']],
-            $rows,
-        );
     }
 
     /**
+     * @param list<PoiCategory> $categories
+     *
      * @return list<Poi>
      */
-    public function findByCategory(UniteUrbaine $uniteUrbaine, PoiCategory $category, int $limit): array
+    public function findByCategories(UniteUrbaine $uniteUrbaine, array $categories): array
     {
         return $this->createQueryBuilder('poi')
             ->andWhere('poi.uniteUrbaine = :uniteUrbaine')
-            ->andWhere('poi.category = :category')
+            ->andWhere('poi.category IN (:categories)')
             ->setParameter('uniteUrbaine', $uniteUrbaine)
-            ->setParameter('category', $category)
+            ->setParameter('categories', $categories)
             ->orderBy('poi.name')
-            ->setMaxResults($limit)
             ->getQuery()
             ->getResult();
     }
