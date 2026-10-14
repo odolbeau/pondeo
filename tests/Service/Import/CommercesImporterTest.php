@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Tests\Service\Import;
 
 use App\Enum\CriterionValueType;
-use App\Factory\CommuneFactory;
 use App\Factory\CriterionFactory;
 use App\Factory\UniteUrbaineFactory;
 use App\Service\Import\CommercesImporter;
@@ -21,24 +20,24 @@ final class CommercesImporterTest extends KernelTestCase
 
     public function testImportSumsCountsPerUniteUrbaineAndDerivesDensities(): void
     {
-        $unit = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
-        CommuneFactory::createOne(['inseeCode' => '56260', 'uniteUrbaine' => $unit]);
-        CommuneFactory::createOne(['inseeCode' => '56206', 'uniteUrbaine' => $unit]);
-        $emptyUnit = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
-        CommuneFactory::createOne(['inseeCode' => '44109', 'uniteUrbaine' => $emptyUnit]);
+        UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
+        UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
 
         $this->createPopulation('56501', 2023, 50_000);
         $this->createPopulation('44701', 2023, 0);
 
-        // 99999 is a commune outside every unité urbaine: skipped.
+        // 99999 is an unité urbaine out of scope, B999 a type the file format does not know: both skipped.
         $csvPath = $this->writeCsv(<<<'CSV'
-            code_insee,year,sub_domain,count
-            56260,2025,B1,5
-            56260,2025,B2,40
-            56206,2025,B2,10
-            56206,2025,B3,45
-            44109,2025,B2,3
-            99999,2025,B2,7
+            code_unite_urbaine,year,type,count
+            56501,2025,B104,5
+            56501,2025,B207,30
+            56501,2025,B204,20
+            56501,2025,B302,30
+            56501,2025,B316,15
+            56501,2025,B999,8
+            56501,2015,B207,40
+            44701,2025,B201,3
+            99999,2025,B207,7
             CSV);
 
         $importer = self::getContainer()->get(CommercesImporter::class);
@@ -52,6 +51,9 @@ final class CommercesImporterTest extends KernelTestCase
         self::assertSame(45, $this->integer('56501', 'commerces_non_alimentaires'));
         self::assertSame(2.0, $this->decimal('56501', 'commerces_total_pour_1000_hab'));
         self::assertSame(1.0, $this->decimal('56501', 'commerces_alimentaires_pour_1000_hab'));
+        // Each year of the file is its own period.
+        self::assertSame(40, $this->integer('56501', 'commerces_alimentaires', 2015));
+        self::assertSame(0, $this->integer('56501', 'commerces_grandes_surfaces', 2015));
         // A unité urbaine without population has a count but no density.
         self::assertSame(3, $this->integer('44701', 'commerces_total'));
         self::assertNull($this->decimal('44701', 'commerces_total_pour_1000_hab'));
@@ -106,22 +108,22 @@ final class CommercesImporterTest extends KernelTestCase
         return $csvPath;
     }
 
-    private function integer(string $uniteUrbaineCode, string $criterionCode): ?int
+    private function integer(string $uniteUrbaineCode, string $criterionCode, int $period = 2025): ?int
     {
-        $value = $this->column('value_integer', $uniteUrbaineCode, $criterionCode);
+        $value = $this->column('value_integer', $uniteUrbaineCode, $criterionCode, $period);
 
         return is_numeric($value) ? (int) $value : null;
     }
 
-    private function decimal(string $uniteUrbaineCode, string $criterionCode): ?float
+    private function decimal(string $uniteUrbaineCode, string $criterionCode, int $period = 2025): ?float
     {
-        $value = $this->column('value_decimal', $uniteUrbaineCode, $criterionCode);
+        $value = $this->column('value_decimal', $uniteUrbaineCode, $criterionCode, $period);
 
         return is_numeric($value) ? (float) $value : null;
     }
 
     // Read through DBAL: see CsvCriterionImporterTest::valuesByPeriod().
-    private function column(string $column, string $uniteUrbaineCode, string $criterionCode): mixed
+    private function column(string $column, string $uniteUrbaineCode, string $criterionCode, int $period): mixed
     {
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
         \assert($entityManager instanceof EntityManagerInterface);
@@ -133,11 +135,11 @@ final class CommercesImporterTest extends KernelTestCase
                     FROM criterion_value cv
                     INNER JOIN unite_urbaine uu ON uu.id = cv.unite_urbaine_id
                     INNER JOIN criterion ON criterion.id = cv.criterion_id
-                    WHERE uu.insee_code = :code AND criterion.code = :criterionCode
+                    WHERE uu.insee_code = :code AND criterion.code = :criterionCode AND cv.period = :period
                     SQL,
                 $column,
             ),
-            ['code' => $uniteUrbaineCode, 'criterionCode' => $criterionCode],
+            ['code' => $uniteUrbaineCode, 'criterionCode' => $criterionCode, 'period' => $period],
         );
 
         return false === $value ? null : $value;

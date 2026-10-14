@@ -20,7 +20,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
         Idempotent — safe to re-run. Import the zones and the population first.
 
         With <comment>--download</comment>, the vendored file is refreshed first from INSEE's Mélodi API
-        (a dozen paged requests, throttled).
+        (a few minutes: paged requests, throttled).
         HELP,
 )]
 #[ImportSource('commerces-bpe.csv')]
