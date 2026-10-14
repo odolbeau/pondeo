@@ -390,6 +390,26 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', 'Plescop');
     }
 
+    public function testPageListsSevesoSitesByLevelWithTheirActivity(): void
+    {
+        $client = self::createClient();
+
+        $dunkerque = UniteUrbaineFactory::createOne(['inseeCode' => '59001']);
+        $high = PoiCategoryFactory::createOne(['code' => 'seveso_high', 'label' => 'Site Seveso seuil haut']);
+        $low = PoiCategoryFactory::createOne(['code' => 'seveso_low', 'label' => 'Site Seveso seuil bas']);
+        PoiFactory::createOne(['name' => 'Raffinerie de Dunkerque', 'category' => $high, 'uniteUrbaine' => $dunkerque, 'address' => '59140 Dunkerque', 'attributes' => ['activity' => 'Cokéfaction et raffinage']]);
+        PoiFactory::createOne(['name' => 'Dépôt de gaz', 'category' => $low, 'uniteUrbaine' => $dunkerque]);
+
+        $client->request('GET', '/unites-urbaines/59001');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Site Seveso seuil haut (1)');
+        self::assertSelectorTextContains('body', 'Site Seveso seuil bas (1)');
+        self::assertSelectorTextContains('body', 'Raffinerie de Dunkerque · Cokéfaction et raffinage');
+        self::assertSelectorTextContains('body', '59140 Dunkerque');
+        self::assertSelectorTextContains('body', 'Dépôt de gaz');
+    }
+
     public function testPageSaysWhichAireDAttractionTheUniteUrbaineDependsOn(): void
     {
         $client = self::createClient();
