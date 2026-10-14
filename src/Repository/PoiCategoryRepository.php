@@ -68,21 +68,39 @@ class PoiCategoryRepository extends ServiceEntityRepository
     }
 
     /**
-     * The categories without parent, each with its children fetched in the
-     * same query (see PoiRepository::findByCategoryWithUniteUrbaine for why not
-     * lazy proxies).
+     * The whole tree of categories, ordered by label. Read as plain values, not
+     * entities: hydrating them would clash with the ones already loaded with
+     * lazy proxies for parents (see PoiRepository::findByCategoryWithUniteUrbaine).
      *
-     * @return list<PoiCategory>
+     * @return list<array{code: string, label: string, children: list<mixed>}>
      */
-    public function findRoots(): array
+    public function findTree(): array
     {
-        return $this->createQueryBuilder('category')
-            ->addSelect('child')
-            ->leftJoin('category.children', 'child')
-            ->andWhere('category.parent IS NULL')
+        /** @var list<array{id: Uuid, code: string, label: string, parentId: Uuid|null}> $rows */
+        $rows = $this->createQueryBuilder('category')
+            ->select('category.id', 'category.code', 'category.label', 'IDENTITY(category.parent) AS parentId')
             ->orderBy('category.label')
-            ->addOrderBy('child.label')
             ->getQuery()
-            ->getResult();
+            ->getArrayResult();
+
+        $childrenOf = [];
+        foreach ($rows as $row) {
+            $childrenOf[null === $row['parentId'] ? '' : (string) $row['parentId']][] = $row;
+        }
+
+        return $this->buildTree($childrenOf, '');
+    }
+
+    /**
+     * @param array<string, list<array{id: Uuid, code: string, label: string, parentId: Uuid|null}>> $childrenOf
+     *
+     * @return list<array{code: string, label: string, children: list<mixed>}>
+     */
+    private function buildTree(array $childrenOf, string $parentId): array
+    {
+        return array_map(
+            fn (array $row): array => ['code' => $row['code'], 'label' => $row['label'], 'children' => $this->buildTree($childrenOf, (string) $row['id'])],
+            $childrenOf[$parentId] ?? [],
+        );
     }
 }
