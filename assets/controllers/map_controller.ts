@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { session } from '@hotwired/turbo';
 import { Map, Popup, setWorkerUrl, type GeoJSONSource } from 'maplibre-gl';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
@@ -464,7 +465,9 @@ export default class extends Controller {
         }
 
         if (pushHistory) {
-            history.pushState(null, '', target);
+            // Through Turbo, not history.pushState(): an entry without Turbo's state is
+            // ignored when coming back to it from another page, which then keeps showing.
+            session.history.push(new URL(target, window.location.href));
 
             return;
         }
