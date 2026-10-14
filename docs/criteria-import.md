@@ -68,7 +68,7 @@ see [criteria-population.md](criteria-population.md).
 
 ## Shops
 
-See [criteria-commerces.md](criteria-commerces.md): same shape, with a derived density per 1000 inhabitants.
+See [criteria-commerces.md](criteria-commerces.md) and [equipements-bpe.md](equipements-bpe.md): same shape, with a derived density per 1000 inhabitants.
 
 ## Associations
 

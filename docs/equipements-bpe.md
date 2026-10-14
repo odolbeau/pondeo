@@ -1,9 +1,10 @@
 # Facilities (BPE)
 
 The project vendors every facility count INSEE publishes in a comparable way
-over time, not only the shops, so that a new criterion on health, sport,
-services or culture starts from data already in the repository. Only the shops
-(see `docs/criteria-commerces.md`) are imported into criteria so far.
+over time, not only the shops, so that a new criterion starts from data
+already in the repository. Facilities are grouped into families (the shops are
+described in `docs/criteria-commerces.md`), each of which is a criterion of
+the comparison.
 
 ## Source
 
@@ -34,6 +35,37 @@ how facilities are declared rather than from more of them: INSEE warns about
 it for the liberal medical professions, whose count follows the number of
 practice addresses.
 
+## Criteria
+
+Each family sums the facility types listed for it, and is stored as a count
+and a density per 1000 inhabitants (computed from the stored count and
+population, never summed), like the shops. The detail page shows the density,
+with the count in its title, its rank, the median of all urban units and the
+evolution over the years. The counts have no rank of their own: they follow
+the size of the town.
+
+| Section of the detail page | Family | Types counted |
+|---|---|---|
+| Santé | General practitioners | general practitioners |
+| | Specialists | the medical specialities, without the generalists, dentists, midwives and physiotherapists |
+| | Dentists | dental surgeons |
+| | Physiotherapists, podiatrists, midwives | those three professions |
+| | Pharmacies | pharmacies |
+| | Care establishments | hospitals and clinics of every kind (short stay, rehabilitation, long stay, psychiatric); emergency units and maternity wards sit inside them and are not counted again |
+| | Nurseries | establishments for young children |
+| | Homes for the elderly | accommodation for the elderly |
+| Sport et culture | Sports facilities | 18 types of sports facilities (pools, tennis courts, gyms, pitches, fitness rooms…) |
+| | Cultural facilities | cinemas, libraries, conservatories |
+| Cadre de vie | Restaurants | restaurants and fast food, a single type in the BPE |
+| | Everyday services | banks, post offices, hairdressers, beauty salons, dry cleaners |
+| | Tourist accommodation | hotels and campsites |
+
+Left out on purpose: the public services (courts, town halls, police), the
+taxis and VTC, the building trades, and the types too rare for a comparison
+to mean anything (most specialities taken one by one, ice rinks…). The types
+of a family are listed in the code with the other definitions of the criteria.
+Education is not in the series (see above).
+
 ## Files
 
 | File | Content |
@@ -46,11 +78,11 @@ later is not downloaded until the types file lists it.
 
 ## Refreshing
 
-The shop import's `--download` option refreshes the whole file (about ten
+The facility import's `--download` option refreshes the whole file (about ten
 minutes, requests are throttled):
 
 ```
-bin/console app:import:criteria:commerces --download
+bin/console app:import:criteria:equipements --download
 git diff resources/geo/
 git add resources/geo/ && git commit
 ```
