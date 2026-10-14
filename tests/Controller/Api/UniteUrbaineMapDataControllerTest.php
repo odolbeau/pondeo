@@ -220,8 +220,12 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
 
         $entityManager->flush();
 
-        PoiFactory::createOne(['category' => PoiCategoryFactory::createOne(['code' => 'board_game_association']), 'uniteUrbaine' => $with]);
-        // Another kind of POI is not an association.
+        // An association is a POI of a type under the association category.
+        $associations = PoiCategoryFactory::createOne(['code' => 'board_game_association']);
+        PoiFactory::createOne(['category' => PoiCategoryFactory::createOne(['code' => 'board_game_club', 'parent' => $associations]), 'uniteUrbaine' => $with]);
+        // A store, and any other kind of POI, is not an association.
+        $stores = PoiCategoryFactory::createOne(['code' => 'board_game_store']);
+        PoiFactory::createOne(['category' => PoiCategoryFactory::createOne(['code' => 'board_game_shop', 'parent' => $stores]), 'uniteUrbaine' => $without]);
         PoiFactory::createOne(['category' => PoiCategoryFactory::createOne(['code' => 'railway_station']), 'uniteUrbaine' => $without]);
 
         self::assertSame(['00001', '00002'], $this->codes($client, []));

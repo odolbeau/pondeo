@@ -1,57 +1,77 @@
 # Board game associations
 
 The board game clubs, ludothèques and other game associations are stored as
-points of interest (POIs) of the category "Association de jeux de société"
-(`board_game_association`). They answer one question: is there at least one in
-a given urban unit, and how many?
+points of interest (POIs), one category per type, all under the parent category
+"Association de jeux de société" (`board_game_association`). They answer one
+question: is there at least one in a given urban unit, and how many? Shops and
+bars have their own page: `docs/poi-board-game-stores.md`.
 
 ## Source
 
-[Subverti's directory of board game structures](https://subverti.com/fr/maps/associations/),
-used **with Subverti's written permission**: the site's terms forbid extracting
-its content, and the permission was obtained by email (October 2026). It is not
-an open licence: keep the permission on file, credit Subverti and link to the
-directory wherever the data is shown.
+An export of [Subverti's directory of board game structures](https://subverti.com/fr/maps/associations/),
+provided by its publisher under the
+[CC BY-SA 4.0](https://creativecommons.org/licenses/by-sa/4.0/deed.fr) licence.
 
-- **Scope:** the structures located in France (~860). Each one has a type
-  (club, ludothèque, national network, other association), kept in its
-  `attributes` with the link to its page in the directory.
-- **Curated:** the directory is maintained by hand and by submissions, so it
-  has far fewer false positives than a filter on the national associations
-  register, but it is not a census: a club nobody submitted is missing.
-- **Location:** the position given by the directory (WGS84), stored as a
-  longitude/latitude point like every other POI.
-- **Identity:** a structure is matched on its slug in the directory, so a
-  refresh updates it in place.
+- **Attribution:** credit the publisher and link to the directory (done on the
+  sources page of the site).
+- **Share-alike:** the vendored files are an adaptation of the export, so they
+  stay under CC BY-SA 4.0 (the code of the project keeps its own licence).
+- **Curated:** the directory is maintained by hand and by submissions: it is
+  not a census, a club nobody submitted is missing.
 
-The file is vendored under `resources/geo/` (Git LFS), like the other
-reference data.
+## Types
+
+| Type in the file | Category | Label |
+|---|---|---|
+| `club` | `board_game_club` | Club de jeux |
+| `ludo` | `board_game_library` | Ludothèque |
+| `rese` | `board_game_network` | Réseau national de jeux |
+| `othe` | `board_game_other_association` | Autre association ludique |
+
+## Vendored file
+
+`resources/geo/jeux-associations.csv` (Git LFS, like the other reference
+data) is a **reduced** copy of the export: only the structures located in
+France that are not defunct, and only these columns:
+
+`id` (the directory's slug), `name`, `type`, `city`, `lat`, `lon`, `website`.
+
+Contact details (emails, phone numbers), descriptions and social links of the
+export are deliberately not kept, and the street address neither: a small
+club's head office is often a private home.
+
+- **Location:** the position given by the directory, WGS84.
+- **Identity:** an association is matched on its `id`, so a refresh updates it
+  in place, and moves it when its type changes.
+- **Unusable rows:** a structure without a usable position is left out.
 
 ## Unité urbaine
 
-Each structure is attached to the urban unit whose boundary contains it (see
+Each association is attached to the urban unit whose boundary contains it (see
 `docs/urban-units.md`). One outside every unit is kept, attached to none.
 
 ## Map filter
 
 "Exclure les villes sans association de jeux" keeps only the urban units that
-contain at least one board game structure. It is off by default, and combines
-with the other filters.
+contain at least one association, of any type. It is off by default, and
+combines with the other filters. Shops and bars do not count.
 
 ## Detail page
 
-The urban unit page lists the count and a sample of structures, like any other
-category.
+The urban unit page lists, for each type, the count and a sample of
+associations, like any other category.
 
 ## Refreshing
 
+There is no automated refresh. Ask the publisher for a new export, rewrite the
+file keeping the columns above, then:
+
 ```
-bin/console app:import:pois:board-game-associations --download
+bin/console app:import:pois:board-games
 git diff resources/geo/
 git add resources/geo/ && git commit
 ```
 
-`--download` refreshes the vendored file from the directory (one page), then
-imports it. The import is an idempotent upsert that removes the structures the
-source no longer lists. Import the zones first (`app:import:zones`);
-`make db-reset` does both in the right order.
+The import is an idempotent upsert that removes the associations the file no
+longer lists. Import the zones first (`app:import:zones`); `make db-reset` does
+both in the right order.
