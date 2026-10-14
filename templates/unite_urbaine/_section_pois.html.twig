@@ -28,6 +28,7 @@
                                             data-action="mouseenter->poi-map#highlight mouseleave->poi-map#unhighlight focus->poi-map#highlight blur->poi-map#unhighlight click->poi-map#select">
                                         <span class="text-stone-900">{{ poi.name }}</span>
                                         {% if poi.category.code != category.code %}<span class="text-stone-500"> · {{ poi.category.label }}</span>{% endif %}
+                                        {% for label in category.otherCategoryLabels[poi.id.toRfc4122] ?? [] %}<span class="text-stone-500"> · {{ label }}</span>{% endfor %}
                                         {% if poi.brand %}<span class="text-stone-500"> · {{ poi.brand }}</span>{% endif %}
                                         {% if poi.attributes.activity is defined %}<span class="text-stone-500"> · {{ poi.attributes.activity }}</span>{% endif %}
                                         {% if poi.address %}<span class="block text-xs text-stone-500">{{ poi.address }}</span>{% endif %}
