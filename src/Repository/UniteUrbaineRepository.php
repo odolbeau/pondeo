@@ -21,6 +21,19 @@ class UniteUrbaineRepository extends ServiceEntityRepository
     }
 
     /**
+     * The boundary of the unité urbaine as GeoJSON, to draw it on a map.
+     */
+    public function findBoundaryGeoJson(UniteUrbaine $uniteUrbaine): ?string
+    {
+        $geoJson = $this->getEntityManager()->getConnection()->fetchOne(
+            'SELECT ST_AsGeoJSON(boundary) FROM unite_urbaine WHERE id = :id',
+            ['id' => $uniteUrbaine->getId()->toRfc4122()],
+        );
+
+        return \is_string($geoJson) ? $geoJson : null;
+    }
+
+    /**
      * The unité urbaine whose boundary contains the given point — used at
      * write-time by PoiUniteUrbaineResolver to populate Poi::$uniteUrbaine.
      */

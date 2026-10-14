@@ -6,6 +6,7 @@ namespace App\Controller;
 
 use App\Entity\UniteUrbaine;
 use App\Enum\DetailSection;
+use App\Repository\UniteUrbaineRepository;
 use App\Service\Criteria\CriterionGlossary;
 use App\Service\Detail\AgePyramid;
 use App\Service\Detail\CriterionDetail;
@@ -38,6 +39,7 @@ final class UniteUrbaineDetailController extends AbstractController
         private readonly UniteUrbaineCriteriaProvider $criteriaProvider,
         private readonly UniteUrbainePoiProvider $poiProvider,
         private readonly UniteUrbaineStationAccessProvider $stationAccessProvider,
+        private readonly UniteUrbaineRepository $uniteUrbaineRepository,
         private readonly RankingCatalog $rankingCatalog,
         private readonly CriterionGlossary $glossary,
     ) {
@@ -75,6 +77,7 @@ final class UniteUrbaineDetailController extends AbstractController
             'sections' => $this->toSections($displayedGroups, $ageGroup, $agePyramids, $stations, $poiCategories, $shopTypes, $inFrame ? 1 : self::COLUMNS),
             'ageGroup' => $ageGroup,
             'poiCategories' => $poiCategories,
+            'boundaryGeoJson' => $inFrame || [] === $poiCategories ? null : $this->uniteUrbaineRepository->findBoundaryGeoJson($uniteUrbaine),
             'stations' => $stations,
             'shopTypes' => $shopTypes,
             'population' => $this->findPopulation($groups),
