@@ -1,3 +1,21 @@
+{% macro tree(nodes, excludedCode, parentCode = '') %}
+    <ul class="{{ parentCode ? 'ml-4 border-l border-stone-200 pl-3' : '' }}">
+        {% for node in nodes|filter(node => node.code != excludedCode) %}
+            <li>
+                <label class="flex cursor-pointer items-center gap-2 py-0.5">
+                    <input type="checkbox" checked class="size-4 shrink-0 accent-emerald-600"
+                           data-poi-map-target="node" data-code="{{ node.code }}" data-parent="{{ parentCode }}" data-leaf-node="{{ node.children|length ? '0' : '1' }}"
+                           data-action="change->poi-map#toggleNode">
+                    <span>{{ node.label }}</span>
+                    <span class="text-xs text-stone-500" data-poi-map-target="nodeCount" data-code="{{ node.code }}"></span>
+                </label>
+                {% if node.children|length %}
+                    {{ _self.tree(node.children, excludedCode, node.code) }}
+                {% endif %}
+            </li>
+        {% endfor %}
+    </ul>
+{% endmacro %}
 {% set poiCount = poiCategories|reduce((total, category) => total + category.pois|length, 0) %}
     <section class="{{ card }}">
         <h2 class="{{ title }}">Points d'intérêt</h2>
@@ -7,37 +25,54 @@
                class="mt-2 inline-block text-sm text-emerald-700 hover:underline">Voir la carte et le détail →</a>
         {% else %}
             <div class="mt-4 grid gap-4 lg:grid-cols-[minmax(0,22rem)_minmax(0,1fr)]" data-controller="poi-map"{% if boundaryGeoJson %} data-poi-map-boundary-value="{{ boundaryGeoJson }}"{% endif %}>
-                <div class="max-h-[48rem] overflow-y-auto pr-1">
-                    {% for category in poiCategories %}
-                        {% set categoryIndex = loop.index0 %}
-                        <h3 class="{{ loop.first ? '' : 'mt-4 ' }}text-sm text-stone-700">
-                            <label class="flex cursor-pointer items-center gap-2">
-                                <input type="checkbox" checked class="size-4 shrink-0 accent-emerald-600" aria-label="Afficher : {{ category.label }}"
-                                       data-poi-map-target="toggle" data-code="{{ category.code }}" data-action="change->poi-map#toggle">
-                                <span class="size-2.5 shrink-0 rounded-full" data-poi-map-target="dot" data-category="{{ categoryIndex }}"></span>
-                                <span>{{ category.label }} <span class="text-stone-500">({{ category.pois|length }})</span></span>
-                            </label>
-                        </h3>
-                        <ul class="mt-1 divide-y divide-stone-200 text-sm" data-poi-map-target="group" data-code="{{ category.code }}">
-                            {% for poi in category.pois %}
-                                <li data-poi-map-target="item" data-category="{{ categoryIndex }}" data-code="{{ category.code }}"
-                                    data-lon="{{ poi.longitude }}" data-lat="{{ poi.latitude }}"
-                                    data-name="{{ poi.name }}" data-address="{{ poi.address }}"
-                                    class="data-active:bg-emerald-50">
-                                    <button type="button" class="block w-full cursor-pointer px-1 py-2 text-left"
-                                            data-action="mouseenter->poi-map#highlight mouseleave->poi-map#unhighlight focus->poi-map#highlight blur->poi-map#unhighlight click->poi-map#select">
-                                        <span class="text-stone-900">{{ poi.name }}</span>
-                                        {% if poi.category.code != category.code %}<span class="text-stone-500"> · {{ poi.category.label }}</span>{% endif %}
-                                        {% for label in category.otherCategoryLabels[poi.id.toRfc4122] ?? [] %}<span class="text-stone-500"> · {{ label }}</span>{% endfor %}
-                                        {% if poi.brand %}<span class="text-stone-500"> · {{ poi.brand }}</span>{% endif %}
-                                        {% if poi.attributes.emergency is defined %}<span class="text-stone-500"> · Urgences</span>{% endif %}
-                                        {% if poi.attributes.activity is defined %}<span class="text-stone-500"> · {{ poi.attributes.activity }}</span>{% endif %}
-                                        {% if poi.address %}<span class="block text-xs text-stone-500">{{ poi.address }}</span>{% endif %}
-                                    </button>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    {% endfor %}
+                <div class="min-w-0">
+                    <details class="mb-3 rounded-lg border border-stone-200 text-sm">
+                        <summary class="flex cursor-pointer items-center gap-2 px-3 py-2 font-medium text-stone-700 select-none hover:text-emerald-700">
+                            <svg viewBox="0 0 20 20" fill="currentColor" aria-hidden="true" class="size-4"><path fill-rule="evenodd" d="M11.49 3.17c-.38-1.56-2.6-1.56-2.98 0a1.53 1.53 0 0 1-2.29.95c-1.37-.84-2.94.73-2.1 2.1.54.9.05 2.07-.95 2.29-1.56.38-1.56 2.6 0 2.98a1.53 1.53 0 0 1 .95 2.29c-.84 1.37.73 2.94 2.1 2.1a1.53 1.53 0 0 1 2.29.95c.38 1.56 2.6 1.56 2.98 0a1.53 1.53 0 0 1 2.29-.95c1.37.84 2.94-.73 2.1-2.1a1.53 1.53 0 0 1 .95-2.29c1.56-.38 1.56-2.6 0-2.98a1.53 1.53 0 0 1-.95-2.29c.84-1.37-.73-2.94-2.1-2.1a1.53 1.53 0 0 1-2.29-.95ZM10 13a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" clip-rule="evenodd"/></svg>
+                            Catégories affichées
+                        </summary>
+                        <div class="border-t border-stone-200 px-3 py-2">
+                            <div class="mb-2 flex gap-3 text-xs">
+                                <button type="button" class="text-emerald-700 hover:underline" data-action="poi-map#showAll">Tout afficher</button>
+                                <button type="button" class="text-emerald-700 hover:underline" data-action="poi-map#hideAll">Tout masquer</button>
+                            </div>
+                            <div class="max-h-72 overflow-y-auto">
+                                {{ _self.tree(categoryRoots, excludedCategoryCode) }}
+                            </div>
+                            <p class="mt-2 text-xs text-stone-500">Les catégories décochées disparaissent de la liste et de la carte, sur toutes les fiches.</p>
+                        </div>
+                    </details>
+
+                    <div class="max-h-[48rem] overflow-y-auto pr-1">
+                        {% for category in poiCategories %}
+                            {% set categoryIndex = loop.index0 %}
+                            <div data-poi-map-target="group" class="{{ loop.first ? '' : 'mt-4' }}">
+                                <h3 class="flex items-center gap-2 text-sm text-stone-700">
+                                    <span class="size-2.5 shrink-0 rounded-full" data-poi-map-target="dot" data-category="{{ categoryIndex }}"></span>
+                                    <span>{{ category.label }} <span class="text-stone-500">(<span data-poi-map-target="groupCount">{{ category.pois|length }}</span>)</span></span>
+                                </h3>
+                                <ul class="mt-1 divide-y divide-stone-200 text-sm" data-code="{{ category.code }}">
+                                    {% for poi in category.pois %}
+                                        <li data-poi-map-target="item" data-category="{{ categoryIndex }}" data-leaf="{{ poi.category.code }}"
+                                            data-lon="{{ poi.longitude }}" data-lat="{{ poi.latitude }}"
+                                            data-name="{{ poi.name }}" data-address="{{ poi.address }}"
+                                            class="data-active:bg-emerald-50">
+                                            <button type="button" class="block w-full cursor-pointer px-1 py-2 text-left"
+                                                    data-action="mouseenter->poi-map#highlight mouseleave->poi-map#unhighlight focus->poi-map#highlight blur->poi-map#unhighlight click->poi-map#select">
+                                                <span class="text-stone-900">{{ poi.name }}</span>
+                                                {% if poi.category.code != category.code %}<span class="text-stone-500"> · {{ poi.category.label }}</span>{% endif %}
+                                                {% for label in category.otherCategoryLabels[poi.id.toRfc4122] ?? [] %}<span class="text-stone-500"> · {{ label }}</span>{% endfor %}
+                                                {% if poi.brand %}<span class="text-stone-500"> · {{ poi.brand }}</span>{% endif %}
+                                                {% if poi.attributes.emergency is defined %}<span class="text-stone-500"> · Urgences</span>{% endif %}
+                                                {% if poi.attributes.activity is defined %}<span class="text-stone-500"> · {{ poi.attributes.activity }}</span>{% endif %}
+                                                {% if poi.address %}<span class="block text-xs text-stone-500">{{ poi.address }}</span>{% endif %}
+                                            </button>
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endfor %}
+                    </div>
                 </div>
                 <div class="h-[30rem] overflow-hidden rounded-lg border border-stone-200 lg:h-[48rem]" data-poi-map-target="map"></div>
             </div>

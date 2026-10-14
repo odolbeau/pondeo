@@ -18,6 +18,6 @@ final class PoiCategoriesController extends AbstractController
 
     public function __invoke(): Response
     {
-        return $this->render('poi_categories/index.html.twig', ['roots' => $this->poiCategoryRepository->findRoots()]);
+        return $this->render('poi_categories/index.html.twig', ['roots' => $this->poiCategoryRepository->findTree()]);
     }
 }

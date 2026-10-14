@@ -405,9 +405,9 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('[data-controller="poi-map"] [data-poi-map-target="map"]');
         self::assertSelectorExists('[data-controller="poi-map"][data-poi-map-boundary-value*="MultiPolygon"]');
-        self::assertSelectorExists('input[data-poi-map-target="toggle"][data-code="hardware_store"]');
-        self::assertSelectorExists('ul[data-poi-map-target="group"][data-code="hardware_store"]');
-        self::assertSelectorExists('[data-poi-map-target="item"][data-name="Leroy Merlin Vannes"][data-lon="-2.75"][data-lat="47.65"]');
+        self::assertSelectorExists('input[data-poi-map-target="node"][data-code="hardware_store"]');
+        self::assertSelectorExists('ul[data-code="hardware_store"]');
+        self::assertSelectorExists('[data-poi-map-target="item"][data-leaf="hardware_store"][data-name="Leroy Merlin Vannes"][data-lon="-2.75"][data-lat="47.65"]');
 
         $client->request('GET', '/unites-urbaines/56501', server: ['HTTP_TURBO_FRAME' => 'unite-urbaine-detail']);
 
@@ -434,7 +434,11 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         $client->request('GET', '/unites-urbaines/56501');
 
         self::assertResponseIsSuccessful();
-        self::assertCount(2, $client->getCrawler()->filter('input[data-poi-map-target="toggle"]'));
+        self::assertCount(2, $client->getCrawler()->filter('[data-poi-map-target="group"]'));
+        // The settings offer the whole tree, with the parents and their children.
+        self::assertCount(4, $client->getCrawler()->filter('input[data-poi-map-target="node"]'));
+        self::assertSelectorExists('input[data-poi-map-target="node"][data-code="hospital_clinic"][data-parent="hospital"][data-leaf-node="1"]');
+        self::assertSelectorExists('input[data-poi-map-target="node"][data-code="hospital"][data-leaf-node="0"]');
         self::assertSelectorTextContains('body', 'Hôpital ou clinique (2)');
         self::assertSelectorTextContains('ul[data-code="hospital"]', 'CH CHUBERT · Centre hospitalier');
         self::assertSelectorTextContains('ul[data-code="hospital"]', 'Clinique du Golfe · Clinique');
@@ -473,7 +477,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         $client->request('GET', '/unites-urbaines/56501');
 
         self::assertResponseIsSuccessful();
-        self::assertCount(1, $client->getCrawler()->filter('input[data-poi-map-target="toggle"]'));
+        self::assertCount(1, $client->getCrawler()->filter('[data-poi-map-target="group"]'));
         self::assertSelectorTextContains('body', 'Site à risque (1)');
         self::assertSelectorTextContains('ul[data-code="risk"]', 'Raffinerie · Seuil haut');
     }
