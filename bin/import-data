@@ -16,6 +16,7 @@ php "$CURDIR/console" app:import:pois:nuclear-plants --no-debug
 php "$CURDIR/console" app:import:pois:board-games --no-debug
 php "$CURDIR/console" app:import:pois:seveso-sites --no-debug
 php "$CURDIR/console" app:import:pois:hospitals --no-debug
+php "$CURDIR/console" app:import:pois:transit-stops --no-debug
 php "$CURDIR/console" app:import:criteria:population --no-debug
 php "$CURDIR/console" app:import:criteria:equipements --no-debug
 php "$CURDIR/console" app:import:criteria:associations --no-debug

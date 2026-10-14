@@ -427,6 +427,24 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
         self::assertSelectorTextContains('body', "Service d'urgences (1)");
         self::assertSelectorTextContains('body', "1 RUE DE L'HOPITAL, 56000 VANNES");
         self::assertSelectorTextNotContains('body', 'CH DE NANTES');
+    public function testPageListsTramAndMetroStationsAmongThePois(): void
+    {
+        $client = self::createClient();
+
+        $lyon = UniteUrbaineFactory::createOne(['inseeCode' => '69701']);
+        $tram = PoiCategoryFactory::createOne(['code' => 'tram_stop', 'label' => 'Station de tramway']);
+        $metro = PoiCategoryFactory::createOne(['code' => 'metro_station', 'label' => 'Station de métro']);
+        PoiFactory::createOne(['name' => 'Part-Dieu Villette', 'category' => $tram, 'uniteUrbaine' => $lyon]);
+        PoiFactory::createOne(['name' => 'Saxe-Gambetta', 'category' => $tram, 'uniteUrbaine' => $lyon]);
+        PoiFactory::createOne(['name' => 'Bellecour', 'category' => $metro, 'uniteUrbaine' => $lyon]);
+
+        $client->request('GET', '/unites-urbaines/69701');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('body', 'Station de tramway (2)');
+        self::assertSelectorTextContains('body', 'Station de métro (1)');
+        self::assertSelectorTextContains('body', 'Part-Dieu Villette');
+        self::assertSelectorTextContains('body', 'Bellecour');
     }
 
     public function testPageSaysWhichAireDAttractionTheUniteUrbaineDependsOn(): void
