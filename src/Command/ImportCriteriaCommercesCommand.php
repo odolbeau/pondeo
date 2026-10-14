@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Command;
 
 use App\Service\Import\CommercesImporter;
-use App\Service\Import\CommercesSourceDownloader;
+use App\Service\Import\EquipmentSourceDownloader;
 use App\Service\Import\ImportSource;
 use Symfony\Component\Console\Attribute\AsCommand;
 use Symfony\Component\Console\Attribute\Option;
@@ -15,20 +15,21 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 
 #[AsCommand(
     name: 'app:import:criteria:commerces',
-    description: 'Import the shop count criteria and their density per 1000 inhabitants from resources/geo/commerces-bpe.csv, per unité urbaine',
+    description: 'Import the shop count criteria and their density per 1000 inhabitants from resources/geo/equipements-bpe.csv, per unité urbaine',
     help: <<<'HELP'
         Idempotent — safe to re-run. Import the zones and the population first.
 
-        With <comment>--download</comment>, the vendored file is refreshed first from INSEE's Mélodi API
-        (a few minutes: paged requests, throttled).
+        With <comment>--download</comment>, the vendored equipment file, of which the shops are one part, is
+        refreshed first from INSEE's Mélodi API (about ten minutes: paged requests, throttled).
+        In dev, add <comment>--no-debug</comment>: the profiler keeps every response of the download in memory.
         HELP,
 )]
-#[ImportSource('commerces-bpe.csv')]
+#[ImportSource('equipements-bpe.csv')]
 final class ImportCriteriaCommercesCommand extends Command
 {
     public function __construct(
         private readonly CommercesImporter $commercesImporter,
-        private readonly CommercesSourceDownloader $commercesSourceDownloader,
+        private readonly EquipmentSourceDownloader $equipmentSourceDownloader,
     ) {
         parent::__construct();
     }
@@ -42,17 +43,17 @@ final class ImportCriteriaCommercesCommand extends Command
 
         if ($download) {
             try {
-                $this->commercesSourceDownloader->download($dir, $io->writeln(...));
+                $this->equipmentSourceDownloader->download($dir, $io->writeln(...));
             } catch (ExceptionInterface $e) {
                 $io->error(\sprintf('Download failed: %s', $e->getMessage()));
 
                 return Command::FAILURE;
             }
 
-            $io->note('Shop counts refreshed. Review with `git diff resources/geo/` before committing.');
+            $io->note('Equipment counts refreshed. Review with `git diff resources/geo/` before committing.');
         }
 
-        $count = $this->commercesImporter->import($dir.'/commerces-bpe.csv');
+        $count = $this->commercesImporter->import($dir.'/equipements-bpe.csv');
 
         $io->success(\sprintf('%d shop values imported (counts and densities, per unité urbaine and year).', $count));
 

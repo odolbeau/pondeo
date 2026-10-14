@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Tests\Service\Import;
 
 use App\Factory\UniteUrbaineFactory;
-use App\Service\Import\CommercesSourceDownloader;
+use App\Service\Import\CsvReader;
+use App\Service\Import\EquipmentSourceDownloader;
 use Doctrine\DBAL\Connection;
 use Symfony\Bundle\FrameworkBundle\Test\KernelTestCase;
 use Symfony\Component\HttpClient\MockHttpClient;
@@ -13,7 +14,7 @@ use Symfony\Component\HttpClient\Response\MockResponse;
 use Zenstruck\Foundry\Test\Factories;
 use Zenstruck\Foundry\Test\ResetDatabase;
 
-final class CommercesSourceDownloaderTest extends KernelTestCase
+final class EquipmentSourceDownloaderTest extends KernelTestCase
 {
     use Factories;
     use ResetDatabase;
@@ -37,6 +38,8 @@ final class CommercesSourceDownloaderTest extends KernelTestCase
                     self::observation('2026-UU2020-99999', '2025', 7.0), // Out of scope.
                     self::observation('2026-AAV2020-056', '2025', 90.0), // Another zoning.
                 ];
+            } elseif ('A504' === $type) {
+                $observations = [self::observation('2026-UU2020-56501', '2025', 120.0)];
             } elseif ('B207' === $type) {
                 $observations = [['dimensions' => ['GEO' => '2026-UU2020-56501', 'TIME_PERIOD' => '2020'], 'measures' => ['OBS_VALUE_NIVEAU' => []]]]; // Statistical secrecy.
             }
@@ -48,13 +51,15 @@ final class CommercesSourceDownloaderTest extends KernelTestCase
         \assert($connection instanceof Connection);
         $dir = sys_get_temp_dir().'/commerces-downloader-test-'.bin2hex(random_bytes(4));
         mkdir($dir);
+        file_put_contents($dir.'/equipements-bpe-types.csv', "type,domain,sub_domain,label\nB207,B,B2,BOULANGERIE\nA504,A,A5,RESTAURANT\n");
 
-        new CommercesSourceDownloader($httpClient, $connection, throttleMicroseconds: 0)->download($dir, static function (string $line): void {});
+        new EquipmentSourceDownloader($httpClient, $connection, new CsvReader(), throttleMicroseconds: 0)->download($dir, static function (string $line): void {});
 
-        self::assertSame("code_unite_urbaine,year,type,count\n56501,2015,B207,40\n56501,2025,B207,31\n", file_get_contents($dir.'/commerces-bpe.csv'));
+        self::assertSame("code_unite_urbaine,year,type,count\n56501,2015,B207,40\n56501,2025,B207,31\n56501,2025,A504,120\n", file_get_contents($dir.'/equipements-bpe.csv'));
         self::assertContains('B207#2', $requests);
 
-        unlink($dir.'/commerces-bpe.csv');
+        unlink($dir.'/equipements-bpe.csv');
+        unlink($dir.'/equipements-bpe-types.csv');
         rmdir($dir);
     }
 

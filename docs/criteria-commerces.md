@@ -18,6 +18,9 @@ through the [Mélodi API](https://portail-api.insee.fr/) (dataset
 urban unit for the situation on 1 January of **2015, 2020 and 2025**, and only
 for the equipment types INSEE keeps comparable over time.
 
+The shops are the commerce domain of the facility file, which holds the other
+domains too (see [equipements-bpe.md](equipements-bpe.md)).
+
 The BPE counts **establishments** open to the public, not floor area or
 turnover: a hypermarket and a newsagent each count for one. It is the
 reference for comparing how well-equipped places are, not a retail census.
