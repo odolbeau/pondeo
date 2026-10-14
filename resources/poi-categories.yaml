@@ -27,6 +27,8 @@
         - { code: seveso_high, label: Site Seveso seuil haut }
         - { code: seveso_low, label: Site Seveso seuil bas }
     - { code: nuclear_power_plant, label: Centrale nucléaire }
+    - { code: polluted_soil_site, label: Site pollué }
+    - { code: polluting_plant, label: Établissement pollueur }
 
 - code: transport
   label: Transports
@@ -37,6 +39,11 @@
         - { code: tram_stop, label: Station de tramway }
         - { code: metro_station, label: Station de métro }
     - { code: railway_station, label: Gare ferroviaire }
+
+- code: culture
+  label: Culture
+  children:
+    - { code: museum, label: Musée de France }
 
 - code: board_game
   label: Jeux de société
