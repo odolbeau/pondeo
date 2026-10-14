@@ -13,7 +13,7 @@ php "$CURDIR/console" app:import:zones --no-debug
 php "$CURDIR/console" app:import:pois:stations --no-debug
 php "$CURDIR/console" app:import:pois:stations:journeys --no-debug
 php "$CURDIR/console" app:import:pois:nuclear-plants --no-debug
-php "$CURDIR/console" app:import:pois:board-game-associations --no-debug
+php "$CURDIR/console" app:import:pois:board-games --no-debug
 php "$CURDIR/console" app:import:criteria:population --no-debug
 php "$CURDIR/console" app:import:criteria:equipements --no-debug
 php "$CURDIR/console" app:import:criteria:associations --no-debug

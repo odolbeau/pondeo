@@ -169,7 +169,8 @@ final readonly class UniteUrbaineMapDataProvider
                       SELECT 1
                       FROM poi association
                       INNER JOIN poi_category association_category ON association_category.id = association.category_id
-                      WHERE association_category.code = 'board_game_association'
+                      INNER JOIN poi_category association_group ON association_group.id = association_category.parent_id
+                      WHERE association_group.code = 'board_game_association'
                         AND association.unite_urbaine_id = uu.id
                   ))
                 SQL.$trainClauses,
