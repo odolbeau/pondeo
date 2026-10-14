@@ -44,19 +44,19 @@ with the count in its title, its rank, the median of all urban units and the
 evolution over the years. The counts have no rank of their own: they follow
 the size of the town.
 
-| Section of the detail page | Family | Types counted |
+| Group (section of the detail page) | Family | Types counted |
 |---|---|---|
-| Santé | General practitioners | general practitioners |
+| Santé (Santé, sport et culture) | General practitioners | general practitioners |
 | | Specialists | the medical specialities, without the generalists, dentists, midwives and physiotherapists |
 | | Dentists | dental surgeons |
 | | Physiotherapists, podiatrists, midwives | those three professions |
 | | Pharmacies | pharmacies |
 | | Care establishments | hospitals and clinics of every kind (short stay, rehabilitation, long stay, psychiatric); emergency units and maternity wards sit inside them and are not counted again |
-| | Nurseries | establishments for young children |
+| Petite enfance et seniors (Santé, sport et culture) | Nurseries | establishments for young children |
 | | Homes for the elderly | accommodation for the elderly |
-| Sport et culture | Sports facilities | 18 types of sports facilities (pools, tennis courts, gyms, pitches, fitness rooms…) |
+| Sport et culture (Santé, sport et culture) | Sports facilities | 18 types of sports facilities (pools, tennis courts, gyms, pitches, fitness rooms…) |
 | | Cultural facilities | cinemas, libraries, conservatories |
-| Cadre de vie | Restaurants | restaurants and fast food, a single type in the BPE |
+| Services et tourisme (Cadre de vie) | Restaurants | restaurants and fast food, a single type in the BPE |
 | | Everyday services | banks, post offices, hairdressers, beauty salons, dry cleaners |
 | | Tourist accommodation | hotels and campsites |
 

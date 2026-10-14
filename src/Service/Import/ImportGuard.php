@@ -47,7 +47,9 @@ final readonly class ImportGuard
 
         // A change to the import logic must re-run the imports too.
         $codeFiles = Finder::create()->files()->name('*.php')->in([$this->projectDir.'/src/Service/Import', $this->projectDir.'/src/Command'])->sort(static fn (\SplFileInfo $a, \SplFileInfo $b): int => $a->getPathname() <=> $b->getPathname());
-        foreach ($codeFiles as $codeFile) {
+        // The facility families and shop types, which define the criteria, live with the enums.
+        $definitionFiles = Finder::create()->files()->name(['EquipmentFamily.php', 'ShopType.php'])->in($this->projectDir.'/src/Enum')->sort(static fn (\SplFileInfo $a, \SplFileInfo $b): int => $a->getPathname() <=> $b->getPathname());
+        foreach ([...$codeFiles, ...$definitionFiles] as $codeFile) {
             hash_update($context, $this->hashFile($codeFile->getPathname()));
         }
 
