@@ -6,8 +6,8 @@ namespace App\Service\Import;
 
 /**
  * Marks an import command as skippable: it is not re-run while these files
- * (relative to resources/geo), the zones file it depends on and the import
- * code are unchanged.
+ * (relative to resources/geo), the zones file it depends on and its command
+ * class are unchanged.
  */
 #[\Attribute(\Attribute::TARGET_CLASS)]
 final readonly class ImportSource

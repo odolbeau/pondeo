@@ -31,7 +31,7 @@ final readonly class SkipUpToDateImportListener
         }
 
         $name = (string) $command->getName();
-        if (!$this->importGuard->isUpToDate($name, $source)) {
+        if (!$this->importGuard->isUpToDate($name, $source, $command::class)) {
             return;
         }
 
@@ -53,8 +53,8 @@ final readonly class SkipUpToDateImportListener
         }
 
         $name = (string) $command->getName();
-        if (!$this->importGuard->isUpToDate($name, $source)) {
-            $this->importGuard->markDone($name, $source);
+        if (!$this->importGuard->isUpToDate($name, $source, $command::class)) {
+            $this->importGuard->markDone($name, $source, $command::class);
         }
     }
 
