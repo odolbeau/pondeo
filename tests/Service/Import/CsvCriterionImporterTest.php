@@ -253,6 +253,7 @@ final class CsvCriterionImporterTest extends KernelTestCase
                 INNER JOIN unite_urbaine uu ON uu.id = cv.unite_urbaine_id
                 INNER JOIN criterion ON criterion.id = cv.criterion_id
                 WHERE uu.insee_code = :code AND criterion.code = :criterionCode
+                ORDER BY cv.period
                 SQL,
             ['code' => $uniteUrbaineCode, 'criterionCode' => $criterionCode],
         );
