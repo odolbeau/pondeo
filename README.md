@@ -45,6 +45,8 @@ criterion's source and import are described in [`docs/`](docs/), starting with
 Every merge to `main` deploys the site and updates its database in place.
 See [`docs/deployment.md`](docs/deployment.md).
 
+Tests: see [`docs/testing.md`](docs/testing.md).
+
 ## Contributing
 
 See [`CONTRIBUTING.md`](CONTRIBUTING.md).
