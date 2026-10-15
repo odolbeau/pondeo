@@ -12,7 +12,6 @@ use Doctrine\DBAL\Schema\Index\IndexedColumn;
 use Doctrine\DBAL\Schema\Index\IndexType;
 use Doctrine\DBAL\Schema\Name\UnqualifiedName;
 use Doctrine\DBAL\Schema\Table;
-use Doctrine\DBAL\Types\Type;
 use Doctrine\ORM\EntityManagerInterface;
 use Doctrine\ORM\Tools\SchemaTool;
 
@@ -149,7 +148,7 @@ class DbmlExporter
 
     private function renderType(Column $column): string
     {
-        $name = Type::lookupName($column->getType());
+        $name = $column->getTypeName();
 
         return match ($name) {
             'string' => \sprintf('varchar(%d)', $column->getLength() ?? 255),
