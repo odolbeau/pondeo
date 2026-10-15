@@ -116,6 +116,7 @@
     },
     "require-dev": {
         "bab/tested-routes-checker-bundle": "^1.0",
+        "dama/doctrine-test-bundle": "^8.7",
         "friendsofphp/php-cs-fixer": "^3.95",
         "helgesverre/toon": "^3.2",
         "phpstan/extension-installer": "^1.4",
