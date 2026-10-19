@@ -1,5 +1,6 @@
 import { Controller } from '@hotwired/stimulus';
 import { LngLatBounds, Map as MapLibreMap, Popup, setWorkerUrl } from 'maplibre-gl';
+import BasemapControl from '../lib/basemap_control';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 // See map_controller.ts: the production build can't follow MapLibre's own worker URL.
@@ -58,6 +59,8 @@ export default class extends Controller {
             center: [2.5, 46.6],
             zoom: 5,
         });
+
+        this.map.addControl(new BasemapControl(), 'top-right');
 
         this.map.on('load', () => {
             // Under the points: the outline of the unité urbaine the POIs belong to.

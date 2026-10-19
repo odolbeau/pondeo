@@ -1,6 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 import { session } from '@hotwired/turbo';
 import { Map, NavigationControl, Popup, setWorkerUrl, type GeoJSONSource } from 'maplibre-gl';
+import BasemapControl from '../lib/basemap_control';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
 // MapLibre finds its worker through a relative `import.meta.url`, which the
@@ -106,6 +107,7 @@ export default class extends Controller {
         });
 
         this.map.addControl(new NavigationControl({ showCompass: false }), 'top-right');
+        this.map.addControl(new BasemapControl(), 'top-right');
 
         this.map.on('load', () => {
             this.map.addSource(ZONES_SOURCE_ID, { type: 'geojson', data: this.emptyFeatureCollection() });
