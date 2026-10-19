@@ -12,6 +12,8 @@
      data-controller="map"
      data-map-data-url-value="{{ dataUrl }}"
      data-map-plants-url-value="{{ plantsUrl }}"
+     data-map-export-url-value="{{ exportUrl }}"
+     data-map-export-limit-value="{{ exportLimit }}"
      data-map-detail-url-value="{{ path('app_unite_urbaine_detail', {code: 'XXXXX'}) }}"
      data-map-population-min-value="{{ populationMin }}"
      data-map-population-max-value="{{ populationMax }}"
@@ -211,6 +213,14 @@
                 <span class="block text-xs text-stone-500">Au moins un club, une ludothèque ou une association de jeux de société dans l'agglomération</span>
             </span>
         </label>
+
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Export</h2>
+
+        <button type="button" data-map-target="exportButton" data-action="map#exportCsv" disabled
+                class="mt-4 w-full rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-700 disabled:cursor-not-allowed disabled:bg-stone-300 disabled:text-stone-500">
+            Exporter en CSV
+        </button>
+        <p class="mt-2 text-xs text-stone-500" data-map-target="exportHelp"></p>
     </aside>
 
     <div class="relative flex-1" data-map-target="mapContainer"></div>

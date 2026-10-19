@@ -45,6 +45,8 @@ final class UniteUrbaineMapControllerTest extends WebTestCase
         self::assertSelectorCount(3, 'button[data-map-target="priceTypeButton"]');
         self::assertSelectorExists('button[data-price-type="global"][aria-pressed="true"]');
         self::assertSelectorExists('aside[data-map-target="filters"]');
+        self::assertSelectorExists('[data-map-export-url-value="/carte/export.csv"][data-map-export-limit-value="200"]');
+        self::assertSelectorExists('button[data-map-target="exportButton"][disabled]');
         self::assertSelectorExists('button[data-action="map#openFilters"]');
     }
 }

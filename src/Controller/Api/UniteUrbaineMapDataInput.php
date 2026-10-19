@@ -7,6 +7,7 @@ namespace App\Controller\Api;
 use App\Enum\AttractionCategory;
 use App\Enum\JourneyDestination;
 use App\Enum\RealEstatePriceType;
+use App\Service\Map\UniteUrbaineMapFilter;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
@@ -22,7 +23,7 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
  * association, is off by default too.
  * The train limits (minutes, by destination city) are empty, so off, by default.
  */
-final readonly class UniteUrbaineMapDataInput
+readonly class UniteUrbaineMapDataInput
 {
     public function __construct(
         #[Assert\PositiveOrZero]
@@ -66,6 +67,24 @@ final readonly class UniteUrbaineMapDataInput
         }
 
         return $excluded;
+    }
+
+    public function toFilter(int $populationMin, int $populationMax): UniteUrbaineMapFilter
+    {
+        return new UniteUrbaineMapFilter(
+            populationMin: $populationMin,
+            populationMax: $populationMax,
+            excludedAttractionCategories: $this->excludedAttractionCategories(),
+            commerceDensityMin: $this->commerceDensityMin,
+            restaurantDensityMin: $this->restaurantDensityMin,
+            nuclearExclusionKm: $this->nuclearExclusionKm,
+            priceMax: $this->priceMax,
+            priceCriterionCode: $this->priceType->criterionCode(),
+            withStation: $this->withStation,
+            withBoardGameAssociation: $this->withBoardGameAssociation,
+            trainLimits: $this->trainMaxMinutes,
+            trainMaxTransfers: $this->trainMaxTransfers,
+        );
     }
 
     #[Assert\Callback]

@@ -43,7 +43,7 @@ type Stats = { min: number; p10: number; p25: number; median: number; p75: numbe
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'panel', 'frame', 'filters', 'filtersButton'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'panel', 'frame', 'filters', 'filtersButton', 'exportButton', 'exportHelp'];
     static values = {
         dataUrl: String,
         plantsUrl: String,
@@ -51,6 +51,8 @@ export default class extends Controller {
         populationMin: Number,
         populationMax: Number,
         stats: Object,
+        exportUrl: String,
+        exportLimit: Number,
     };
 
     declare readonly mapContainerTarget: HTMLDivElement;
@@ -68,6 +70,8 @@ export default class extends Controller {
     declare readonly statsHintTargets: HTMLElement[];
     declare readonly filtersTarget: HTMLElement;
     declare readonly filtersButtonTarget: HTMLButtonElement;
+    declare readonly exportButtonTarget: HTMLButtonElement;
+    declare readonly exportHelpTarget: HTMLElement;
     declare readonly nuclearExclusionKmTarget: HTMLInputElement;
     declare readonly withStationTarget: HTMLInputElement;
     declare readonly withBoardGameAssociationTarget: HTMLInputElement;
@@ -82,6 +86,8 @@ export default class extends Controller {
     declare readonly populationMinValue: number;
     declare readonly populationMaxValue: number;
     declare readonly statsValue: Record<string, Stats>;
+    declare readonly exportUrlValue: string;
+    declare readonly exportLimitValue: number;
 
     private map!: Map;
     private steps!: number[];
@@ -294,6 +300,39 @@ export default class extends Controller {
         const geojson: GeoJSON.FeatureCollection = await response.json();
 
         (this.map.getSource(ZONES_SOURCE_ID) as GeoJSONSource | undefined)?.setData(geojson);
+        this.renderExport(geojson.features.length);
+    }
+
+    // The map already holds the matching cities: their count tells whether the export is within its cap.
+    renderExport(count: number) {
+        const allowed = count > 0 && count <= this.exportLimitValue;
+        this.exportButtonTarget.disabled = !allowed;
+        this.exportButtonTarget.textContent = allowed ? `Exporter en CSV (${count} villes)` : 'Exporter en CSV';
+        this.exportHelpTarget.textContent = 0 === count ? 'Aucune ville ne correspond aux filtres.' : count > this.exportLimitValue ? `Affinez les filtres : ${this.exportLimitValue} villes au plus (${count} actuellement).` : '';
+    }
+
+    async exportCsv() {
+        const [min, max] = this.valuesFromInputs();
+        const url = new URL(this.exportUrlValue, window.location.origin);
+        for (const [name, value] of this.filterParams(min, max)) {
+            url.searchParams.set(name, value);
+        }
+        url.searchParams.set('populationMin', String(min));
+        url.searchParams.set('populationMax', String(max));
+
+        const response = await fetch(url);
+        if (!response.ok) {
+            const body = await response.json().catch(() => null);
+            this.exportHelpTarget.textContent = body?.error ?? "L'export a échoué.";
+
+            return;
+        }
+
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(await response.blob());
+        link.download = /filename="([^"]+)"/.exec(response.headers.get('Content-Disposition') ?? '')?.[1] ?? 'pondeo-export.csv';
+        link.click();
+        URL.revokeObjectURL(link.href);
     }
 
     onCommerceInput() {

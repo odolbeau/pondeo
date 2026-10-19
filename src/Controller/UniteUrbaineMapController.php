@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Controller\Api\UniteUrbaineMapExportController;
 use App\Enum\JourneyDestination;
 use App\Enum\RealEstatePriceType;
 use App\Service\Map\CriterionStatsProvider;
@@ -29,6 +30,8 @@ final class UniteUrbaineMapController extends AbstractController
         return $this->render('map/index.html.twig', [
             'title' => 'Carte des unités urbaines',
             'dataUrl' => $this->generateUrl('app_map_data'),
+            'exportUrl' => $this->generateUrl('app_map_export'),
+            'exportLimit' => UniteUrbaineMapExportController::LIMIT,
             'plantsUrl' => $this->generateUrl('app_map_nuclear_plants'),
             'populationMin' => $bounds['min'],
             'populationMax' => $bounds['max'],
