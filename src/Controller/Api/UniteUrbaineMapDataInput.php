@@ -6,6 +6,7 @@ namespace App\Controller\Api;
 
 use App\Enum\AttractionCategory;
 use App\Enum\JourneyDestination;
+use App\Enum\RealEstatePriceType;
 use Symfony\Component\Validator\Constraints as Assert;
 use Symfony\Component\Validator\Context\ExecutionContextInterface;
 
@@ -15,6 +16,8 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
  * controller falls back to the full bounds. The exclusions default to off:
  * every unité urbaine is shown until asked otherwise. The commerce
  * density minimum (shops per 1000 inhabitants) is likewise off when null, as is the exclusion radius (km) around nuclear plants. The price per m² maximum (€) has no minimum counterpart and is off when null.
+ * The restaurant density minimum works like the commerce one. The price maximum applies to the
+ * price type chosen (all housing by default).
  * Keeping only the unités urbaines with a railway station, or with a board game
  * association, is off by default too.
  * The train limits (minutes, by destination city) are empty, so off, by default.
@@ -34,6 +37,9 @@ final readonly class UniteUrbaineMapDataInput
         public ?float $nuclearExclusionKm = null,
         #[Assert\PositiveOrZero]
         public ?float $priceMax = null,
+        public RealEstatePriceType $priceType = RealEstatePriceType::Global,
+        #[Assert\PositiveOrZero]
+        public ?float $restaurantDensityMin = null,
         public bool $withStation = false,
         public bool $withBoardGameAssociation = false,
         /** @var array<string, int> destination value => maximum minutes (car to the station + train) */

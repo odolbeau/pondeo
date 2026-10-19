@@ -8,15 +8,27 @@
 {% block footer %}{% endblock %}
 
 {% block body %}
-<div class="flex h-[calc(100vh-3.5rem)] bg-transparent text-stone-900"
+<div class="relative flex h-[calc(100dvh-3.5rem)] bg-transparent text-stone-900"
      data-controller="map"
      data-map-data-url-value="{{ dataUrl }}"
      data-map-plants-url-value="{{ plantsUrl }}"
      data-map-detail-url-value="{{ path('app_unite_urbaine_detail', {code: 'XXXXX'}) }}"
      data-map-population-min-value="{{ populationMin }}"
      data-map-population-max-value="{{ populationMax }}"
+     data-map-stats-value="{{ stats|json_encode|e('html_attr') }}"
 >
-    <aside class="w-80 shrink-0 overflow-y-auto border-r border-stone-200 bg-white p-6">
+    {# Below md the filters are a drawer over the map, opened from this button. #}
+    <button type="button" data-action="map#openFilters" data-map-target="filtersButton"
+            class="absolute bottom-6 left-1/2 z-10 -translate-x-1/2 rounded-full bg-emerald-600 px-5 py-3 text-sm font-semibold text-white shadow-lg md:hidden">
+        Filtres
+    </button>
+
+    <aside class="fixed inset-x-0 bottom-0 top-14 z-20 hidden overflow-y-auto border-stone-200 bg-white p-6 md:static md:block md:w-80 md:shrink-0 md:border-r lg:w-96 xl:w-[28rem]" data-map-target="filters">
+        <button type="button" data-action="map#closeFilters"
+                class="mb-6 w-full rounded bg-emerald-600 px-4 py-2 text-sm font-semibold text-white md:hidden">
+            Voir la carte
+        </button>
+
         <h2 class="text-sm font-semibold uppercase tracking-wide text-stone-600">Population</h2>
 
         <div class="relative mt-6 h-1 rounded bg-stone-300">
@@ -133,8 +145,33 @@
             </span>
             <span class="mt-1 block text-xs text-stone-500">Tous commerces confondus (INSEE, BPE)</span>
         </label>
+        {{ include('map/_stats_hint.html.twig', {code: 'commerces_total_pour_1000_hab', input: 'commerceDensityMin', direction: 'min', unit: 'commerces pour 1000 hab.', decimals: 1}) }}
+
+        <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Restaurants</h2>
+
+        <label class="mt-4 block text-sm text-stone-700">
+            Au moins
+            <span class="mt-2 flex items-center gap-2">
+                <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="0"
+                       aria-label="Restaurants minimum pour 1000 habitants"
+                       data-map-target="restaurantDensityMin"
+                       data-action="input->map#onRestaurantInput"
+                       class="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+                <span>restaurants pour 1000 hab.</span>
+            </span>
+            <span class="mt-1 block text-xs text-stone-500">Restauration traditionnelle et rapide (INSEE, BPE)</span>
+        </label>
+        {{ include('map/_stats_hint.html.twig', {code: 'restaurants_pour_1000_hab', input: 'restaurantDensityMin', direction: 'min', unit: 'restaurants pour 1000 hab.', decimals: 1}) }}
 
         <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Immobilier</h2>
+
+        <div class="mt-4 flex overflow-hidden rounded border border-stone-300 text-sm" role="group" aria-label="Type de bien">
+            {% for type, label in {global: 'Global', house: 'Maisons', apartment: 'Appartements'} %}
+                <button type="button" data-map-target="priceTypeButton" data-price-type="{{ type }}"
+                        data-action="map#onPriceTypeClick" aria-pressed="{{ 'global' == type ? 'true' : 'false' }}"
+                        class="flex-1 px-2 py-1 text-stone-700 aria-pressed:bg-emerald-600 aria-pressed:text-white">{{ label }}</button>
+            {% endfor %}
+        </div>
 
         <label class="mt-4 block text-sm text-stone-700">
             Au plus
@@ -146,8 +183,9 @@
                        class="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
                 <span>€/m²</span>
             </span>
-            <span class="mt-1 block text-xs text-stone-500">Appartements et maisons, dernière année (DVF)</span>
+            <span class="mt-1 block text-xs text-stone-500" data-map-target="priceHelp">Appartements et maisons, dernière année (DVF)</span>
         </label>
+        {{ include('map/_stats_hint.html.twig', {input: 'priceMax', direction: 'max', unit: '€/m²', decimals: -2}) }}
 
         <h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Centrales nucléaires</h2>
 
@@ -177,7 +215,7 @@
 
     <div class="relative flex-1" data-map-target="mapContainer"></div>
 
-    <aside class="relative hidden w-[26rem] shrink-0 overflow-y-auto border-l border-stone-200 bg-stone-50 p-6" data-map-target="panel">
+    <aside class="fixed inset-x-0 bottom-0 top-14 z-20 hidden overflow-y-auto border-l md:relative md:inset-auto md:z-auto md:w-[26rem] md:shrink-0 border-stone-200 bg-stone-50 p-6" data-map-target="panel">
         <button type="button" data-action="map#closePanel" aria-label="Fermer le détail"
                 class="absolute right-4 top-4 text-stone-600 hover:text-stone-900">✕</button>
         <turbo-frame id="unite-urbaine-detail" class="block transition-opacity aria-busy:opacity-50" data-map-target="frame"></turbo-frame>

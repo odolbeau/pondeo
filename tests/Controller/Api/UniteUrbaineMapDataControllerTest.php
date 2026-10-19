@@ -119,6 +119,71 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         self::assertSame(['00001', '00002'], $this->codes($client, ['commerceDensityMin' => '4.2']));
     }
 
+    public function testDataEndpointCanRequireAMinimumRestaurantDensity(): void
+    {
+        $client = self::createClient();
+
+        $many = UniteUrbaineFactory::createOne(['inseeCode' => '00001', 'boundary' => 'SRID=4326;MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))']);
+        $few = UniteUrbaineFactory::createOne(['inseeCode' => '00002', 'boundary' => 'SRID=4326;MULTIPOLYGON(((1 0,1 1,2 1,2 0,1 0)))']);
+
+        $population = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+        $density = CriterionFactory::createOne(['code' => 'restaurants_pour_1000_hab', 'valueType' => CriterionValueType::Decimal]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ([$many, $few] as $uniteUrbaine) {
+            $entityManager->persist(new CriterionValue($population, $uniteUrbaine, 10_000, 2023));
+        }
+
+        $entityManager->persist(new CriterionValue($density, $many, 3.4, 2025));
+        $entityManager->persist(new CriterionValue($density, $few, 1.1, 2025));
+        $entityManager->flush();
+
+        self::assertSame(['00001', '00002'], $this->codes($client, []));
+        self::assertSame(['00001'], $this->codes($client, ['restaurantDensityMin' => '2']));
+    }
+
+    public function testDataEndpointCapsThePriceOfTheChosenPropertyType(): void
+    {
+        $client = self::createClient();
+
+        // Cheap houses but expensive flats, and the other way round.
+        $houses = UniteUrbaineFactory::createOne(['inseeCode' => '00001', 'boundary' => 'SRID=4326;MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))']);
+        $flats = UniteUrbaineFactory::createOne(['inseeCode' => '00002', 'boundary' => 'SRID=4326;MULTIPOLYGON(((1 0,1 1,2 1,2 0,1 0)))']);
+
+        $population = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+        $global = CriterionFactory::createOne(['code' => 'prix_m2', 'valueType' => CriterionValueType::Integer]);
+        $house = CriterionFactory::createOne(['code' => 'prix_m2_maison', 'valueType' => CriterionValueType::Integer]);
+        $apartment = CriterionFactory::createOne(['code' => 'prix_m2_appartement', 'valueType' => CriterionValueType::Integer]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ([$houses, $flats] as $uniteUrbaine) {
+            $entityManager->persist(new CriterionValue($population, $uniteUrbaine, 10_000, 2023));
+            $entityManager->persist(new CriterionValue($global, $uniteUrbaine, 3_000, 2025));
+        }
+
+        $entityManager->persist(new CriterionValue($house, $houses, 2_000, 2025));
+        $entityManager->persist(new CriterionValue($apartment, $houses, 5_000, 2025));
+        $entityManager->persist(new CriterionValue($house, $flats, 4_000, 2025));
+        $entityManager->persist(new CriterionValue($apartment, $flats, 2_500, 2025));
+        $entityManager->flush();
+
+        self::assertSame(['00001', '00002'], $this->codes($client, ['priceMax' => '3000']));
+        self::assertSame(['00001', '00002'], $this->codes($client, ['priceMax' => '3000', 'priceType' => 'global']));
+        self::assertSame(['00001'], $this->codes($client, ['priceMax' => '3000', 'priceType' => 'house']));
+        self::assertSame(['00002'], $this->codes($client, ['priceMax' => '3000', 'priceType' => 'apartment']));
+    }
+
+    public function testDataEndpointRejectsAnUnknownPriceType(): void
+    {
+        $client = self::createClient();
+
+        $client->request('GET', '/carte/donnees', ['priceType' => 'castle']);
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
     public function testDataEndpointCanCapThePricePerSquareMeter(): void
     {
         $client = self::createClient();

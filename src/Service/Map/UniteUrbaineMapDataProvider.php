@@ -70,7 +70,7 @@ final readonly class UniteUrbaineMapDataProvider
      *
      * A unité urbaine with no attraction category is never excluded: unknown
      * is not the same as satellite. Likewise, with a commerce density
-     * minimum, an unité urbaine without a density value is left out: it
+     * minimum (shops or restaurants), an unité urbaine without a density value is left out: it
      * cannot be said to reach it. With a nuclear exclusion radius, an unité urbaine whose
      * centroid is within it of a plant is left out. A price per m² maximum
      * leaves out an unité urbaine without a price (Alsace-Moselle is not in the source) for the same reason as the density minimum.
@@ -88,7 +88,7 @@ final readonly class UniteUrbaineMapDataProvider
      *
      * @return list<array{id: string, code: string, name: string, population: int, geometryJson: string}>
      */
-    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null, ?float $priceMax = null, bool $withStation = false, array $trainLimits = [], ?int $trainMaxTransfers = null, bool $withBoardGameAssociation = false): array
+    public function findFeatures(int $period, int $populationMin, int $populationMax, array $excludedAttractionCategories = [], ?float $commerceDensityMin = null, ?float $nuclearExclusionKm = null, ?float $priceMax = null, bool $withStation = false, array $trainLimits = [], ?int $trainMaxTransfers = null, bool $withBoardGameAssociation = false, ?float $restaurantDensityMin = null, string $priceCriterionCode = 'prix_m2'): array
     {
         $criterionId = $this->populationCriterionId();
         $excludedCategoryValues = array_map(static fn (AttractionCategory $category): string => $category->value, $excludedAttractionCategories);
@@ -140,6 +140,17 @@ final readonly class UniteUrbaineMapDataProvider
                         )
                         AND density.value_decimal >= CAST(:densityMin AS numeric)
                   ))
+                  AND (CAST(:restaurantDensityMin AS numeric) IS NULL OR EXISTS (
+                      SELECT 1
+                      FROM criterion_value restaurant_density
+                      INNER JOIN criterion rc ON rc.id = restaurant_density.criterion_id
+                      WHERE rc.code = 'restaurants_pour_1000_hab'
+                        AND restaurant_density.unite_urbaine_id = uu.id
+                        AND restaurant_density.period = (
+                            SELECT MAX(period) FROM criterion_value WHERE criterion_id = rc.id
+                        )
+                        AND restaurant_density.value_decimal >= CAST(:restaurantDensityMin AS numeric)
+                  ))
                   AND (CAST(:nuclearKm AS numeric) IS NULL OR NOT EXISTS (
                       SELECT 1
                       FROM poi plant
@@ -151,7 +162,7 @@ final readonly class UniteUrbaineMapDataProvider
                       SELECT 1
                       FROM criterion_value price
                       INNER JOIN criterion pc ON pc.id = price.criterion_id
-                      WHERE pc.code = 'prix_m2'
+                      WHERE pc.code = :priceCriterionCode
                         AND price.unite_urbaine_id = uu.id
                         AND price.period = (
                             SELECT MAX(period) FROM criterion_value WHERE criterion_id = pc.id
@@ -182,6 +193,8 @@ final readonly class UniteUrbaineMapDataProvider
                 'densityMin' => $commerceDensityMin,
                 'nuclearKm' => $nuclearExclusionKm,
                 'priceMax' => $priceMax,
+                'priceCriterionCode' => $priceCriterionCode,
+                'restaurantDensityMin' => $restaurantDensityMin,
                 'withStation' => $withStation,
                 'withBoardGameAssociation' => $withBoardGameAssociation,
                 // An empty IN () list is invalid SQL: a value no category has keeps the clause a no-op.
