@@ -105,3 +105,7 @@ git add resources/geo/ && git commit
 Without `--download`, the vendored file is imported as is. The import is an
 idempotent upsert. Import the zones and the population first
 (`make db-reset` runs everything in the right order).
+
+The map shows, under the field, the national median and quartiles of the
+density, and applies one with a click. Restaurants (BPE type `A504`) have the
+same filter, in their own "Restaurants" section.

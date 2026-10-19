@@ -12,7 +12,7 @@ const ZONES_SOURCE_ID = 'unites-urbaines';
 const SELECTED_LAYER_ID = `${ZONES_SOURCE_ID}-selected`;
 const UNITE_CODE_PATTERN = /^[0-9A-Za-z]{5}$/;
 // Query params making up the filter — in the page URL and in localStorage.
-const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'withBoardGameAssociation', 'trainMaxTransfers'];
+const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceType', 'restaurantDensityMin', 'withStation', 'withBoardGameAssociation', 'trainMaxTransfers'];
 // One param per destination city: trainMaxMinutes[paris]=120.
 const TRAIN_PARAM_PREFIX = 'trainMaxMinutes[';
 const PLANTS_SOURCE_ID = 'nuclear-plants';
@@ -20,6 +20,17 @@ const PLANTS_RADIUS_SOURCE_ID = `${PLANTS_SOURCE_ID}-radius`;
 const PLANT_ICON_ID = 'nuclear-plant-icon';
 const EARTH_RADIUS_KM = 6371.0088;
 const STORAGE_KEY = 'pondeo:map:population';
+const DEFAULT_PRICE_TYPE = 'global';
+const PRICE_CODES: Record<string, string> = { global: 'prix_m2', house: 'prix_m2_maison', apartment: 'prix_m2_appartement' };
+const PRICE_LABELS: Record<string, string> = { global: 'Appartements et maisons', house: 'Maisons', apartment: 'Appartements' };
+// Share of the unités urbaines a threshold keeps, with the percentile it sits at.
+const STAT_CHIPS: { key: 'p25' | 'median' | 'p75'; keptByMin: number }[] = [
+    { key: 'p25', keptByMin: 75 },
+    { key: 'median', keptByMin: 50 },
+    { key: 'p75', keptByMin: 25 },
+];
+
+type Stats = { min: number; p10: number; p25: number; median: number; p75: number; p90: number; max: number };
 
 // Round-number steps ("paliers") the population slider snaps to, rather
 // than letting it select an arbitrary population to the exact inhabitant —
@@ -31,13 +42,14 @@ const STORAGE_KEY = 'pondeo:map:population';
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'panel', 'frame'];
+    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'panel', 'frame', 'filters', 'filtersButton'];
     static values = {
         dataUrl: String,
         plantsUrl: String,
         detailUrl: String,
         populationMin: Number,
         populationMax: Number,
+        stats: Object,
     };
 
     declare readonly mapContainerTarget: HTMLDivElement;
@@ -48,7 +60,13 @@ export default class extends Controller {
     declare readonly excludeCouronneTarget: HTMLInputElement;
     declare readonly excludePolesSecondairesTarget: HTMLInputElement;
     declare readonly commerceDensityMinTarget: HTMLInputElement;
+    declare readonly restaurantDensityMinTarget: HTMLInputElement;
     declare readonly priceMaxTarget: HTMLInputElement;
+    declare readonly priceTypeButtonTargets: HTMLButtonElement[];
+    declare readonly priceHelpTarget: HTMLElement;
+    declare readonly statsHintTargets: HTMLElement[];
+    declare readonly filtersTarget: HTMLElement;
+    declare readonly filtersButtonTarget: HTMLButtonElement;
     declare readonly nuclearExclusionKmTarget: HTMLInputElement;
     declare readonly withStationTarget: HTMLInputElement;
     declare readonly withBoardGameAssociationTarget: HTMLInputElement;
@@ -62,12 +80,14 @@ export default class extends Controller {
     declare readonly detailUrlValue: string;
     declare readonly populationMinValue: number;
     declare readonly populationMaxValue: number;
+    declare readonly statsValue: Record<string, Stats>;
 
     private map!: Map;
     private steps!: number[];
     private selectedCode: string | null = null;
     private plants: GeoJSON.FeatureCollection<GeoJSON.Point> = { type: 'FeatureCollection', features: [] };
     private debounceHandle?: ReturnType<typeof setTimeout>;
+    private priceType = DEFAULT_PRICE_TYPE;
 
     connect() {
         this.steps = POPULATION_STEPS.filter((s) => s > this.populationMinValue && s < this.populationMaxValue);
@@ -157,6 +177,11 @@ export default class extends Controller {
         this.commerceDensityMinTarget.value = params.get('commerceDensityMin') ?? '';
         this.nuclearExclusionKmTarget.value = params.get('nuclearExclusionKm') ?? '';
         this.priceMaxTarget.value = params.get('priceMax') ?? '';
+        this.restaurantDensityMinTarget.value = params.get('restaurantDensityMin') ?? '';
+        const priceType = params.get('priceType') ?? DEFAULT_PRICE_TYPE;
+        this.priceType = priceType in PRICE_CODES ? priceType : DEFAULT_PRICE_TYPE;
+        this.renderPriceType();
+        this.renderStatsHints();
         this.applyTrainParams(params);
         this.trainMaxTransfersTarget.value = params.get('trainMaxTransfers') ?? '';
         this.writeInputs(min, max);
@@ -249,6 +274,9 @@ export default class extends Controller {
         this.updateUrl(min, max, pushHistory);
         this.saveFilter(min, max);
 
+        const activeFilters = [...this.filterParams(min, max).keys()].length;
+        this.filtersButtonTarget.textContent = 0 === activeFilters ? 'Filtres' : `Filtres (${activeFilters})`;
+
         const url = new URL(this.dataUrlValue, window.location.origin);
         for (const [name, value] of this.filterParams(min, max)) {
             url.searchParams.set(name, value);
@@ -268,8 +296,84 @@ export default class extends Controller {
         this.scheduleRefresh();
     }
 
+    onRestaurantInput() {
+        this.scheduleRefresh();
+    }
+
     onPriceInput() {
         this.scheduleRefresh();
+    }
+
+    onPriceTypeClick(event: Event) {
+        const type = (event.currentTarget as HTMLElement).dataset.priceType ?? DEFAULT_PRICE_TYPE;
+        this.priceType = type in PRICE_CODES ? type : DEFAULT_PRICE_TYPE;
+        this.renderPriceType();
+        this.renderStatsHints();
+        this.scheduleRefresh();
+    }
+
+    // The filter drawer below md: the map stays the default view.
+    openFilters() {
+        this.filtersTarget.classList.remove('hidden');
+    }
+
+    closeFilters() {
+        this.filtersTarget.classList.add('hidden');
+    }
+
+    renderPriceType() {
+        for (const button of this.priceTypeButtonTargets) {
+            button.setAttribute('aria-pressed', String(button.dataset.priceType === this.priceType));
+        }
+        this.priceHelpTarget.textContent = `${PRICE_LABELS[this.priceType]}, dernière année (DVF)`;
+    }
+
+    // Reference points under a filter: where the median sits, and clickable
+    // thresholds that each keep a given share of the unités urbaines.
+    renderStatsHints() {
+        for (const hint of this.statsHintTargets) {
+            const code = hint.dataset.statsCode ?? PRICE_CODES[this.priceType];
+            const stats = this.statsValue[code];
+            hint.replaceChildren();
+            if (undefined === stats) {
+                continue;
+            }
+
+            const input = this[`${hint.dataset.statsInput}Target` as 'priceMaxTarget'];
+            const round = this.rounder(Number(hint.dataset.statsDecimals));
+            const format = (value: number) => new Intl.NumberFormat('fr-FR').format(round(value));
+            const unit = hint.dataset.statsUnit ?? '';
+            const isMin = 'min' === hint.dataset.statsDirection;
+
+            const summary = document.createElement('p');
+            summary.textContent = `Médiane ${format(stats.median)} ${unit} · 80 % des villes entre ${format(stats.p10)} et ${format(stats.p90)}`;
+            const chips = document.createElement('p');
+            chips.className = 'mt-1 flex flex-wrap items-center gap-1';
+            chips.append('Seuils :');
+            for (const chip of STAT_CHIPS) {
+                const button = document.createElement('button');
+                button.type = 'button';
+                button.className = 'rounded border border-stone-300 px-1.5 py-0.5 text-stone-700 hover:border-emerald-600';
+                button.textContent = `${isMin ? '≥' : '≤'} ${format(stats[chip.key])}`;
+                button.dataset.tooltip = `Garde ${isMin ? chip.keptByMin : 100 - chip.keptByMin} % des villes`;
+                button.addEventListener('click', () => {
+                    input.value = String(round(stats[chip.key]));
+                    this.scheduleRefresh();
+                });
+                chips.append(button);
+            }
+            hint.append(summary, chips);
+        }
+    }
+
+    // Positive decimals: that many digits; negative: prices, to the nearest 50 €.
+    rounder(decimals: number): (value: number) => number {
+        if (decimals < 0) {
+            return (value) => Math.round(value / 50) * 50;
+        }
+        const factor = 10 ** decimals;
+
+        return (value) => Math.round(value * factor) / factor;
     }
 
     onTrainInput() {
@@ -284,6 +388,10 @@ export default class extends Controller {
     // Null (filter off) for an empty or invalid field.
     commerceDensityMin(): number | null {
         return this.positiveNumber(this.commerceDensityMinTarget.value);
+    }
+
+    restaurantDensityMin(): number | null {
+        return this.positiveNumber(this.restaurantDensityMinTarget.value);
     }
 
     priceMax(): number | null {
@@ -507,9 +615,16 @@ export default class extends Controller {
         if (null !== nuclearKm) {
             params.set('nuclearExclusionKm', String(nuclearKm));
         }
+        const restaurantDensity = this.restaurantDensityMin();
+        if (null !== restaurantDensity) {
+            params.set('restaurantDensityMin', String(restaurantDensity));
+        }
         const priceMax = this.priceMax();
         if (null !== priceMax) {
             params.set('priceMax', String(priceMax));
+        }
+        if (DEFAULT_PRICE_TYPE !== this.priceType) {
+            params.set('priceType', this.priceType);
         }
         const transfers = this.trainMaxTransfersTarget.value.trim();
         if ('' !== transfers && Number.isInteger(Number(transfers)) && Number(transfers) >= 0) {

@@ -46,8 +46,10 @@ Shops and other premises are left out.
 
 ## Map filter
 
-The map (`/carte`) can cap the price per m² (apartments and houses together,
-latest year). It is an upper bound only; leaving it empty disables the filter.
+The map (`/carte`) can cap the price per m² (latest year), for apartments and
+houses together (the default), houses only, or apartments only. Under the field,
+the national median and quartiles of the chosen type help pick a cap; each can
+be applied with a click. It is an upper bound only; leaving it empty disables the filter.
 A unit without a price never matches a cap. The value is kept in the map URL
 like the other filters.
 
