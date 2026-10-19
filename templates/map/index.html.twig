@@ -225,7 +225,12 @@
 
     <div class="relative flex-1" data-map-target="mapContainer"></div>
 
-    <aside class="fixed inset-x-0 bottom-0 top-14 z-20 hidden overflow-y-auto border-l md:relative md:inset-auto md:z-auto md:w-[26rem] md:shrink-0 border-stone-200 bg-stone-50 p-6" data-map-target="panel">
+    <aside class="group/panel fixed inset-x-0 bottom-0 top-14 z-20 hidden overflow-y-auto border-l md:relative md:inset-auto md:z-auto md:w-[26rem] md:shrink-0 border-stone-200 bg-stone-50 p-6" data-map-target="panel">
+        {# Turbo marks the frame aria-busy while the city loads. #}
+        <div role="status" aria-label="Chargement de la ville"
+             class="pointer-events-none absolute left-1/2 top-32 z-10 hidden -translate-x-1/2 group-has-[turbo-frame[aria-busy=true]]/panel:block">
+            <div class="h-10 w-10 animate-spin rounded-full border-4 border-stone-300 border-t-emerald-600"></div>
+        </div>
         <button type="button" data-action="map#closePanel" aria-label="Fermer le détail"
                 class="absolute right-4 top-4 text-stone-600 hover:text-stone-900">✕</button>
         <turbo-frame id="unite-urbaine-detail" class="block transition-opacity aria-busy:opacity-50" data-map-target="frame"></turbo-frame>
