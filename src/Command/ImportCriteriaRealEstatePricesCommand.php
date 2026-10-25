@@ -15,7 +15,7 @@ use Symfony\Contracts\HttpClient\Exception\ExceptionInterface;
 
 #[AsCommand(
     name: 'app:import:criteria:real-estate-prices',
-    description: 'Import the price per m² criteria (all years) from resources/geo/prix-immobilier.csv, averaged per unité urbaine',
+    description: 'Import the price per m² criteria ("Achat" group, all years) from resources/geo/prix-immobilier.csv, averaged per unité urbaine',
     help: <<<'HELP'
         Idempotent — safe to re-run.
 

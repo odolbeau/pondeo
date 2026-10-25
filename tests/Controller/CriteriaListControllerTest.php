@@ -19,7 +19,7 @@ final class CriteriaListControllerTest extends WebTestCase
     {
         $client = self::createClient();
 
-        CriterionFactory::createOne(['code' => 'prix_m2', 'label' => 'Prix au m²', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Immobilier']);
+        CriterionFactory::createOne(['code' => 'prix_m2', 'label' => 'Prix au m²', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Achat']);
         CriterionFactory::createOne(['code' => 'population', 'label' => 'Population', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Démographie']);
         CriterionFactory::createOne(['code' => 'inconnu', 'label' => 'Sans texte', 'valueType' => CriterionValueType::Integer, 'groupLabel' => null]);
 
@@ -31,7 +31,7 @@ final class CriteriaListControllerTest extends WebTestCase
         self::assertSelectorExists('nav[aria-label="Sommaire"] a[href="#demographie"]');
         self::assertSelectorExists('section#demographie');
         self::assertSelectorTextSame('section:nth-of-type(1) h2', 'Démographie');
-        self::assertSelectorTextSame('section:nth-of-type(2) h2', 'Immobilier');
+        self::assertSelectorTextSame('section:nth-of-type(2) h2', 'Achat');
         self::assertSelectorTextSame('section:nth-of-type(3) h2', 'Autres');
         self::assertSelectorTextContains('section:nth-of-type(1) dd', "nombre d'habitants");
         self::assertSelectorTextContains('section:nth-of-type(1) dd:last-child', 'Source : INSEE');

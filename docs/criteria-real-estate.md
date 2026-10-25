@@ -1,7 +1,7 @@
 # Real estate prices
 
 Each urban unit (see `docs/urban-units.md`) carries its average price per m²
-for 2021 to 2025, under the "Immobilier" group of its detail page (see
+for 2021 to 2025, under the "Achat" group of its detail page (see
 `docs/urban-unit-detail.md`). Like every criterion, it gets a rank (1 = the
 most expensive), the median of all urban units and a small curve of its
 evolution.

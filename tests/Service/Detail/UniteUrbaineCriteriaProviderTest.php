@@ -80,14 +80,15 @@ final class UniteUrbaineCriteriaProviderTest extends KernelTestCase
         self::assertSame([], $labelDetail->series);
     }
 
-    public function testRealEstateGroupComesAfterDemographyAndRanksTheMostExpensiveFirst(): void
+    public function testRealEstateGroupsComeAfterDemographyWithRentsAfterPricesAndRankTheMostExpensiveFirst(): void
     {
         $paris = UniteUrbaineFactory::createOne(['inseeCode' => '00001']);
         $vannes = UniteUrbaineFactory::createOne(['inseeCode' => '00002']);
         $brest = UniteUrbaineFactory::createOne(['inseeCode' => '00003']);
 
         $population = CriterionFactory::createOne(['code' => 'population', 'label' => 'Population', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Démographie']);
-        $price = CriterionFactory::createOne(['code' => 'prix_m2', 'label' => 'Prix au m²', 'unit' => '€/m²', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Immobilier']);
+        $price = CriterionFactory::createOne(['code' => 'prix_m2', 'label' => 'Prix au m²', 'unit' => '€/m²', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Achat']);
+        $rent = CriterionFactory::createOne(['code' => 'loyer_m2_appartement', 'label' => 'Loyer au m² (appartements)', 'unit' => '€/m²', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Location']);
         $shops = CriterionFactory::createOne(['code' => 'shops', 'label' => 'Commerces', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Commerces']);
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);
@@ -95,6 +96,7 @@ final class UniteUrbaineCriteriaProviderTest extends KernelTestCase
         foreach ([
             [$population, $vannes, 56_000, 2023],
             [$shops, $vannes, 5.5, 2025],
+            [$rent, $vannes, 11.4, 2025],
             [$price, $paris, 10_500, 2025],
             [$price, $vannes, 3_600, 2024],
             [$price, $vannes, 3_800, 2025],
@@ -112,7 +114,7 @@ final class UniteUrbaineCriteriaProviderTest extends KernelTestCase
 
         $groups = $provider->findGroups($vannesUnit);
 
-        self::assertSame(['Démographie', 'Immobilier', 'Commerces'], array_map(static fn (\App\Service\Detail\CriterionGroupDetail $group): string => $group->label, $groups));
+        self::assertSame(['Démographie', 'Achat', 'Location', 'Commerces'], array_map(static fn (\App\Service\Detail\CriterionGroupDetail $group): string => $group->label, $groups));
 
         $priceDetail = $groups[1]->criteria[0];
         self::assertSame(3_800, $priceDetail->value);

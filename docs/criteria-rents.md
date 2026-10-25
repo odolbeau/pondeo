@@ -2,9 +2,10 @@
 
 Each urban unit (see `docs/urban-units.md`) carries its advertised rent per m²
 for apartments (all sizes, T1-T2, T3 and more) and houses, under the
-"Immobilier" group of its detail page (see `docs/urban-unit-detail.md`), next
-to the sale prices (see `docs/criteria-real-estate.md`). Like every criterion,
-it gets a rank (1 = the most expensive) and the median of all urban units.
+"Location" group of its detail page (see `docs/urban-unit-detail.md`), after
+the sale prices of the "Achat" group (see `docs/criteria-real-estate.md`).
+Like every criterion, it gets a rank (1 = the most expensive) and the median
+of all urban units.
 
 ## Source
 
