@@ -1,6 +1,6 @@
 {# Reference points under a filter, filled in by the map controller. #}
 <div class="relative mt-2" data-controller="chart-tooltip" data-action="pointermove->chart-tooltip#move pointerdown->chart-tooltip#move pointerleave->chart-tooltip#hide">
-    <div class="text-xs text-stone-500" data-map-target="statsHint"
+    <div class="text-xs text-stone-500" data-filters-target="statsHint"
          {% if code is defined %}data-stats-code="{{ code }}"{% endif %}
          data-stats-input="{{ input }}" data-stats-direction="{{ direction }}" data-stats-unit="{{ unit }}" data-stats-decimals="{{ decimals }}"></div>
     <div hidden data-chart-tooltip-target="tooltip" class="pointer-events-none absolute z-10 whitespace-nowrap rounded border border-stone-700 bg-stone-800 px-2 py-1 text-xs text-white shadow-lg"></div>

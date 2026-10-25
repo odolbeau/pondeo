@@ -1,6 +1,7 @@
 import { Controller } from '@hotwired/stimulus';
 import { session } from '@hotwired/turbo';
 import { Map, NavigationControl, Popup, setWorkerUrl, type GeoJSONSource } from 'maplibre-gl';
+import type { FiltersChange } from './filters_controller';
 import BasemapControl from '../lib/basemap_control';
 import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 
@@ -8,101 +9,45 @@ import workerUrl from 'maplibre-gl/dist/maplibre-gl-worker.mjs?worker&url';
 // production build can't follow: it would never emit the worker.
 setWorkerUrl(workerUrl);
 
-const DEBOUNCE_MS = 200;
 const ZONES_SOURCE_ID = 'unites-urbaines';
 const SELECTED_LAYER_ID = `${ZONES_SOURCE_ID}-selected`;
 const UNITE_CODE_PATTERN = /^[0-9A-Za-z]{5}$/;
-// Query params making up the filter — in the page URL and in localStorage.
-const FILTER_PARAMS = ['populationMin', 'populationMax', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceType', 'restaurantDensityMin', 'withStation', 'withBoardGameAssociation', 'trainMaxTransfers'];
-// One param per destination city: trainMaxMinutes[paris]=120.
-const TRAIN_PARAM_PREFIX = 'trainMaxMinutes[';
 const PLANTS_SOURCE_ID = 'nuclear-plants';
 const PLANTS_RADIUS_SOURCE_ID = `${PLANTS_SOURCE_ID}-radius`;
 const PLANT_ICON_ID = 'nuclear-plant-icon';
 const EARTH_RADIUS_KM = 6371.0088;
-const STORAGE_KEY = 'pondeo:map:population';
-const DEFAULT_PRICE_TYPE = 'global';
-const PRICE_CODES: Record<string, string> = { global: 'prix_m2', house: 'prix_m2_maison', apartment: 'prix_m2_appartement' };
-const PRICE_LABELS: Record<string, string> = { global: 'Appartements et maisons', house: 'Maisons', apartment: 'Appartements' };
-// Share of the unités urbaines a threshold keeps, with the percentile it sits at.
-const STAT_CHIPS: { key: 'p25' | 'median' | 'p75'; keptByMin: number }[] = [
-    { key: 'p25', keptByMin: 75 },
-    { key: 'median', keptByMin: 50 },
-    { key: 'p75', keptByMin: 25 },
-];
-
-type Stats = { min: number; p10: number; p25: number; median: number; p75: number; p90: number; max: number };
-
-// Round-number steps ("paliers") the population slider snaps to, rather
-// than letting it select an arbitrary population to the exact inhabitant —
-// unreadable and not meaningfully more useful. Exact values are typed in the
-// number inputs instead. Steps below the smallest unité urbaine (~2 000
-// inhabitants) are dropped in connect(). Capped at 1M: distinguishing among
-// the handful of agglomérations above that isn't useful on a slider, so its
-// top step stands in for everything up to populationMaxValue.
-const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
 export default class extends Controller {
-    static targets = ['mapContainer', 'minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'panel', 'frame', 'filters', 'filtersButton', 'exportButton', 'exportHelp'];
+    static targets = ['mapContainer', 'panel', 'frame', 'filters', 'filtersButton', 'exportButton', 'exportHelp'];
     static values = {
         dataUrl: String,
         plantsUrl: String,
         detailUrl: String,
-        populationMin: Number,
-        populationMax: Number,
-        stats: Object,
         exportUrl: String,
         exportLimit: Number,
     };
 
     declare readonly mapContainerTarget: HTMLDivElement;
-    declare readonly minRangeTarget: HTMLInputElement;
-    declare readonly maxRangeTarget: HTMLInputElement;
-    declare readonly minInputTarget: HTMLInputElement;
-    declare readonly maxInputTarget: HTMLInputElement;
-    declare readonly excludeCouronneTarget: HTMLInputElement;
-    declare readonly excludePolesSecondairesTarget: HTMLInputElement;
-    declare readonly commerceDensityMinTarget: HTMLInputElement;
-    declare readonly restaurantDensityMinTarget: HTMLInputElement;
-    declare readonly priceMaxTarget: HTMLInputElement;
-    declare readonly priceTypeButtonTargets: HTMLButtonElement[];
-    declare readonly priceHelpTarget: HTMLElement;
-    declare readonly statsHintTargets: HTMLElement[];
     declare readonly filtersTarget: HTMLElement;
     declare readonly filtersButtonTarget: HTMLButtonElement;
     declare readonly exportButtonTarget: HTMLButtonElement;
     declare readonly exportHelpTarget: HTMLElement;
-    declare readonly nuclearExclusionKmTarget: HTMLInputElement;
-    declare readonly withStationTarget: HTMLInputElement;
-    declare readonly withBoardGameAssociationTarget: HTMLInputElement;
-    declare readonly trainCityTargets: HTMLSelectElement[];
-    declare readonly trainHoursTargets: HTMLInputElement[];
-    declare readonly trainMaxTransfersTarget: HTMLInputElement;
     declare readonly panelTarget: HTMLElement;
     declare readonly frameTarget: HTMLElement & { src: string | null };
     declare readonly dataUrlValue: string;
     declare readonly plantsUrlValue: string;
     declare readonly detailUrlValue: string;
-    declare readonly populationMinValue: number;
-    declare readonly populationMaxValue: number;
-    declare readonly statsValue: Record<string, Stats>;
     declare readonly exportUrlValue: string;
     declare readonly exportLimitValue: number;
 
     private map!: Map;
-    private steps!: number[];
     private selectedCode: string | null = null;
     private plants: GeoJSON.FeatureCollection<GeoJSON.Point> = { type: 'FeatureCollection', features: [] };
-    private debounceHandle?: ReturnType<typeof setTimeout>;
-    private priceType = DEFAULT_PRICE_TYPE;
+    // The filter as the filters panel announced it, and whether the map layers exist yet.
+    private filterQuery = new URLSearchParams();
+    private ready = false;
 
     connect() {
-        this.steps = POPULATION_STEPS.filter((s) => s > this.populationMinValue && s < this.populationMaxValue);
-        this.steps.unshift(this.populationMinValue);
-        this.steps.push(this.populationMaxValue);
-
-        this.minRangeTarget.max = this.maxRangeTarget.max = String(this.steps.length - 1);
-        this.applyParams(this.initialParams());
         window.addEventListener('popstate', this.onPopState);
 
         this.map = new Map({
@@ -154,62 +99,44 @@ export default class extends Controller {
                 this.applySelection(fromUrl);
             }
 
-            this.refresh(false);
+            this.ready = true;
+            this.drawPlantRadii();
+            this.updateUrl(false);
+            this.refresh();
         });
     }
 
     disconnect() {
         window.removeEventListener('popstate', this.onPopState);
-        clearTimeout(this.debounceHandle);
         this.map?.remove();
     }
 
-    // Back/forward: the URL is the source of truth, so the inputs, the
-    // selection and the map are rebuilt from it without pushing a new entry.
-    // Ignored until the map layers exist; the initial load reads the URL itself.
+    // Back/forward: the URL is the source of truth. The filters panel rebuilds
+    // itself from it and says so (see onFiltersChange); the selection is the
+    // map's concern. Ignored until the map layers exist; the initial load reads the URL itself.
     private onPopState = () => {
-        if (!this.map.getLayer(SELECTED_LAYER_ID)) {
+        if (!this.ready) {
             return;
         }
 
-        this.applyParams(new URLSearchParams(window.location.search));
-        this.drawPlantRadii();
         this.applySelection(this.uniteFromUrl());
-        this.refresh(false);
     };
 
-    applyParams(params: { get(name: string): string | null }) {
-        const [min, max] = this.orderedOrFull(params.get('populationMin'), params.get('populationMax'));
-        this.excludeCouronneTarget.checked = '1' === params.get('excludeCouronne');
-        this.excludePolesSecondairesTarget.checked = '1' === params.get('excludePolesSecondaires');
-        this.withStationTarget.checked = '1' === params.get('withStation');
-        this.withBoardGameAssociationTarget.checked = '1' === params.get('withBoardGameAssociation');
-        this.commerceDensityMinTarget.value = params.get('commerceDensityMin') ?? '';
-        this.nuclearExclusionKmTarget.value = params.get('nuclearExclusionKm') ?? '';
-        this.priceMaxTarget.value = params.get('priceMax') ?? '';
-        this.restaurantDensityMinTarget.value = params.get('restaurantDensityMin') ?? '';
-        const priceType = params.get('priceType') ?? DEFAULT_PRICE_TYPE;
-        this.priceType = priceType in PRICE_CODES ? priceType : DEFAULT_PRICE_TYPE;
-        this.renderPriceType();
-        this.renderStatsHints();
-        this.applyTrainParams(params);
-        this.trainMaxTransfersTarget.value = params.get('trainMaxTransfers') ?? '';
-        this.writeInputs(min, max);
-        this.syncRanges(min, max);
-    }
+    // The filters panel says the filter changed: the visitor did it (a new history
+    // entry), or the page is loading or going back (the URL is already right).
+    onFiltersChange(event: CustomEvent<FiltersChange>) {
+        this.filterQuery = new URLSearchParams(event.detail.params);
+        this.filtersButtonTarget.textContent = 0 === event.detail.count ? 'Filtres' : `Filtres (${event.detail.count})`;
 
-    // The rows are filled in order with the destinations the params mention.
-    applyTrainParams(params: { get(name: string): string | null }) {
-        const destinations = [...this.trainCityTargets[0].options].map((option) => option.value).filter((value) => '' !== value);
-        const limits = destinations
-            .map((destination): [string, string | null] => [destination, params.get(`${TRAIN_PARAM_PREFIX}${destination}]`)])
-            .filter((limit): limit is [string, string] => null !== limit[1]);
+        if (!this.ready) {
+            return; // The first load draws everything once the layers exist.
+        }
 
-        this.trainCityTargets.forEach((select, row) => {
-            const limit = limits[row];
-            select.value = limit?.[0] ?? '';
-            this.trainHoursTargets[row].value = limit ? String(Number(limit[1]) / 60) : '';
-        });
+        this.drawPlantRadii();
+        if ('history' !== event.detail.reason) {
+            this.updateUrl('user' === event.detail.reason);
+        }
+        this.refresh();
     }
 
     uniteFromUrl(): string | null {
@@ -218,41 +145,14 @@ export default class extends Controller {
         return null !== code && UNITE_CODE_PATTERN.test(code) ? code : null;
     }
 
-    onRangeInput() {
-        const a = this.steps[Number(this.minRangeTarget.value)];
-        const b = this.steps[Number(this.maxRangeTarget.value)];
-        this.writeInputs(Math.min(a, b), Math.max(a, b));
-
-        this.scheduleRefresh();
-    }
-
-    // Fires on every keystroke: the sliders follow, but the typed text is
-    // left alone so the user isn't fought while typing.
-    onNumberInput() {
-        const [min, max] = this.valuesFromInputs();
-        this.syncRanges(min, max);
-
-        this.scheduleRefresh();
-    }
-
-    // Once editing is done, the inputs are rewritten with the clamped and
-    // ordered values that are actually applied.
-    onNumberChange() {
-        const [min, max] = this.valuesFromInputs();
-        this.writeInputs(min, max);
-        this.syncRanges(min, max);
-
-        this.scheduleRefresh();
-    }
-
     select(code: string) {
         this.applySelection(code);
-        this.updateUrl(...this.valuesFromInputs(), true);
+        this.updateUrl(true);
     }
 
     closePanel() {
         this.applySelection(null);
-        this.updateUrl(...this.valuesFromInputs(), true);
+        this.updateUrl(true);
     }
 
     // The panel and the highlight only; the URL is the caller's concern.
@@ -269,32 +169,11 @@ export default class extends Controller {
         this.map.setFilter(SELECTED_LAYER_ID, ['==', ['get', 'code'], code ?? '']);
     }
 
-    onToggleChange() {
-        this.scheduleRefresh();
-    }
-
-    scheduleRefresh() {
-        clearTimeout(this.debounceHandle);
-        this.debounceHandle = setTimeout(() => this.refresh(), DEBOUNCE_MS);
-    }
-
-    async refresh(pushHistory = true) {
-        const [min, max] = this.valuesFromInputs();
-
-        this.updateUrl(min, max, pushHistory);
-        this.saveFilter(min, max);
-
-        const activeFilters = [...this.filterParams(min, max).keys()].length;
-        this.filtersButtonTarget.textContent = 0 === activeFilters ? 'Filtres' : `Filtres (${activeFilters})`;
-
+    async refresh() {
         const url = new URL(this.dataUrlValue, window.location.origin);
-        for (const [name, value] of this.filterParams(min, max)) {
+        for (const [name, value] of this.filterQuery) {
             url.searchParams.set(name, value);
         }
-        // The endpoint's population bounds default to the full range anyway,
-        // but sending both keeps the request explicit.
-        url.searchParams.set('populationMin', String(min));
-        url.searchParams.set('populationMax', String(max));
 
         const response = await fetch(url);
         const geojson: GeoJSON.FeatureCollection = await response.json();
@@ -312,13 +191,10 @@ export default class extends Controller {
     }
 
     async exportCsv() {
-        const [min, max] = this.valuesFromInputs();
         const url = new URL(this.exportUrlValue, window.location.origin);
-        for (const [name, value] of this.filterParams(min, max)) {
+        for (const [name, value] of this.filterQuery) {
             url.searchParams.set(name, value);
         }
-        url.searchParams.set('populationMin', String(min));
-        url.searchParams.set('populationMax', String(max));
 
         const response = await fetch(url);
         if (!response.ok) {
@@ -335,26 +211,6 @@ export default class extends Controller {
         URL.revokeObjectURL(link.href);
     }
 
-    onCommerceInput() {
-        this.scheduleRefresh();
-    }
-
-    onRestaurantInput() {
-        this.scheduleRefresh();
-    }
-
-    onPriceInput() {
-        this.scheduleRefresh();
-    }
-
-    onPriceTypeClick(event: Event) {
-        const type = (event.currentTarget as HTMLElement).dataset.priceType ?? DEFAULT_PRICE_TYPE;
-        this.priceType = type in PRICE_CODES ? type : DEFAULT_PRICE_TYPE;
-        this.renderPriceType();
-        this.renderStatsHints();
-        this.scheduleRefresh();
-    }
-
     // The filter drawer below md: the map stays the default view.
     openFilters() {
         this.filtersTarget.classList.remove('hidden');
@@ -362,111 +218,6 @@ export default class extends Controller {
 
     closeFilters() {
         this.filtersTarget.classList.add('hidden');
-    }
-
-    renderPriceType() {
-        for (const button of this.priceTypeButtonTargets) {
-            button.setAttribute('aria-pressed', String(button.dataset.priceType === this.priceType));
-        }
-        this.priceHelpTarget.textContent = `${PRICE_LABELS[this.priceType]}, dernière année (DVF)`;
-    }
-
-    // Reference points under a filter: where the median sits, and clickable
-    // thresholds that each keep a given share of the unités urbaines.
-    renderStatsHints() {
-        for (const hint of this.statsHintTargets) {
-            const code = hint.dataset.statsCode ?? PRICE_CODES[this.priceType];
-            const stats = this.statsValue[code];
-            hint.replaceChildren();
-            if (undefined === stats) {
-                continue;
-            }
-
-            const input = this[`${hint.dataset.statsInput}Target` as 'priceMaxTarget'];
-            const round = this.rounder(Number(hint.dataset.statsDecimals));
-            const format = (value: number) => new Intl.NumberFormat('fr-FR').format(round(value));
-            const unit = hint.dataset.statsUnit ?? '';
-            const isMin = 'min' === hint.dataset.statsDirection;
-
-            const summary = document.createElement('p');
-            summary.textContent = `Médiane ${format(stats.median)} ${unit} · 80 % des villes entre ${format(stats.p10)} et ${format(stats.p90)}`;
-            const chips = document.createElement('p');
-            chips.className = 'mt-1 flex flex-wrap items-center gap-1';
-            chips.append('Seuils :');
-            for (const chip of STAT_CHIPS) {
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'rounded border border-stone-300 px-1.5 py-0.5 text-stone-700 hover:border-emerald-600';
-                button.textContent = `${isMin ? '≥' : '≤'} ${format(stats[chip.key])}`;
-                button.dataset.tooltip = `Garde ${isMin ? chip.keptByMin : 100 - chip.keptByMin} % des villes`;
-                button.addEventListener('click', () => {
-                    input.value = String(round(stats[chip.key]));
-                    this.scheduleRefresh();
-                });
-                chips.append(button);
-            }
-            hint.append(summary, chips);
-        }
-    }
-
-    // Positive decimals: that many digits; negative: prices, to the nearest 50 €.
-    rounder(decimals: number): (value: number) => number {
-        if (decimals < 0) {
-            return (value) => Math.round(value / 50) * 50;
-        }
-        const factor = 10 ** decimals;
-
-        return (value) => Math.round(value * factor) / factor;
-    }
-
-    onTrainInput() {
-        this.scheduleRefresh();
-    }
-
-    onNuclearInput() {
-        this.drawPlantRadii();
-        this.scheduleRefresh();
-    }
-
-    // Null (filter off) for an empty or invalid field.
-    commerceDensityMin(): number | null {
-        return this.positiveNumber(this.commerceDensityMinTarget.value);
-    }
-
-    restaurantDensityMin(): number | null {
-        return this.positiveNumber(this.restaurantDensityMinTarget.value);
-    }
-
-    priceMax(): number | null {
-        return this.positiveNumber(this.priceMaxTarget.value);
-    }
-
-    nuclearExclusionKm(): number | null {
-        return this.positiveNumber(this.nuclearExclusionKmTarget.value);
-    }
-
-    // Rows left empty are off; a city picked twice keeps its strictest limit.
-    trainLimits(): [string, number][] {
-        const limits: Record<string, number> = {};
-        this.trainCityTargets.forEach((select, row) => {
-            const hours = this.positiveNumber(this.trainHoursTargets[row].value);
-            if ('' === select.value || null === hours) {
-                return;
-            }
-            limits[select.value] = Math.min(limits[select.value] ?? Infinity, Math.round(hours * 60));
-        });
-
-        return Object.entries(limits);
-    }
-
-    positiveNumber(raw: string): number | null {
-        if ('' === raw.trim()) {
-            return null;
-        }
-
-        const value = Number(raw);
-
-        return Number.isFinite(value) && value > 0 ? value : null;
     }
 
     // The plants are always shown; their radius circles only while the
@@ -517,7 +268,7 @@ export default class extends Controller {
     }
 
     drawPlantRadii() {
-        const km = this.nuclearExclusionKm();
+        const km = Number(this.filterQuery.get('nuclearExclusionKm')) || null;
         const features = null === km ? [] : this.plants.features.map((plant) => this.circle(plant.geometry.coordinates as [number, number], km));
 
         (this.map.getSource(PLANTS_RADIUS_SOURCE_ID) as GeoJSONSource | undefined)?.setData({ type: 'FeatureCollection', features });
@@ -557,56 +308,11 @@ export default class extends Controller {
         return context.getImageData(0, 0, size, size);
     }
 
-    // An empty or invalid field falls back to its bound; the pair is then
-    // ordered, so typing a min above the max doesn't produce an empty map.
-    valuesFromInputs(): [number, number] {
-        const min = this.clamp(this.minInputTarget.value, this.populationMinValue);
-        const max = this.clamp(this.maxInputTarget.value, this.populationMaxValue);
-
-        return min <= max ? [min, max] : [max, min];
-    }
-
-    clamp(raw: string | null, fallback: number): number {
-        if (null === raw || '' === raw.trim()) {
-            return fallback;
-        }
-
-        const value = Math.round(Number(raw));
-        if (!Number.isFinite(value)) {
-            return fallback;
-        }
-
-        return Math.min(Math.max(value, this.populationMinValue), this.populationMaxValue);
-    }
-
-    writeInputs(min: number, max: number) {
-        this.minInputTarget.value = String(min);
-        this.maxInputTarget.value = String(max);
-    }
-
-    // The slider only shows the nearest step; the exact value lives in the
-    // inputs.
-    syncRanges(min: number, max: number) {
-        this.minRangeTarget.value = String(this.nearestStepIndex(min));
-        this.maxRangeTarget.value = String(this.nearestStepIndex(max));
-    }
-
-    nearestStepIndex(value: number): number {
-        let nearest = 0;
-        this.steps.forEach((step, i) => {
-            if (Math.abs(step - value) < Math.abs(this.steps[nearest] - value)) {
-                nearest = i;
-            }
-        });
-
-        return nearest;
-    }
-
-    // Makes the current filter shareable: reflected in the page URL, and
-    // read back from it on load (the selected unité urbaine too). A bound left at its default (the full
-    // range) is omitted entirely, so an untouched filter keeps a clean URL.
-    updateUrl(min: number, max: number, pushHistory: boolean) {
-        const params = this.filterParams(min, max);
+    // Makes the current filter shareable: reflected in the page URL, and read back
+    // from it on load (the selected unité urbaine too). A filter left at its
+    // default is omitted entirely, so an untouched filter keeps a clean URL.
+    updateUrl(pushHistory: boolean) {
+        const params = new URLSearchParams(this.filterQuery);
         if (null !== this.selectedCode) {
             params.set('unite', this.selectedCode);
         }
@@ -627,103 +333,6 @@ export default class extends Controller {
         // Keep the current state: it carries Turbo's restoration data, without
         // which the back button silently does nothing on this entry.
         history.replaceState(history.state, '', target);
-    }
-
-    // The filter as query params, leaving out whatever is at its default.
-    filterParams(min: number, max: number): URLSearchParams {
-        const params = new URLSearchParams();
-        if (min !== this.populationMinValue) {
-            params.set('populationMin', String(min));
-        }
-        if (max !== this.populationMaxValue) {
-            params.set('populationMax', String(max));
-        }
-        if (this.excludeCouronneTarget.checked) {
-            params.set('excludeCouronne', '1');
-        }
-        if (this.excludePolesSecondairesTarget.checked) {
-            params.set('excludePolesSecondaires', '1');
-        }
-        if (this.withStationTarget.checked) {
-            params.set('withStation', '1');
-        }
-        if (this.withBoardGameAssociationTarget.checked) {
-            params.set('withBoardGameAssociation', '1');
-        }
-        const density = this.commerceDensityMin();
-        if (null !== density) {
-            params.set('commerceDensityMin', String(density));
-        }
-        const nuclearKm = this.nuclearExclusionKm();
-        if (null !== nuclearKm) {
-            params.set('nuclearExclusionKm', String(nuclearKm));
-        }
-        const restaurantDensity = this.restaurantDensityMin();
-        if (null !== restaurantDensity) {
-            params.set('restaurantDensityMin', String(restaurantDensity));
-        }
-        const priceMax = this.priceMax();
-        if (null !== priceMax) {
-            params.set('priceMax', String(priceMax));
-        }
-        if (DEFAULT_PRICE_TYPE !== this.priceType) {
-            params.set('priceType', this.priceType);
-        }
-        const transfers = this.trainMaxTransfersTarget.value.trim();
-        if ('' !== transfers && Number.isInteger(Number(transfers)) && Number(transfers) >= 0) {
-            params.set('trainMaxTransfers', transfers);
-        }
-        for (const [destination, minutes] of this.trainLimits()) {
-            params.set(`${TRAIN_PARAM_PREFIX}${destination}]`, String(minutes));
-        }
-
-        return params;
-    }
-
-    // The URL wins so a shared link shows what its author saw; otherwise the
-    // last filter from this browser is restored, then the defaults.
-    initialParams(): { get(name: string): string | null } {
-        const params = new URLSearchParams(window.location.search);
-        if ([...params.keys()].some((name) => FILTER_PARAMS.includes(name) || name.startsWith(TRAIN_PARAM_PREFIX))) {
-            return params;
-        }
-
-        const saved = this.loadFilter();
-
-        return { get: (name) => saved?.[name] ?? null };
-    }
-
-    orderedOrFull(rawMin: string | null, rawMax: string | null): [number, number] {
-        const min = this.clamp(rawMin, this.populationMinValue);
-        const max = this.clamp(rawMax, this.populationMaxValue);
-
-        return min <= max ? [min, max] : [this.populationMinValue, this.populationMaxValue];
-    }
-
-    // localStorage can throw (private mode, blocked site data) or hold
-    // garbage, and the filter must work without it.
-    saveFilter(min: number, max: number) {
-        try {
-            const params = this.filterParams(min, max);
-            if (0 === [...params].length) {
-                localStorage.removeItem(STORAGE_KEY);
-
-                return;
-            }
-            localStorage.setItem(STORAGE_KEY, JSON.stringify(Object.fromEntries(params)));
-        } catch {
-            // Not persisting is an acceptable degradation.
-        }
-    }
-
-    loadFilter(): Record<string, string> | null {
-        try {
-            const raw = localStorage.getItem(STORAGE_KEY);
-
-            return null === raw ? null : JSON.parse(raw);
-        } catch {
-            return null;
-        }
     }
 
     emptyFeatureCollection(): GeoJSON.FeatureCollection {
