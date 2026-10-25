@@ -89,6 +89,17 @@ final readonly class UniteUrbaineFilterClauseProvider
                         )
                         AND restaurant_density.value_decimal >= CAST(:fRestaurantDensityMin AS numeric)
                   ))
+                  AND (CAST(:fAssociationDensityMin AS numeric) IS NULL OR EXISTS (
+                      SELECT 1
+                      FROM criterion_value association_density
+                      INNER JOIN criterion ac ON ac.id = association_density.criterion_id
+                      WHERE ac.code = 'associations_actives_pour_1000_hab'
+                        AND association_density.unite_urbaine_id = uu.id
+                        AND association_density.period = (
+                            SELECT MAX(period) FROM criterion_value WHERE criterion_id = ac.id
+                        )
+                        AND association_density.value_decimal >= CAST(:fAssociationDensityMin AS numeric)
+                  ))
                   AND (CAST(:fNuclearKm AS numeric) IS NULL OR NOT EXISTS (
                       SELECT 1
                       FROM poi plant
@@ -133,6 +144,7 @@ final readonly class UniteUrbaineFilterClauseProvider
                 'fPopulationMax' => $filter->populationMax,
                 'fCommerceDensityMin' => $filter->commerceDensityMin,
                 'fRestaurantDensityMin' => $filter->restaurantDensityMin,
+                'fAssociationDensityMin' => $filter->associationDensityMin,
                 'fNuclearKm' => $filter->nuclearExclusionKm,
                 'fPriceMax' => $filter->priceMax,
                 'fPriceCriterion' => $filter->priceCriterionCode,

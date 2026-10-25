@@ -54,6 +54,28 @@ final class UniteUrbaineMapExportControllerTest extends WebTestCase
         self::assertStringEndsWith(';20000;3,40', $lines[1]);
     }
 
+    public function testItExportsTheAssociationDensityOfAFilteredUnit(): void
+    {
+        $client = self::createClient();
+
+        $unit = UniteUrbaineFactory::createOne(['inseeCode' => '00001', 'name' => 'Vannes', 'boundary' => self::BOUNDARY]);
+        $population = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+        $density = CriterionFactory::createOne(['code' => 'associations_actives_pour_1000_hab', 'valueType' => CriterionValueType::Decimal]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        $entityManager->persist(new CriterionValue($population, $unit, 20_000, 2023));
+        $entityManager->persist(new CriterionValue($density, $unit, 31.25, 2026));
+        $entityManager->flush();
+
+        $client->request('GET', '/carte/export.csv', ['associationDensityMin' => '20']);
+
+        self::assertResponseIsSuccessful();
+        $lines = $this->lines($client);
+        self::assertStringEndsWith(';"Associations actives pour 1000 hab."', $lines[0]);
+        self::assertStringEndsWith(';20000;31,25', $lines[1]);
+    }
+
     public function testItAcceptsExactlyTheLimitAndRefusesMore(): void
     {
         $client = self::createClient();

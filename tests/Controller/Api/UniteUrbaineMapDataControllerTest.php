@@ -143,6 +143,36 @@ final class UniteUrbaineMapDataControllerTest extends WebTestCase
         self::assertSame(['00001'], $this->codes($client, ['restaurantDensityMin' => '2']));
     }
 
+    public function testDataEndpointCanRequireAMinimumAssociationDensity(): void
+    {
+        $client = self::createClient();
+
+        $many = UniteUrbaineFactory::createOne(['inseeCode' => '00001', 'boundary' => 'SRID=4326;MULTIPOLYGON(((0 0,0 1,1 1,1 0,0 0)))']);
+        $few = UniteUrbaineFactory::createOne(['inseeCode' => '00002', 'boundary' => 'SRID=4326;MULTIPOLYGON(((1 0,1 1,2 1,2 0,1 0)))']);
+        // No density value: cannot be said to reach a minimum.
+        $unknown = UniteUrbaineFactory::createOne(['inseeCode' => '00003', 'boundary' => 'SRID=4326;MULTIPOLYGON(((2 0,2 1,3 1,3 0,2 0)))']);
+
+        $population = CriterionFactory::createOne(['code' => 'population', 'valueType' => CriterionValueType::Integer]);
+        $density = CriterionFactory::createOne(['code' => 'associations_actives_pour_1000_hab', 'valueType' => CriterionValueType::Decimal]);
+        // Another density, which the filter must not read.
+        $total = CriterionFactory::createOne(['code' => 'associations_total_pour_1000_hab', 'valueType' => CriterionValueType::Decimal]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ([$many, $few, $unknown] as $uniteUrbaine) {
+            $entityManager->persist(new CriterionValue($population, $uniteUrbaine, 10_000, 2023));
+        }
+
+        $entityManager->persist(new CriterionValue($density, $many, 31.0, 2026));
+        $entityManager->persist(new CriterionValue($density, $few, 12.5, 2026));
+        $entityManager->persist(new CriterionValue($total, $few, 80.0, 2026));
+        $entityManager->flush();
+
+        self::assertSame(['00001', '00002', '00003'], $this->codes($client, []));
+        self::assertSame(['00001'], $this->codes($client, ['associationDensityMin' => '20']));
+        self::assertSame(['00001', '00002'], $this->codes($client, ['associationDensityMin' => '12.5']));
+    }
+
     public function testDataEndpointCapsThePriceOfTheChosenPropertyType(): void
     {
         $client = self::createClient();

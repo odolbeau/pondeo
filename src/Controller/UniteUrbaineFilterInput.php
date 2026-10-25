@@ -19,7 +19,9 @@ use Symfony\Component\Validator\Context\ExecutionContextInterface;
  * inhabitants) is likewise off when null, as is the exclusion radius (km) around
  * nuclear plants. The price per m² maximum (€) has no minimum counterpart and is
  * off when null. The restaurant density minimum works like the commerce one. The
- * price maximum applies to the price type chosen (all housing by default).
+ * price maximum applies to the price type chosen (all housing by default). The
+ * association density minimum (active associations per 1000 inhabitants) works
+ * like the commerce one.
  * Keeping only the unités urbaines with a railway station, or with a board game
  * association, is off by default too.
  * The train limits (minutes, by destination city) are empty, so off, by default.
@@ -42,6 +44,8 @@ readonly class UniteUrbaineFilterInput
         public RealEstatePriceType $priceType = RealEstatePriceType::Global,
         #[Assert\PositiveOrZero]
         public ?float $restaurantDensityMin = null,
+        #[Assert\PositiveOrZero]
+        public ?float $associationDensityMin = null,
         public bool $withStation = false,
         public bool $withBoardGameAssociation = false,
         /** @var array<string, int> destination value => maximum minutes (car to the station + train) */
@@ -78,6 +82,7 @@ readonly class UniteUrbaineFilterInput
             excludedAttractionCategories: $this->excludedAttractionCategories(),
             commerceDensityMin: $this->commerceDensityMin,
             restaurantDensityMin: $this->restaurantDensityMin,
+            associationDensityMin: $this->associationDensityMin,
             nuclearExclusionKm: $this->nuclearExclusionKm,
             priceMax: $this->priceMax,
             priceCriterionCode: $this->priceType->criterionCode(),
@@ -119,6 +124,7 @@ readonly class UniteUrbaineFilterInput
             'priceMax' => $this->priceMax,
             'priceType' => RealEstatePriceType::Global === $this->priceType ? null : $this->priceType->value,
             'restaurantDensityMin' => $this->restaurantDensityMin,
+            'associationDensityMin' => $this->associationDensityMin,
             'withStation' => $this->withStation ? '1' : null,
             'withBoardGameAssociation' => $this->withBoardGameAssociation ? '1' : null,
             'trainMaxMinutes' => [] === $this->trainMaxMinutes ? null : $this->trainMaxMinutes,

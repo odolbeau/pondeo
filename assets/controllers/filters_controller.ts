@@ -38,7 +38,7 @@ const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_
 // results inside a form (`submit` value), the form is submitted with the
 // filter instead, so the results are refreshed in place.
 export default class extends Controller {
-    static targets = ['minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'summary', 'count', 'hidden', 'toggle', 'drawer'];
+    static targets = ['minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'associationDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'summary', 'count', 'hidden', 'toggle', 'drawer'];
     static values = {
         populationMin: Number,
         populationMax: Number,
@@ -56,6 +56,7 @@ export default class extends Controller {
     declare readonly excludePolesSecondairesTarget: HTMLInputElement;
     declare readonly commerceDensityMinTarget: HTMLInputElement;
     declare readonly restaurantDensityMinTarget: HTMLInputElement;
+    declare readonly associationDensityMinTarget: HTMLInputElement;
     declare readonly priceMaxTarget: HTMLInputElement;
     declare readonly priceTypeButtonTargets: HTMLButtonElement[];
     declare readonly priceHelpTarget: HTMLElement;
@@ -134,6 +135,7 @@ export default class extends Controller {
         this.nuclearExclusionKmTarget.value = params.get('nuclearExclusionKm') ?? '';
         this.priceMaxTarget.value = params.get('priceMax') ?? '';
         this.restaurantDensityMinTarget.value = params.get('restaurantDensityMin') ?? '';
+        this.associationDensityMinTarget.value = params.get('associationDensityMin') ?? '';
         const priceType = params.get('priceType') ?? DEFAULT_PRICE_TYPE;
         this.priceType = priceType in PRICE_CODES ? priceType : DEFAULT_PRICE_TYPE;
         this.renderPriceType();
@@ -317,7 +319,7 @@ export default class extends Controller {
     activeCount(): number {
         const [min, max] = this.valuesFromInputs();
         const toggles = [this.excludeCouronneTarget, this.excludePolesSecondairesTarget, this.withStationTarget, this.withBoardGameAssociationTarget];
-        const numbers = [this.commerceDensityMinTarget, this.restaurantDensityMinTarget, this.priceMaxTarget, this.nuclearExclusionKmTarget];
+        const numbers = [this.commerceDensityMinTarget, this.restaurantDensityMinTarget, this.associationDensityMinTarget, this.priceMaxTarget, this.nuclearExclusionKmTarget];
         const trainLimits = this.trainLimits().length;
 
         return (
@@ -349,6 +351,10 @@ export default class extends Controller {
 
     restaurantDensityMin(): number | null {
         return this.positiveNumber(this.restaurantDensityMinTarget.value);
+    }
+
+    associationDensityMin(): number | null {
+        return this.positiveNumber(this.associationDensityMinTarget.value);
     }
 
     priceMax(): number | null {
@@ -474,6 +480,10 @@ export default class extends Controller {
         const restaurantDensity = this.restaurantDensityMin();
         if (null !== restaurantDensity) {
             params.set('restaurantDensityMin', String(restaurantDensity));
+        }
+        const associationDensity = this.associationDensityMin();
+        if (null !== associationDensity) {
+            params.set('associationDensityMin', String(associationDensity));
         }
         // The price type and the transfers only qualify a price or a train limit: alone, they are no filter.
         const priceMax = this.priceMax();
