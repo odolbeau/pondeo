@@ -18,9 +18,9 @@ Each criterion is turned into a **percentile** among all unités urbaines: 1 for
 the best, 0 for the worst. The best end is the one the criterion's ranking
 uses (low unemployment, high living standard...), except for prices, where
 cheap is what people want. The population and the density are left out: whether
-big or small is better is a matter of taste, which one importance cannot say. So is the
-density of associations, which says as much about a town's role in its area as about its
-life. The score is the
+big or small is better is a matter of taste, which one importance cannot say. The
+density of associations counts: more is better, even though a small town that
+serves a whole area is flattered, as the ranking's note says. The score is the
 average of a unit's percentiles weighted by the importance, scaled to 0-100.
 Ranks are shared on ties, as in the single-criterion rankings.
 
