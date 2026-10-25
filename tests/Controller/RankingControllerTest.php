@@ -111,6 +111,19 @@ final class RankingControllerTest extends WebTestCase
         self::assertSelectorTextContains('tbody tr:first-child', 'Brest');
     }
 
+    public function testRentRankingStartsWithTheHighestRent(): void
+    {
+        $client = self::createClient();
+        $this->createValues('loyer_m2_appartement', ['Guéret' => 8.4, 'Paris' => 24.7]);
+
+        $client->request('GET', '/classements/loyer_m2_appartement');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Le loyer au m² des appartements');
+        self::assertSelectorTextContains('main section', 'Source : Estimations ANIL');
+        self::assertSelectorTextContains('tbody tr:first-child', 'Paris');
+    }
+
     public function testIndexGroupsClimateAndRiskRankingsByTheme(): void
     {
         $client = self::createClient();

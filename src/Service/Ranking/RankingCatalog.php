@@ -20,6 +20,10 @@ final class RankingCatalog
 
     private const string SOURCE_DVF = 'DGFiP, Demandes de valeurs foncières (statistiques DVF, Etalab), ventes de 2021 à 2025';
 
+    private const string SOURCE_RENTS = 'Estimations ANIL, à partir des données du Groupe SeLoger et de leboncoin (carte des loyers 2025) ; pondération : INSEE, recensement de la population';
+
+    private const string TEXT_RENTS = 'Il s\'agit du loyer demandé dans les annonces de leboncoin et de SeLoger pour un logement vide, charges comprises, au 3e trimestre 2025 : un nouveau locataire paie souvent plus que ceux déjà en place. Quand une commune a trop peu d\'annonces, elle reprend le loyer estimé pour un groupe de communes voisines : plusieurs petites agglomérations peuvent alors afficher le même loyer et partager leur rang.';
+
     private const string SOURCE_OPEN_METEO = 'Open-Meteo.com, réanalyse ERA5, moyenne 1991-2020 (CC BY 4.0)';
 
     private const string SOURCE_PROJECTION = 'Open-Meteo.com, modèles climatiques CMIP6, période 2041-2050 (CC BY 4.0)';
@@ -81,6 +85,14 @@ final class RankingCatalog
                 'Le prix moyen d\'un mètre carré de maison acheté dans l\'agglomération. Il porte sur la surface habitable : le terrain n\'est pas compté, mais il pèse dans le prix.',
                 self::TEXT_DVF,
             ], self::SOURCE_DVF), invertedInScore: true, scoreTitle: 'Des maisons abordables'),
+            new Ranking('loyer_m2_appartement', 'Immobilier', 'Le loyer au m² des appartements', 'Pour louer en ville.', new RankingNote([
+                'Combien coûte par mois un mètre carré d\'appartement à la location, toutes tailles confondues. À 12 €/m², un 50 m² se loue 600 € par mois.',
+                self::TEXT_RENTS,
+            ], self::SOURCE_RENTS), invertedInScore: true, scoreTitle: "Des loyers d'appartement bas"),
+            new Ranking('loyer_m2_maison', 'Immobilier', 'Le loyer au m² des maisons', 'Pour louer avec jardin.', new RankingNote([
+                'Combien coûte par mois un mètre carré de maison à la location. Les maisons sont peu nombreuses à louer : leur loyer est plus souvent estimé sur un groupe de communes que celui des appartements.',
+                self::TEXT_RENTS,
+            ], self::SOURCE_RENTS), invertedInScore: true, scoreTitle: 'Des loyers de maison bas'),
             new Ranking('part_logements_vacants', 'Immobilier', 'Le moins de logements vacants', 'Un marché tendu ou une ville qui se vide ?', new RankingNote([
                 'Sur 100 logements de l\'agglomération, combien sont vides, c\'est-à-dire ni habités ni utilisés comme résidence secondaire ? Les logements en vente, en location ou en attente de travaux en font partie.',
                 'Peu de vacance signifie qu\'il est difficile de se loger : le marché est tendu. Beaucoup de vacance peut indiquer une ville qui perd des habitants. À l\'inverse, une station balnéaire pleine de résidences secondaires affichera peu de logements vacants sans être pour autant tendue.',
