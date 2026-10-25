@@ -24,13 +24,7 @@ final class UniteUrbaineMapDataController extends AbstractController
 
     public function __invoke(#[MapQueryString] UniteUrbaineMapDataInput $filters): JsonResponse
     {
-        $period = $this->mapDataProvider->getLatestPeriod();
-        $bounds = $this->mapDataProvider->getPopulationBounds($period);
-
-        $min = $filters->populationMin ?? $bounds['min'];
-        $max = $filters->populationMax ?? $bounds['max'];
-
-        $unitesUrbaines = $this->mapDataProvider->findFeatures($period, $filters->toFilter($min, $max));
+        $unitesUrbaines = $this->mapDataProvider->findFeatures($filters->toFilter());
 
         return JsonResponse::fromJsonString($this->mapDataProvider->toFeatureCollectionJson($unitesUrbaines));
     }

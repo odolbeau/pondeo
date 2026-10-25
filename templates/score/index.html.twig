@@ -71,7 +71,7 @@
                     </table>
 
                     {% if pages > 1 %}
-                        {% set query = {w: weights} %}
+                        {% set query = {w: weights}|merge(filterQuery) %}
                         <nav class="mt-6 flex items-center justify-between text-sm" aria-label="Pagination">
                             {% if page > 1 %}
                                 <a href="{{ path('app_score', query|merge({page: page - 1})) }}" class="text-emerald-700 hover:underline">← Précédent</a>

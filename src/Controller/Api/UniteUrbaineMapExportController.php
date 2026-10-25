@@ -32,14 +32,7 @@ final class UniteUrbaineMapExportController extends AbstractController
 
     public function __invoke(#[MapQueryString] UniteUrbaineMapExportInput $filters): Response
     {
-        $period = $this->mapDataProvider->getLatestPeriod();
-        $bounds = $this->mapDataProvider->getPopulationBounds($period);
-
-        $rows = $this->mapDataProvider->findExportRows(
-            $period,
-            $filters->toFilter($filters->populationMin ?? $bounds['min'], $filters->populationMax ?? $bounds['max']),
-            self::LIMIT,
-        );
+        $rows = $this->mapDataProvider->findExportRows($filters->toFilter(), self::LIMIT);
 
         if (\count($rows) > self::LIMIT) {
             return new JsonResponse(['error' => \sprintf('Trop de résultats (plus de %d) : affinez vos filtres.', self::LIMIT)], Response::HTTP_UNPROCESSABLE_ENTITY);

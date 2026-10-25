@@ -7,8 +7,8 @@ namespace App\Controller;
 use App\Controller\Api\UniteUrbaineMapExportController;
 use App\Enum\JourneyDestination;
 use App\Enum\RealEstatePriceType;
+use App\Service\Filter\PopulationRangeProvider;
 use App\Service\Map\CriterionStatsProvider;
-use App\Service\Map\UniteUrbaineMapDataProvider;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\Routing\Attribute\Route;
@@ -17,15 +17,14 @@ use Symfony\Component\Routing\Attribute\Route;
 final class UniteUrbaineMapController extends AbstractController
 {
     public function __construct(
-        private readonly UniteUrbaineMapDataProvider $mapDataProvider,
+        private readonly PopulationRangeProvider $populationRangeProvider,
         private readonly CriterionStatsProvider $criterionStatsProvider,
     ) {
     }
 
     public function __invoke(): Response
     {
-        $period = $this->mapDataProvider->getLatestPeriod();
-        $bounds = $this->mapDataProvider->getPopulationBounds($period);
+        $bounds = $this->populationRangeProvider->getBounds($this->populationRangeProvider->getLatestPeriod());
 
         return $this->render('map/index.html.twig', [
             'title' => 'Carte des unités urbaines',

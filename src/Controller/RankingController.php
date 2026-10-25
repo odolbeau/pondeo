@@ -25,8 +25,11 @@ final class RankingController extends AbstractController
     ) {
     }
 
-    public function __invoke(string $code, #[MapQueryString] RankingInput $input = new RankingInput()): Response
-    {
+    public function __invoke(
+        string $code,
+        #[MapQueryString] RankingInput $input = new RankingInput(),
+        #[MapQueryString] UniteUrbaineFilterInput $filters = new UniteUrbaineFilterInput(),
+    ): Response {
         $ranking = $this->catalog->find($code);
         $criterion = null === $ranking ? null : $this->criterionRepository->findOneBy(['code' => $code]);
         if (null === $ranking || null === $criterion) {
@@ -34,7 +37,7 @@ final class RankingController extends AbstractController
         }
 
         $rankFromLowest = $criterion->isRankFromLowest() !== $input->isReversed();
-        $data = $this->rankingProvider->findRanking($code, $rankFromLowest, self::PER_PAGE, ($input->page - 1) * self::PER_PAGE);
+        $data = $this->rankingProvider->findRanking($code, $rankFromLowest, self::PER_PAGE, ($input->page - 1) * self::PER_PAGE, $filters->toFilter());
 
         $rows = $data['rows'];
         $siblings = array_values(array_filter(
@@ -48,6 +51,8 @@ final class RankingController extends AbstractController
             'rows' => $rows,
             'period' => $data['period'],
             'total' => $data['total'],
+            'nationalTotal' => $data['nationalTotal'],
+            'filterQuery' => $filters->toQuery(),
             'page' => $input->page,
             'pages' => max(1, (int) ceil($data['total'] / self::PER_PAGE)),
             'reversed' => $input->isReversed(),

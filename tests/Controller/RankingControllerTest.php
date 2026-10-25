@@ -124,6 +124,61 @@ final class RankingControllerTest extends WebTestCase
         self::assertSelectorTextContains('tbody tr:first-child', 'Paris');
     }
 
+    public function testFilterRanksTheSelectionAmongItselfAndKeepsTheNationalMedian(): void
+    {
+        $client = self::createClient();
+        $this->createValues('loyer_m2_appartement', ['Petite' => 8.0, 'Moyenne' => 12.0, 'Grande' => 25.0, 'Autre' => 16.0]);
+        $this->createPopulations(['Petite' => 5_000, 'Moyenne' => 50_000, 'Grande' => 500_000, 'Autre' => 60_000]);
+
+        $client->request('GET', '/classements/loyer_m2_appartement?populationMin=10000&populationMax=100000');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorCount(2, 'tbody tr');
+        self::assertSelectorTextContains('tbody tr:first-child', 'Autre');
+        self::assertSelectorTextContains('tbody tr:first-child td:first-child', '1');
+        self::assertSelectorTextContains('tbody tr:last-child td:first-child', '2');
+        self::assertSelectorTextContains('tbody tr:last-child', 'Moyenne');
+        // The median is that of the four units (14), not of the two kept.
+        self::assertSelectorTextContains('main', '2 unités urbaines sur 4');
+        self::assertSelectorTextContains('main', 'médiane nationale : 14');
+    }
+
+    public function testFilterKeepsTheOtherEndOfTheRankingAndIsKeptInTheLinks(): void
+    {
+        $client = self::createClient();
+        $this->createValues('loyer_m2_appartement', ['Petite' => 8.0, 'Moyenne' => 12.0, 'Grande' => 25.0]);
+        $this->createPopulations(['Petite' => 5_000, 'Moyenne' => 50_000, 'Grande' => 500_000]);
+
+        $crawler = $client->request('GET', '/classements/loyer_m2_appartement?populationMin=10000&ordre=inverse');
+
+        self::assertSelectorTextContains('tbody tr:first-child', 'Moyenne');
+        self::assertSelectorCount(2, 'tbody tr');
+        self::assertCount(1, $crawler->filter('a[href*="populationMin=10000"][href*="ordre=defaut"]'));
+    }
+
+    public function testFilterWithoutAnyMatchSaysSo(): void
+    {
+        $client = self::createClient();
+        $this->createValues('loyer_m2_appartement', ['Petite' => 8.0]);
+        $this->createPopulations(['Petite' => 5_000]);
+
+        $client->request('GET', '/classements/loyer_m2_appartement?populationMin=1000000');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorNotExists('tbody');
+        self::assertSelectorTextContains('main', 'Aucune unité urbaine ne correspond à ces filtres.');
+    }
+
+    public function testInvalidFilterIsRejected(): void
+    {
+        $client = self::createClient();
+        $this->createValues('population', ['Vannes' => 100]);
+
+        $client->request('GET', '/classements/population?populationMin=-5');
+
+        self::assertResponseStatusCodeSame(404);
+    }
+
     public function testIndexGroupsClimateAndRiskRankingsByTheme(): void
     {
         $client = self::createClient();
@@ -166,6 +221,24 @@ final class RankingControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorTextContains('main', 'Les plus peuplées');
         self::assertSelectorTextContains('main', 'Vannes');
+    }
+
+    /**
+     * The population of units already created by {@see self::createValues()}, which the filters bound.
+     *
+     * @param array<string, int> $populations by unité urbaine name
+     */
+    private function createPopulations(array $populations): void
+    {
+        $criterion = CriterionFactory::createOne(['code' => 'population', 'label' => 'Population', 'valueType' => CriterionValueType::Integer]);
+
+        $entityManager = self::getContainer()->get(EntityManagerInterface::class);
+        \assert($entityManager instanceof EntityManagerInterface);
+        foreach ($populations as $name => $population) {
+            $entityManager->persist(new CriterionValue($criterion, UniteUrbaineFactory::new()->findOrCreate(['name' => (string) $name]), $population, 2023));
+        }
+
+        $entityManager->flush();
     }
 
     /**

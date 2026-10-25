@@ -23,14 +23,16 @@ final class UniteUrbaineScoreController extends AbstractController
     ) {
     }
 
-    public function __invoke(#[MapQueryString] ScoreInput $input = new ScoreInput()): Response
-    {
+    public function __invoke(
+        #[MapQueryString] ScoreInput $input = new ScoreInput(),
+        #[MapQueryString] UniteUrbaineFilterInput $filters = new UniteUrbaineFilterInput(),
+    ): Response {
         $rankings = array_filter($this->catalog->all(), static fn (Ranking $ranking): bool => $ranking->scorable);
         $rankings = array_column(array_map(static fn (Ranking $ranking): array => [$ranking->code, $ranking], $rankings), 1, 0);
 
         $weights = array_intersect_key($input->weights(), $rankings);
         $inverted = array_keys(array_filter($rankings, static fn (Ranking $ranking): bool => $ranking->invertedInScore));
-        $data = $this->scoreProvider->findScores($weights, self::PER_PAGE, ($input->page - 1) * self::PER_PAGE, $inverted);
+        $data = $this->scoreProvider->findScores($weights, self::PER_PAGE, ($input->page - 1) * self::PER_PAGE, $inverted, $filters->toFilter());
 
         $themes = [];
         foreach ($rankings as $ranking) {
@@ -41,6 +43,7 @@ final class UniteUrbaineScoreController extends AbstractController
             'themes' => $themes,
             'rankings' => $rankings,
             'weights' => $weights,
+            'filterQuery' => $filters->toQuery(),
             'maxWeight' => ScoreInput::MAX_WEIGHT,
             'rows' => $data['rows'],
             'total' => $data['total'],
