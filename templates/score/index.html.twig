@@ -6,15 +6,17 @@
 
 {% block body %}
 <main class="min-h-[calc(100vh-3.5rem)] bg-transparent px-6 py-12 text-stone-900">
-    <div class="mx-auto max-w-5xl">
+    <div class="mx-auto max-w-7xl">
         <h1 class="text-4xl font-bold tracking-tight">Mon classement</h1>
         <p class="mt-3 max-w-2xl text-stone-600">
             Donnez de l'importance aux critères qui comptent pour vous, de 0 (ignoré) à {{ maxWeight }} (essentiel) : les agglomérations sont classées selon le score que vous obtenez. L'adresse de la page garde vos réglages, vous pouvez la partager.
         </p>
 
-        <div class="mt-8 grid gap-8 lg:grid-cols-[20rem_1fr]">
+        <div class="mt-8 grid gap-8 lg:grid-cols-[22rem_minmax(0,1fr)]">
             <form method="get" action="{{ path('app_score') }}" data-turbo-frame="score-results" data-controller="score" data-score-target="form" class="space-y-6">
-                {{ include('filters/_block.html.twig') }}
+                {{ include('filters/_block.html.twig', {always_open: true}) }}
+
+                <h2 class="border-t border-stone-200 pt-6 text-sm font-semibold uppercase tracking-wide text-stone-600">Importance des critères</h2>
                 {% for theme, themeRankings in themes %}
                     <fieldset>
                         <legend class="text-xs font-medium uppercase tracking-wider text-emerald-700">{{ theme }}</legend>

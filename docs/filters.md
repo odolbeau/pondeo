@@ -47,8 +47,8 @@ A page that is filtered says so: the number of active filters is highlighted
 next to a "Réinitialiser" link that clears them all. On the rankings, the panel
 sits on the left of the results on a large screen, as on the map, and opens from
 a "Filtres" button on a small one; the results refresh in place when a filter
-changes. On the personal ranking, it opens from the same button above the
-importances.
+changes. The personal ranking does the same, with the importances of the
+criteria below the filters.
 
 ## The last filter is kept
 
