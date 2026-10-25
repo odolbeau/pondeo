@@ -6,6 +6,8 @@ namespace App\Service\Ranking;
 
 use App\Enum\Departement;
 use App\Service\Detail\CriterionTrend;
+use App\Service\Filter\UniteUrbaineFilter;
+use App\Service\Filter\UniteUrbaineFilterClauseProvider;
 use Doctrine\DBAL\Connection;
 
 /**
@@ -17,18 +19,35 @@ use Doctrine\DBAL\Connection;
  */
 final readonly class CriterionRankingProvider
 {
-    public function __construct(private Connection $connection)
-    {
+    public function __construct(
+        private Connection $connection,
+        private UniteUrbaineFilterClauseProvider $filterClauseProvider,
+    ) {
     }
 
     /**
-     * @return array{period: ?int, total: int, median: ?float, maxValue: float, rows: list<RankingRow>}
+     * With a filter, only the unités urbaine it keeps are ranked, among
+     * themselves: the ranks and the total follow the selection, while the
+     * median and the longest bar stay those of every unité urbaine, the
+     * reference a threshold is read against.
+     *
+     * @return array{period: ?int, total: int, nationalTotal: int, median: ?float, maxValue: float, rows: list<RankingRow>}
      */
-    public function findRanking(string $criterionCode, bool $rankFromLowest, int $limit, int $offset = 0): array
+    public function findRanking(string $criterionCode, bool $rankFromLowest, int $limit, int $offset = 0, ?UniteUrbaineFilter $filter = null): array
     {
         $direction = $rankFromLowest ? 'ASC' : 'DESC';
 
-        /** @var list<array{rank: int, code: string, name: string, departement: ?string, value: string|int|float, population: ?int, period: int, total: int, median: string|float, max_value: string|float, unit: ?string, rank_from_lowest: bool, first_period: ?int, first_value: string|int|float|null}> $rows */
+        $selection = '';
+        $selectionParams = [];
+        $selectionTypes = [];
+        if (null !== $filter && !$filter->isEmpty()) {
+            $clause = $this->filterClauseProvider->provide($filter);
+            $selection = 'WHERE s.unite_urbaine_id IN (SELECT uu.id '.$clause->sql.')';
+            $selectionParams = $clause->params;
+            $selectionTypes = $clause->types;
+        }
+
+        /** @var list<array{rank: int, code: string, name: string, departement: ?string, value: string|int|float, population: ?int, period: int, total: int, national_total: int, median: string|float, max_value: string|float, unit: ?string, rank_from_lowest: bool, first_period: ?int, first_value: string|int|float|null}> $rows */
         $rows = $this->connection->fetchAllAssociative(
             <<<SQL
                 WITH criterion_period AS (
@@ -47,9 +66,11 @@ final readonly class CriterionRankingProvider
                 ranked AS (
                     SELECT s.*, RANK() OVER (ORDER BY s.value {$direction}) AS rank, COUNT(*) OVER () AS total
                     FROM scoped s
+                    {$selection}
                 )
                 SELECT r.rank, uu.insee_code AS code, uu.name, uu.departement, r.value, r.period, r.total, r.unit, r.rank_from_lowest,
                        fp.period AS first_period, fp.value AS first_value,
+                       (SELECT COUNT(*) FROM scoped) AS national_total,
                        (SELECT PERCENTILE_CONT(0.5) WITHIN GROUP (ORDER BY value) FROM scoped) AS median,
                        (SELECT MAX(ABS(value)) FROM scoped) AS max_value,
                        (
@@ -73,7 +94,8 @@ final readonly class CriterionRankingProvider
                 ORDER BY r.rank, uu.name
                 LIMIT :limit OFFSET :offset
                 SQL,
-            ['code' => $criterionCode, 'limit' => $limit, 'offset' => $offset],
+            ['code' => $criterionCode, 'limit' => $limit, 'offset' => $offset] + $selectionParams,
+            $selectionTypes,
         );
 
         $result = [];
@@ -93,6 +115,7 @@ final readonly class CriterionRankingProvider
         return [
             'period' => [] === $rows ? null : $rows[0]['period'],
             'total' => [] === $rows ? 0 : $rows[0]['total'],
+            'nationalTotal' => [] === $rows ? 0 : $rows[0]['national_total'],
             'median' => [] === $rows ? null : (float) $rows[0]['median'],
             'maxValue' => [] === $rows ? 0.0 : (float) $rows[0]['max_value'],
             'rows' => $result,

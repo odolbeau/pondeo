@@ -58,6 +58,25 @@ final class UniteUrbaineScoreControllerTest extends WebTestCase
         self::assertSelectorNotExists('input[name="w[population]"]');
     }
 
+    public function testFilterKeepsSomeUnitsRankedAmongThemselvesWithTheirNationalPercentiles(): void
+    {
+        $client = self::createClient();
+        $this->createValues('taux_activite', ['Petite' => 60.0, 'Grande' => 80.0, 'Moyenne' => 70.0]);
+        $this->createValues('population', ['Petite' => 5_000, 'Grande' => 500_000, 'Moyenne' => 50_000]);
+
+        $crawler = $client->request('GET', '/mon-classement?w[taux_activite]=5&populationMax=100000');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorCount(2, 'tbody tr');
+        self::assertSelectorTextContains('tbody tr:first-child', 'Moyenne');
+        self::assertSelectorTextContains('tbody tr:first-child td:first-child', '1');
+        // Moyenne is at the median of the three units, whatever the filter: 50 out of 100.
+        self::assertSelectorTextContains('tbody tr:first-child', '50,0');
+        self::assertSelectorTextContains('tbody tr:last-child td:first-child', '2');
+        self::assertSelectorTextContains('tbody tr:last-child', 'Petite');
+        self::assertCount(0, $crawler->filter('a:contains("Grande")'));
+    }
+
     public function testZeroWeightsAndUnknownCriteriaAreIgnored(): void
     {
         $client = self::createClient();

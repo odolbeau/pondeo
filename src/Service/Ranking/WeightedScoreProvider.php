@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Service\Ranking;
 
 use App\Enum\Departement;
+use App\Service\Filter\UniteUrbaineFilter;
+use App\Service\Filter\UniteUrbaineFilterClauseProvider;
 use Doctrine\DBAL\ArrayParameterType;
 use Doctrine\DBAL\Connection;
 
@@ -26,23 +28,39 @@ final readonly class WeightedScoreProvider
 
     private const int MAX_STRENGTHS = 3;
 
-    public function __construct(private Connection $connection)
-    {
+    public function __construct(
+        private Connection $connection,
+        private UniteUrbaineFilterClauseProvider $filterClauseProvider,
+    ) {
     }
 
     /**
+     * The percentiles are always those among every unité urbaine, so a score
+     * means the same whatever the filter; the filter only keeps some of the
+     * units, ranked among themselves.
+     *
      * @param array<string, int> $weights  importance by criterion code, each above 0
      * @param list<string>       $inverted codes whose lower values are the better ones, against the criterion's own ranking
      *
      * @return array{total: int, rows: list<ScoreRow>}
      */
-    public function findScores(array $weights, int $limit, int $offset = 0, array $inverted = []): array
+    public function findScores(array $weights, int $limit, int $offset = 0, array $inverted = [], ?UniteUrbaineFilter $filter = null): array
     {
         if ([] === $weights) {
             return ['total' => 0, 'rows' => []];
         }
 
         [$cte, $params] = $this->scoresQuery($weights, $inverted);
+
+        $selection = '';
+        $selectionParams = [];
+        $selectionTypes = [];
+        if (null !== $filter && !$filter->isEmpty()) {
+            $clause = $this->filterClauseProvider->provide($filter);
+            $selection = 'WHERE s.unite_urbaine_id IN (SELECT uu.id '.$clause->sql.')';
+            $selectionParams = $clause->params;
+            $selectionTypes = $clause->types;
+        }
 
         /** @var list<array{rank: int, code: string, name: string, departement: ?string, score: string|float, population: ?int, total: int}> $rows */
         $rows = $this->connection->fetchAllAssociative(
@@ -51,6 +69,7 @@ final readonly class WeightedScoreProvider
                 ranked AS (
                     SELECT s.*, RANK() OVER (ORDER BY s.score DESC) AS rank, COUNT(*) OVER () AS total
                     FROM scores s
+                    {$selection}
                 )
                 SELECT r.rank, uu.insee_code AS code, uu.name, uu.departement, r.score, r.total,
                        (
@@ -66,7 +85,8 @@ final readonly class WeightedScoreProvider
                 ORDER BY r.rank, uu.name
                 LIMIT :limit OFFSET :offset
                 SQL,
-            $params + ['limit' => $limit, 'offset' => $offset],
+            $params + $selectionParams + ['limit' => $limit, 'offset' => $offset],
+            $selectionTypes,
         );
 
         $strengths = $this->findStrengths($cte, $params, array_column($rows, 'code'));

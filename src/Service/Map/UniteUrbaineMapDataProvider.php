@@ -4,61 +4,22 @@ declare(strict_types=1);
 
 namespace App\Service\Map;
 
-use App\Enum\AttractionCategory;
-use App\Repository\CriterionRepository;
-use Doctrine\DBAL\ArrayParameterType;
+use App\Service\Filter\UniteUrbaineFilter;
+use App\Service\Filter\UniteUrbaineFilterClauseProvider;
 use Doctrine\DBAL\Connection;
-use Doctrine\DBAL\ParameterType;
 
 /**
  * Raw-SQL queries backing the unité urbaine map (Doctrine can't express the
- * boundary simplification cleanly). findFeatures()'s params are the extension
- * point for more filters, so the data endpoint doesn't need a new controller
- * per criterion.
+ * boundary simplification cleanly). The filters themselves are the shared ones
+ * of {@see UniteUrbaineFilterClauseProvider}, so the data endpoint doesn't need
+ * a new controller per criterion.
  */
 final readonly class UniteUrbaineMapDataProvider
 {
     public function __construct(
         private Connection $connection,
-        private CriterionRepository $criterionRepository,
+        private UniteUrbaineFilterClauseProvider $filterClauseProvider,
     ) {
-    }
-
-    public function getLatestPeriod(): int
-    {
-        $criterionId = $this->populationCriterionId();
-
-        $period = $this->connection->fetchOne(
-            'SELECT MAX(period) FROM criterion_value WHERE criterion_id = :criterionId',
-            ['criterionId' => $criterionId],
-        );
-
-        if (false === $period || null === $period) {
-            throw new \LogicException('No population data found.');
-        }
-
-        return self::toInt($period);
-    }
-
-    /** @return array{min: int, max: int} */
-    public function getPopulationBounds(int $period): array
-    {
-        $criterionId = $this->populationCriterionId();
-
-        $row = $this->connection->fetchAssociative(
-            <<<'SQL'
-                SELECT MIN(value_integer) AS min, MAX(value_integer) AS max
-                FROM criterion_value
-                WHERE criterion_id = :criterionId AND period = :period
-                SQL,
-            ['criterionId' => $criterionId, 'period' => $period],
-        );
-
-        if (false === $row || null === $row['min']) {
-            throw new \LogicException("No population data found at period {$period}.");
-        }
-
-        return ['min' => self::toInt($row['min']), 'max' => self::toInt($row['max'])];
     }
 
     /**
@@ -68,26 +29,13 @@ final readonly class UniteUrbaineMapDataProvider
      * JSON payload size itself. toFeatureCollectionJson() splices it
      * straight into the response body instead.
      *
-     * A unité urbaine with no attraction category is never excluded: unknown
-     * is not the same as satellite. Likewise, with a commerce density
-     * minimum (shops or restaurants), an unité urbaine without a density value is left out: it
-     * cannot be said to reach it. With a nuclear exclusion radius, an unité urbaine whose
-     * centroid is within it of a plant is left out. A price per m² maximum
-     * leaves out an unité urbaine without a price (Alsace-Moselle is not in the source) for the same reason as the density minimum.
-     * With `withStation`, only the unités urbaine containing a railway station are kept;
-     * likewise with `withBoardGameAssociation` and a board game association.
-     * A train limit keeps an unité urbaine if, from one of its closest stations,
-     * the car ride plus the train to the destination fits in the minutes. A
-     * station without a journey row is inside the destination (train: 0); a
-     * station that cannot reach it does not count, nor does an unité urbaine
-     * without access stations. A transfers maximum also discards the stations
-     * whose fewest transfers to the destination exceed it.
+     * Only the unités urbaine with a boundary are kept: the others cannot be drawn.
      *
      * @return list<array{id: string, code: string, name: string, population: int, geometryJson: string}>
      */
-    public function findFeatures(int $period, UniteUrbaineMapFilter $filter): array
+    public function findFeatures(UniteUrbaineFilter $filter): array
     {
-        $from = $this->matchingFrom($period, $filter);
+        $from = $this->matchingFrom($filter);
 
         // Simplified: at full resolution, the boundaries of thousands of
         // unités urbaines together are too large to decode/transfer for an
@@ -122,9 +70,9 @@ final readonly class UniteUrbaineMapDataProvider
      *
      * @return list<array{code: string, name: string, departement: string|null, population: int, commerceDensity: float|null, restaurantDensity: float|null, price: float|null, trainMinutes: array<string, float|null>}>
      */
-    public function findExportRows(int $period, UniteUrbaineMapFilter $filter, int $limit): array
+    public function findExportRows(UniteUrbaineFilter $filter, int $limit): array
     {
-        $from = $this->matchingFrom($period, $filter);
+        $from = $this->matchingFrom($filter);
 
         $columns = '';
         $params = $from['params'];
@@ -148,7 +96,7 @@ final readonly class UniteUrbaineMapDataProvider
                     FROM station_access sa
                     LEFT JOIN station_journey sj ON sj.station_id = sa.station_id AND sj.destination = :exportDestination{$i}
                     WHERE sa.unite_urbaine_id = uu.id
-                      AND (sj.id IS NULL OR (sj.median_duration_minutes IS NOT NULL AND (CAST(:trainTransfers AS integer) IS NULL OR sj.transfers <= CAST(:trainTransfers AS integer))))
+                      AND (sj.id IS NULL OR (sj.median_duration_minutes IS NOT NULL AND (CAST(:fTrainTransfers AS integer) IS NULL OR sj.transfers <= CAST(:fTrainTransfers AS integer))))
                 ) AS train_{$i}
                 SQL;
             $params["exportDestination{$i}"] = $destination;
@@ -201,117 +149,13 @@ final readonly class UniteUrbaineMapDataProvider
      * The FROM and WHERE shared by the map and the export, so both keep the
      * same unités urbaine.
      *
-     * @return array{sql: string, params: array<string, mixed>, types: array<string, ArrayParameterType|ParameterType>}
+     * @return array{sql: string, params: array<string, mixed>, types: array<string, \Doctrine\DBAL\ArrayParameterType|\Doctrine\DBAL\ParameterType>}
      */
-    private function matchingFrom(int $period, UniteUrbaineMapFilter $filter): array
+    private function matchingFrom(UniteUrbaineFilter $filter): array
     {
-        $criterionId = $this->populationCriterionId();
-        $excludedCategoryValues = array_map(static fn (AttractionCategory $category): string => $category->value, $filter->excludedAttractionCategories);
+        $clause = $this->filterClauseProvider->provide($filter);
 
-        $trainClauses = '';
-        $trainParams = [];
-        $i = 0;
-        foreach ($filter->trainLimits as $destination => $minutes) {
-            $trainClauses .= <<<SQL
-
-                  AND EXISTS (
-                      SELECT 1
-                      FROM station_access sa
-                      LEFT JOIN station_journey sj ON sj.station_id = sa.station_id AND sj.destination = :trainDestination{$i}
-                      WHERE sa.unite_urbaine_id = uu.id
-                        AND (sj.id IS NULL OR (sj.median_duration_minutes IS NOT NULL AND (CAST(:trainTransfers AS integer) IS NULL OR sj.transfers <= CAST(:trainTransfers AS integer))))
-                        AND sa.duration_seconds / 60.0 + COALESCE(sj.median_duration_minutes, 0) <= :trainMinutes{$i}
-                  )
-                SQL;
-            $trainParams["trainDestination{$i}"] = $destination;
-            $trainParams["trainMinutes{$i}"] = $minutes;
-            ++$i;
-        }
-
-        $sql = <<<'SQL'
-                FROM unite_urbaine uu
-                INNER JOIN criterion_value cv ON cv.unite_urbaine_id = uu.id
-                WHERE cv.criterion_id = :criterionId
-                  AND cv.period = :period
-                  AND cv.value_integer BETWEEN :min AND :max
-                  AND uu.boundary IS NOT NULL
-                  AND (uu.attraction_category IS NULL OR uu.attraction_category NOT IN (:excludedCategories))
-                  AND (CAST(:densityMin AS numeric) IS NULL OR EXISTS (
-                      SELECT 1
-                      FROM criterion_value density
-                      INNER JOIN criterion dc ON dc.id = density.criterion_id
-                      WHERE dc.code = 'commerces_total_pour_1000_hab'
-                        AND density.unite_urbaine_id = uu.id
-                        AND density.period = (
-                            SELECT MAX(period) FROM criterion_value WHERE criterion_id = dc.id
-                        )
-                        AND density.value_decimal >= CAST(:densityMin AS numeric)
-                  ))
-                  AND (CAST(:restaurantDensityMin AS numeric) IS NULL OR EXISTS (
-                      SELECT 1
-                      FROM criterion_value restaurant_density
-                      INNER JOIN criterion rc ON rc.id = restaurant_density.criterion_id
-                      WHERE rc.code = 'restaurants_pour_1000_hab'
-                        AND restaurant_density.unite_urbaine_id = uu.id
-                        AND restaurant_density.period = (
-                            SELECT MAX(period) FROM criterion_value WHERE criterion_id = rc.id
-                        )
-                        AND restaurant_density.value_decimal >= CAST(:restaurantDensityMin AS numeric)
-                  ))
-                  AND (CAST(:nuclearKm AS numeric) IS NULL OR NOT EXISTS (
-                      SELECT 1
-                      FROM poi plant
-                      INNER JOIN poi_category plant_category ON plant_category.id = plant.category_id
-                      WHERE plant_category.code = 'nuclear_power_plant'
-                        AND ST_DWithin(uu.centroid, plant.location, CAST(:nuclearKm AS numeric) * 1000)
-                  ))
-                  AND (CAST(:priceMax AS numeric) IS NULL OR EXISTS (
-                      SELECT 1
-                      FROM criterion_value price
-                      INNER JOIN criterion pc ON pc.id = price.criterion_id
-                      WHERE pc.code = :priceCriterionCode
-                        AND price.unite_urbaine_id = uu.id
-                        AND price.period = (
-                            SELECT MAX(period) FROM criterion_value WHERE criterion_id = pc.id
-                        )
-                        AND price.value_integer <= CAST(:priceMax AS numeric)
-                    ))
-                  AND (NOT :withStation OR EXISTS (
-                      SELECT 1
-                      FROM poi station
-                      INNER JOIN poi_category station_category ON station_category.id = station.category_id
-                      WHERE station_category.code = 'railway_station'
-                        AND station.unite_urbaine_id = uu.id
-                  ))
-                  AND (NOT :withBoardGameAssociation OR EXISTS (
-                      SELECT 1
-                      FROM poi association
-                      INNER JOIN poi_category association_category ON association_category.id = association.category_id
-                      INNER JOIN poi_category association_group ON association_group.id = association_category.parent_id
-                      WHERE association_group.code = 'board_game_association'
-                        AND association.unite_urbaine_id = uu.id
-                  ))
-                SQL.$trainClauses;
-
-        return [
-            'sql' => $sql,
-            'params' => $trainParams + ['trainTransfers' => $filter->trainMaxTransfers] + [
-                'criterionId' => $criterionId,
-                'period' => $period,
-                'min' => $filter->populationMin,
-                'max' => $filter->populationMax,
-                'densityMin' => $filter->commerceDensityMin,
-                'restaurantDensityMin' => $filter->restaurantDensityMin,
-                'nuclearKm' => $filter->nuclearExclusionKm,
-                'priceMax' => $filter->priceMax,
-                'priceCriterionCode' => $filter->priceCriterionCode,
-                'withStation' => $filter->withStation,
-                'withBoardGameAssociation' => $filter->withBoardGameAssociation,
-                // An empty IN () list is invalid SQL: a value no category has keeps the clause a no-op.
-                'excludedCategories' => [] === $excludedCategoryValues ? [''] : $excludedCategoryValues,
-            ],
-            'types' => ['excludedCategories' => ArrayParameterType::STRING, 'withStation' => ParameterType::BOOLEAN, 'withBoardGameAssociation' => ParameterType::BOOLEAN],
-        ];
+        return ['sql' => $clause->sql.' AND uu.boundary IS NOT NULL', 'params' => $clause->params, 'types' => $clause->types];
     }
 
     /**
@@ -366,16 +210,6 @@ final readonly class UniteUrbaineMapDataProvider
         }, $rows);
 
         return json_encode(['type' => 'FeatureCollection', 'features' => $features], \JSON_THROW_ON_ERROR);
-    }
-
-    private function populationCriterionId(): string
-    {
-        $criterion = $this->criterionRepository->findOneBy(['code' => 'population']);
-        if (null === $criterion) {
-            throw new \LogicException('Criterion "population" not found.');
-        }
-
-        return $criterion->getId()->toRfc4122();
     }
 
     private static function toInt(mixed $value): int
