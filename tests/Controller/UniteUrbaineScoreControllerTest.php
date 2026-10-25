@@ -79,6 +79,18 @@ final class UniteUrbaineScoreControllerTest extends WebTestCase
         self::assertCount(0, $crawler->filter('a:contains("Grande")'));
     }
 
+    public function testAssociationDensityIsAnOptionAndMoreIsBetter(): void
+    {
+        $client = self::createClient();
+        $this->createValues('associations_actives_pour_1000_hab', ['Calme' => 8.0, 'Vivante' => 30.0]);
+
+        $client->request('GET', '/mon-classement?w[associations_actives_pour_1000_hab]=4');
+
+        self::assertSelectorExists('input[type=range][name="w[associations_actives_pour_1000_hab]"]');
+        self::assertSelectorTextContains('tbody tr:first-child', 'Vivante');
+        self::assertSelectorTextContains('tbody tr:first-child', 'Points forts : une vie associative riche');
+    }
+
     public function testZeroWeightsAndUnknownCriteriaAreIgnored(): void
     {
         $client = self::createClient();
