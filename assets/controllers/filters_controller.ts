@@ -87,6 +87,7 @@ export default class extends Controller {
     private steps!: number[];
     private debounceHandle?: ReturnType<typeof setTimeout>;
     private priceType = DEFAULT_PRICE_TYPE;
+    private lastParams = '';
 
     connect() {
         this.steps = POPULATION_STEPS.filter((s) => s > this.populationMinValue && s < this.populationMaxValue);
@@ -96,12 +97,14 @@ export default class extends Controller {
         this.minRangeTarget.max = this.maxRangeTarget.max = String(this.steps.length - 1);
         this.applyParams(new URLSearchParams(window.location.search));
         window.addEventListener('popstate', this.onPopState);
+        document.addEventListener('turbo:load', this.onTurboLoad);
 
         this.announce('initial');
     }
 
     disconnect() {
         window.removeEventListener('popstate', this.onPopState);
+        document.removeEventListener('turbo:load', this.onTurboLoad);
         clearTimeout(this.debounceHandle);
     }
 
@@ -110,6 +113,17 @@ export default class extends Controller {
     private onPopState = () => {
         this.applyParams(new URLSearchParams(window.location.search));
         this.announce('history');
+    };
+
+    // When Turbo shows a page, the address is not always the page's yet as the
+    // controller connects (a redirect to the saved filters, for instance, is
+    // only reflected once the page is rendered): it is read again when the visit
+    // is over.
+    private onTurboLoad = () => {
+        this.applyParams(new URLSearchParams(window.location.search));
+        if (this.params().toString() !== this.lastParams) {
+            this.announce('initial');
+        }
     };
 
     applyParams(params: { get(name: string): string | null }) {
@@ -187,11 +201,10 @@ export default class extends Controller {
         this.debounceHandle = setTimeout(() => this.changed(), DEBOUNCE_MS);
     }
 
-    // The filters shown by a page of results, which is not always open.
+    // The filters of a page of results: closed under the button, open beside the results on a large screen.
     toggle() {
-        const open = this.drawerTarget.hidden;
-        this.drawerTarget.hidden = !open;
-        this.toggleTarget.setAttribute('aria-expanded', String(open));
+        this.drawerTarget.classList.toggle('hidden');
+        this.toggleTarget.setAttribute('aria-expanded', String(!this.drawerTarget.classList.contains('hidden')));
     }
 
     clear() {
@@ -212,7 +225,12 @@ export default class extends Controller {
         const chips = this.chips();
         this.renderChips(chips);
         this.syncHidden();
-        this.dispatch('change', { detail: { params: this.params().toString(), count: chips.length, reason } satisfies FiltersChange });
+        if (this.hasToggleTarget) {
+            this.toggleTarget.textContent = 0 === chips.length ? 'Filtres' : `Filtres (${chips.length})`;
+        }
+
+        this.lastParams = this.params().toString();
+        this.dispatch('change', { detail: { params: this.lastParams, count: chips.length, reason } satisfies FiltersChange });
     }
 
     // The enclosing form carries the filter as hidden fields, whoever submits it

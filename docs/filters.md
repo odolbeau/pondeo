@@ -44,8 +44,11 @@ The ranking index (`/classements`, a top 3 per ranking) is not filtered.
 ## Always visible, never hidden
 
 A page that is filtered says so: the active filters are listed as labels, each
-one removable, with a link to clear them all. On the rankings, the panel opens
-from a "Filtres" button, and the results refresh in place when a filter changes.
+one removable, with a link to clear them all. On the rankings, the panel sits on
+the left of the results on a large screen, as on the map, and opens from a
+"Filtres" button on a small one; the results refresh in place when a filter
+changes. On the personal ranking, it opens from the same button above the
+importances.
 
 ## The last filter is kept
 
