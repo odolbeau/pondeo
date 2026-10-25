@@ -42,6 +42,7 @@ final class UniteUrbaineMapControllerTest extends WebTestCase
         self::assertSelectorExists('input[type="number"][data-filters-target="maxInput"][value="84176"]');
         self::assertSelectorExists('input[type="number"][data-filters-target="priceMax"]:not([value])');
         self::assertSelectorExists('input[type="number"][data-filters-target="restaurantDensityMin"]:not([value])');
+        self::assertSelectorExists('input[type="number"][data-filters-target="associationDensityMin"]:not([value])');
         self::assertSelectorCount(3, 'button[data-filters-target="priceTypeButton"]');
         self::assertSelectorExists('button[data-price-type="global"][aria-pressed="true"]');
         self::assertSelectorExists('aside[data-map-target="filters"][data-controller="filters"][data-filters-population-min-value="84176"][data-filters-population-max-value="84176"]');

@@ -68,7 +68,7 @@ final readonly class UniteUrbaineMapDataProvider
      * each (only for the filters that are set), most populated first. One more
      * row than `$limit` is returned at most: enough to tell the cap was exceeded.
      *
-     * @return list<array{code: string, name: string, departement: string|null, population: int, commerceDensity: float|null, restaurantDensity: float|null, price: float|null, trainMinutes: array<string, float|null>}>
+     * @return list<array{code: string, name: string, departement: string|null, population: int, commerceDensity: float|null, restaurantDensity: float|null, associationDensity: float|null, price: float|null, trainMinutes: array<string, float|null>}>
      */
     public function findExportRows(UniteUrbaineFilter $filter, int $limit): array
     {
@@ -82,6 +82,10 @@ final readonly class UniteUrbaineMapDataProvider
 
         if (null !== $filter->restaurantDensityMin) {
             $columns .= ', '.$this->latestValue('restaurants_pour_1000_hab', 'value_decimal').' AS restaurant_density';
+        }
+
+        if (null !== $filter->associationDensityMin) {
+            $columns .= ', '.$this->latestValue('associations_actives_pour_1000_hab', 'value_decimal').' AS association_density';
         }
 
         if (null !== $filter->priceMax) {
@@ -122,6 +126,7 @@ final readonly class UniteUrbaineMapDataProvider
                     'population' => self::toInt($row['population']),
                     'commerceDensity' => isset($row['commerce_density']) ? (float) self::toNumeric($row['commerce_density']) : null,
                     'restaurantDensity' => isset($row['restaurant_density']) ? (float) self::toNumeric($row['restaurant_density']) : null,
+                    'associationDensity' => isset($row['association_density']) ? (float) self::toNumeric($row['association_density']) : null,
                     'price' => isset($row['price']) ? (float) self::toNumeric($row['price']) : null,
                     'trainMinutes' => $trainMinutes,
                 ];

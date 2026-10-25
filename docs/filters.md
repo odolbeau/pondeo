@@ -13,7 +13,7 @@ address of each page, so a selection made on one page applies to the others.
 | Attraction areas | without the "couronnes" of another city, without the secondary poles |
 | Train | the units from which a destination city (Paris, Lyon, ...) is within a number of minutes, car to the station included, optionally with a maximum of transfers (see [station-journeys.md](station-journeys.md)) |
 | Stations | the units with a railway station |
-| Shops, restaurants | at least a density per 1000 inhabitants |
+| Shops, restaurants, associations | at least a density per 1000 inhabitants (active associations, for the latter) |
 | Price | at most a price per m², for apartments, houses or both (see [criteria-real-estate.md](criteria-real-estate.md)) |
 | Nuclear plants | the units farther than a distance from any plant |
 | Board games | the units with an association |

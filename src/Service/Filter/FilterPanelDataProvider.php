@@ -39,6 +39,7 @@ final readonly class FilterPanelDataProvider
             'stats' => $this->criterionStatsProvider->findStats([
                 'commerces_total_pour_1000_hab',
                 'restaurants_pour_1000_hab',
+                'associations_actives_pour_1000_hab',
                 ...array_map(static fn (RealEstatePriceType $type): string => $type->criterionCode(), RealEstatePriceType::cases()),
             ]),
             'journeyDestinations' => JourneyDestination::cases(),

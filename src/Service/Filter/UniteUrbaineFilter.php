@@ -22,6 +22,7 @@ final readonly class UniteUrbaineFilter
         public array $excludedAttractionCategories = [],
         public ?float $commerceDensityMin = null,
         public ?float $restaurantDensityMin = null,
+        public ?float $associationDensityMin = null,
         public ?float $nuclearExclusionKm = null,
         public ?float $priceMax = null,
         public string $priceCriterionCode = 'prix_m2',
@@ -43,6 +44,7 @@ final readonly class UniteUrbaineFilter
             && [] === $this->excludedAttractionCategories
             && null === $this->commerceDensityMin
             && null === $this->restaurantDensityMin
+            && null === $this->associationDensityMin
             && null === $this->nuclearExclusionKm
             && null === $this->priceMax
             && !$this->withStation

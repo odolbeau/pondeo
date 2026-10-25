@@ -47,6 +47,10 @@ final class UniteUrbaineMapExportController extends AbstractController
             $header[] = 'Restaurants pour 1000 hab.';
         }
 
+        if (null !== $filters->associationDensityMin) {
+            $header[] = 'Associations actives pour 1000 hab.';
+        }
+
         if (null !== $filters->priceMax) {
             $header[] = 'Prix au m² (€)';
         }
@@ -77,6 +81,10 @@ final class UniteUrbaineMapExportController extends AbstractController
 
                 if (null !== $filters->restaurantDensityMin) {
                     $line[] = $this->decimal($row['restaurantDensity'], 2);
+                }
+
+                if (null !== $filters->associationDensityMin) {
+                    $line[] = $this->decimal($row['associationDensity'], 2);
                 }
 
                 if (null !== $filters->priceMax) {
