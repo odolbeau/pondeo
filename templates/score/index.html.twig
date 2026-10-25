@@ -12,35 +12,40 @@
             Donnez de l'importance aux critères qui comptent pour vous, de 0 (ignoré) à {{ maxWeight }} (essentiel) : les agglomérations sont classées selon le score que vous obtenez. L'adresse de la page garde vos réglages, vous pouvez la partager.
         </p>
 
-        <div class="mt-8 grid gap-8 lg:grid-cols-[22rem_minmax(0,1fr)]">
-            <form method="get" action="{{ path('app_score') }}" data-turbo-frame="score-results" data-controller="score" data-score-target="form" class="space-y-6">
-                {{ include('filters/_block.html.twig', {always_open: true}) }}
+        {# One form for the filters and the importances, whose two parts are columns of the grid: side by side from `xl`, stacked beside the results from `lg`. #}
+        <div class="mt-8 grid items-start gap-8 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr] xl:grid-cols-[20rem_22rem_minmax(0,1fr)] xl:grid-rows-1">
+            <form method="get" action="{{ path('app_score') }}" data-turbo-frame="score-results" data-controller="score" data-score-target="form" class="contents">
+                <div class="lg:col-start-1 lg:row-start-1 xl:col-start-2">
+                    {{ include('filters/_block.html.twig', {always_open: true}) }}
+                </div>
 
-                <h2 class="border-t border-stone-200 pt-6 text-sm font-semibold uppercase tracking-wide text-stone-600">Importance des critères</h2>
-                {% for theme, themeRankings in themes %}
-                    <fieldset>
-                        <legend class="text-xs font-medium uppercase tracking-wider text-emerald-700">{{ theme }}</legend>
-                        <ul class="mt-2 space-y-3">
-                            {% for ranking in themeRankings %}
-                                {% set id = 'w-' ~ ranking.code %}
-                                <li>
-                                    <label for="{{ id }}" class="flex items-baseline justify-between gap-2 text-sm text-stone-800">
-                                        <span>{{ ranking.scoreLabel }}</span>
-                                        <output for="{{ id }}" data-score-target="output" class="w-4 shrink-0 text-right font-semibold tabular-nums text-emerald-700">{{ weights[ranking.code] ?? 0 }}</output>
-                                    </label>
-                                    <input type="range" id="{{ id }}" name="w[{{ ranking.code }}]" min="0" max="{{ maxWeight }}" step="1" value="{{ weights[ranking.code] ?? 0 }}"
-                                           aria-describedby="{{ id }}-hint" data-score-target="slider" data-action="input->score#update"
-                                           class="mt-1 w-full accent-emerald-600">
-                                    <p id="{{ id }}-hint" class="text-xs text-stone-500">{{ ranking.tagline }}</p>
-                                </li>
-                            {% endfor %}
-                        </ul>
-                    </fieldset>
-                {% endfor %}
-                <button type="submit" class="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Calculer mon classement</button>
+                <div class="space-y-6 lg:col-start-1 lg:row-start-2 xl:col-start-1 xl:row-start-1">
+                    <h2 class="border-t border-stone-200 pt-6 text-sm font-semibold uppercase tracking-wide text-stone-600 xl:border-t-0 xl:pt-0">Importance des critères</h2>
+                    {% for theme, themeRankings in themes %}
+                        <fieldset>
+                            <legend class="text-xs font-medium uppercase tracking-wider text-emerald-700">{{ theme }}</legend>
+                            <ul class="mt-2 space-y-3">
+                                {% for ranking in themeRankings %}
+                                    {% set id = 'w-' ~ ranking.code %}
+                                    <li>
+                                        <label for="{{ id }}" class="flex items-baseline justify-between gap-2 text-sm text-stone-800">
+                                            <span>{{ ranking.scoreLabel }}</span>
+                                            <output for="{{ id }}" data-score-target="output" class="w-4 shrink-0 text-right font-semibold tabular-nums text-emerald-700">{{ weights[ranking.code] ?? 0 }}</output>
+                                        </label>
+                                        <input type="range" id="{{ id }}" name="w[{{ ranking.code }}]" min="0" max="{{ maxWeight }}" step="1" value="{{ weights[ranking.code] ?? 0 }}"
+                                               aria-describedby="{{ id }}-hint" data-score-target="slider" data-action="input->score#update"
+                                               class="mt-1 w-full accent-emerald-600">
+                                        <p id="{{ id }}-hint" class="text-xs text-stone-500">{{ ranking.tagline }}</p>
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </fieldset>
+                    {% endfor %}
+                    <button type="submit" class="rounded-full bg-emerald-600 px-5 py-2 text-sm font-semibold text-white transition hover:bg-emerald-700">Calculer mon classement</button>
+                </div>
             </form>
 
-            <turbo-frame id="score-results" data-turbo-action="advance">
+            <turbo-frame id="score-results" data-turbo-action="advance" class="lg:col-start-2 lg:row-span-2 lg:row-start-1 xl:col-start-3 xl:row-span-1">
                 {% if weights is empty %}
                     <p class="rounded-xl border border-dashed border-stone-300 p-6 text-stone-600">Réglez au moins un critère au-dessus de 0 pour voir apparaître votre classement.</p>
                 {% elseif rows is empty %}
