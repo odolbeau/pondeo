@@ -25,6 +25,7 @@ php "$CURDIR/console" app:import:criteria:population --no-debug
 php "$CURDIR/console" app:import:criteria:equipements --no-debug
 php "$CURDIR/console" app:import:criteria:associations --no-debug
 php "$CURDIR/console" app:import:criteria:real-estate-prices --no-debug
+php "$CURDIR/console" app:import:criteria:rents --no-debug
 php "$CURDIR/console" app:import:criteria:employment --no-debug
 php "$CURDIR/console" app:import:criteria:income --no-debug
 php "$CURDIR/console" app:import:criteria:education --no-debug

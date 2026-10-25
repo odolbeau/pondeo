@@ -36,13 +36,16 @@ final readonly class HousingSourceDownloader
      */
     public function download(string $targetDir, \Closure $progress): void
     {
-        // OCS: dwelling category (main residence, vacant...). TSH: occupancy status of the main residences (100 owner, 221 social housing).
+        // OCS: dwelling category (main residence, vacant...). TSH: occupancy status of the main residences (100 owner,
+        // 211 unfurnished private rental, 221 social housing).
         $this->melodiCountsDownloader->download('DS_RP_LOGEMENT_PRINC', $targetDir.'/logement-recensement.csv', [
             'logements' => self::COMMON_FILTERS + ['OCS' => '_T', 'TSH' => '_T'],
             'vacants' => self::COMMON_FILTERS + ['OCS' => 'DW_VAC', 'TSH' => '_T'],
             'residences_principales' => self::COMMON_FILTERS + ['OCS' => 'DW_MAIN', 'TSH' => '_T'],
             'proprietaires' => self::COMMON_FILTERS + ['OCS' => 'DW_MAIN', 'TSH' => '100'],
             'hlm' => self::COMMON_FILTERS + ['OCS' => 'DW_MAIN', 'TSH' => '221'],
+            // Not a housing criterion: the weight of the rents (see RentImporter).
+            'locataires_prives' => self::COMMON_FILTERS + ['OCS' => 'DW_MAIN', 'TSH' => '211'],
         ], $progress);
     }
 }

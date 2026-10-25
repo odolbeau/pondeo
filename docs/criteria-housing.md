@@ -31,6 +31,10 @@ vacancy but few main residences.
 - **Shares:** derived from those sums, never summed. A unit without a base has
   no share.
 
+The vendored file also counts the main residences rented unfurnished in the
+private sector. It is not a criterion here: it weights the rents (see
+[criteria-rents.md](criteria-rents.md)).
+
 ## Refreshing
 
 ```
