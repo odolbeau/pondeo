@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Controller;
 
+use App\Service\Filter\FilterPanelDataProvider;
 use App\Service\Ranking\Ranking;
 use App\Service\Ranking\RankingCatalog;
 use App\Service\Ranking\WeightedScoreProvider;
@@ -20,6 +21,7 @@ final class UniteUrbaineScoreController extends AbstractController
     public function __construct(
         private readonly RankingCatalog $catalog,
         private readonly WeightedScoreProvider $scoreProvider,
+        private readonly FilterPanelDataProvider $filterPanelDataProvider,
     ) {
     }
 
@@ -39,7 +41,7 @@ final class UniteUrbaineScoreController extends AbstractController
             $themes[$ranking->theme][] = $ranking;
         }
 
-        return $this->render('score/index.html.twig', [
+        return $this->render('score/index.html.twig', $this->filterPanelDataProvider->provide() + [
             'themes' => $themes,
             'rankings' => $rankings,
             'weights' => $weights,

@@ -27,6 +27,12 @@ Ranks are shared on ties, as in the single-criterion rankings.
 Percentiles rather than raw values, so that one extreme city (Paris for the
 population or the prices) does not flatten everybody else.
 
+## Filters
+
+The filters of the map narrow down the units that are ranked, without changing
+the scores; see [filters.md](filters.md). The importances are kept in the
+browser from one visit to the next, like the filters.
+
 ## Missing data
 
 A unit with no value for a criterion is scored on the others. It is only ranked
