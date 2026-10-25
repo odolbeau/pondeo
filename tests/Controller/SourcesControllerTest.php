@@ -22,6 +22,8 @@ final class SourcesControllerTest extends WebTestCase
         self::assertAnySelectorTextContains('li p', 'CC BY-SA 4.0');
         self::assertAnySelectorTextContains('li p', 'Export fourni par Subverti');
         self::assertAnySelectorTextContains('h2', 'Agence du Numérique en Santé');
+        self::assertAnySelectorTextContains('h2', 'ANIL');
+        self::assertAnySelectorTextContains('li p', 'Estimations ANIL, à partir des données du Groupe SeLoger et de leboncoin');
     }
 
     public function testTheFooterLinksToTheSourcesPage(): void

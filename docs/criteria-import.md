@@ -78,6 +78,10 @@ See [criteria-associations.md](criteria-associations.md): same shape, with a der
 
 See [criteria-real-estate.md](criteria-real-estate.md): not additive, so averaged per urban unit with the number of sales as weight.
 
+## Rents
+
+See [criteria-rents.md](criteria-rents.md): not additive, so averaged per urban unit with the number of private rentals (census) as weight.
+
 ## Employment
 
 See [criteria-employment.md](criteria-employment.md): counts are summed, rates derived from them; census years only.
