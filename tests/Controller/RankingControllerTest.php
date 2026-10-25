@@ -156,6 +156,20 @@ final class RankingControllerTest extends WebTestCase
         self::assertCount(1, $crawler->filter('a[href*="populationMin=10000"][href*="ordre=defaut"]'));
     }
 
+    public function testPageOffersTheFiltersAndRefreshesItsResultsInPlace(): void
+    {
+        $client = self::createClient();
+        $this->createValues('loyer_m2_appartement', ['Petite' => 8.0]);
+        $this->createPopulations(['Petite' => 5_000]);
+
+        $client->request('GET', '/classements/loyer_m2_appartement?ordre=inverse');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorExists('form[data-turbo-frame="ranking-results"] [data-controller="filters"][data-filters-submit-value="true"][data-filters-population-max-value="5000"]');
+        self::assertSelectorExists('[data-filters-keep-value=\'["ordre"]\']');
+        self::assertSelectorExists('turbo-frame#ranking-results[data-turbo-action="advance"] tbody a[data-turbo-frame="_top"]');
+    }
+
     public function testFilterWithoutAnyMatchSaysSo(): void
     {
         $client = self::createClient();

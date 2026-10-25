@@ -27,6 +27,8 @@ final class UniteUrbaineScoreControllerTest extends WebTestCase
         self::assertResponseIsSuccessful();
         self::assertSelectorExists('input[type=range][name="w[taux_chomage]"]');
         self::assertSelectorTextContains('turbo-frame#score-results', 'Réglez au moins un critère');
+        self::assertSelectorExists('form [data-controller="filters"][data-filters-submit-value="true"]');
+        self::assertSelectorExists('input[type=range][name="w[taux_chomage]"][data-score-target="slider"]');
         self::assertSelectorNotExists('tbody');
     }
 

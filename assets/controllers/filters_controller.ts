@@ -1,4 +1,5 @@
 import { Controller } from '@hotwired/stimulus';
+import { savePreference } from '../lib/cookie';
 
 const DEBOUNCE_MS = 200;
 // Query params making up the filter. One param per destination city: trainMaxMinutes[paris]=120.
@@ -15,8 +16,7 @@ const STAT_CHIPS: { key: 'p25' | 'median' | 'p75'; keptByMin: number }[] = [
 
 // The last filter used, so that every page starts from it: the server reads it
 // to send a page without filters to the same page with them in its address.
-export const COOKIE_NAME = 'pondeo_filters';
-const COOKIE_MAX_AGE = 60 * 60 * 24 * 365;
+const COOKIE_NAME = 'pondeo_filters';
 
 type Stats = { min: number; p10: number; p25: number; median: number; p75: number; p90: number; max: number };
 
@@ -40,12 +40,14 @@ type Chip = { label: string; clear: () => void };
 // results inside a form (`submit` value), the form is submitted with the
 // filter instead, so the results are refreshed in place.
 export default class extends Controller {
-    static targets = ['minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'summary', 'chips', 'hidden'];
+    static targets = ['minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'summary', 'chips', 'hidden', 'toggle', 'drawer'];
     static values = {
         populationMin: Number,
         populationMax: Number,
         stats: Object,
         submit: Boolean,
+        // Params of the page, besides the filter, that a submission keeps (the order of a ranking, for instance).
+        keep: Array,
     };
 
     declare readonly minRangeTarget: HTMLInputElement;
@@ -72,10 +74,15 @@ export default class extends Controller {
     declare readonly chipsTarget: HTMLElement;
     declare readonly hasHiddenTarget: boolean;
     declare readonly hiddenTarget: HTMLElement;
+    declare readonly hasToggleTarget: boolean;
+    declare readonly toggleTarget: HTMLElement;
+    declare readonly hasDrawerTarget: boolean;
+    declare readonly drawerTarget: HTMLElement;
     declare readonly populationMinValue: number;
     declare readonly populationMaxValue: number;
     declare readonly statsValue: Record<string, Stats>;
     declare readonly submitValue: boolean;
+    declare readonly keepValue: string[];
 
     private steps!: number[];
     private debounceHandle?: ReturnType<typeof setTimeout>;
@@ -180,38 +187,54 @@ export default class extends Controller {
         this.debounceHandle = setTimeout(() => this.changed(), DEBOUNCE_MS);
     }
 
+    // The filters shown by a page of results, which is not always open.
+    toggle() {
+        const open = this.drawerTarget.hidden;
+        this.drawerTarget.hidden = !open;
+        this.toggleTarget.setAttribute('aria-expanded', String(open));
+    }
+
     clear() {
         this.applyParams(new URLSearchParams());
         this.changed();
     }
 
     changed() {
-        const params = this.params();
-        this.saveCookie(params);
+        savePreference(COOKIE_NAME, this.params());
         this.announce('user');
 
         if (this.submitValue) {
-            this.submitForm(params);
+            this.element.closest('form')?.requestSubmit();
         }
     }
 
     announce(reason: FiltersChange['reason']) {
         const chips = this.chips();
         this.renderChips(chips);
+        this.syncHidden();
         this.dispatch('change', { detail: { params: this.params().toString(), count: chips.length, reason } satisfies FiltersChange });
     }
 
-    // The enclosing form gets the filter as hidden fields: the visible ones are
-    // not named, since they do not hold the query's values as such (a population
-    // at its bound is no filter, a train city and its hours are two fields).
-    submitForm(params: URLSearchParams) {
-        const form = this.element.closest('form');
-        if (null === form || !this.hasHiddenTarget) {
+    // The enclosing form carries the filter as hidden fields, whoever submits it
+    // (the filters, or the sliders of the personal ranking): the visible fields
+    // are not named, since they do not hold the query's values as such (a
+    // population at its bound is no filter, a train city and its hours are two fields).
+    syncHidden() {
+        if (!this.hasHiddenTarget) {
             return;
         }
 
+        const current = new URLSearchParams(window.location.search);
+        const fields = [...this.params()];
+        for (const name of this.keepValue) {
+            const value = current.get(name);
+            if (null !== value) {
+                fields.push([name, value]);
+            }
+        }
+
         this.hiddenTarget.replaceChildren(
-            ...[...params].map(([name, value]) => {
+            ...fields.map(([name, value]) => {
                 const input = document.createElement('input');
                 input.type = 'hidden';
                 input.name = name;
@@ -220,15 +243,6 @@ export default class extends Controller {
                 return input;
             }),
         );
-        form.requestSubmit();
-    }
-
-    // localStorage is not an option here: the server has to know the filter.
-    saveCookie(params: URLSearchParams) {
-        const attributes = `Path=/; SameSite=Lax${'https:' === window.location.protocol ? '; Secure' : ''}`;
-        document.cookie = 0 === [...params].length
-            ? `${COOKIE_NAME}=; Max-Age=0; ${attributes}`
-            : `${COOKIE_NAME}=${encodeURIComponent(params.toString())}; Max-Age=${COOKIE_MAX_AGE}; ${attributes}`;
     }
 
     renderPriceType() {

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Controller;
 
 use App\Repository\CriterionRepository;
+use App\Service\Filter\FilterPanelDataProvider;
 use App\Service\Ranking\CriterionRankingProvider;
 use App\Service\Ranking\RankingCatalog;
 use Symfony\Bundle\FrameworkBundle\Controller\AbstractController;
@@ -22,6 +23,7 @@ final class RankingController extends AbstractController
         private readonly RankingCatalog $catalog,
         private readonly CriterionRankingProvider $rankingProvider,
         private readonly CriterionRepository $criterionRepository,
+        private readonly FilterPanelDataProvider $filterPanelDataProvider,
     ) {
     }
 
@@ -45,7 +47,7 @@ final class RankingController extends AbstractController
             static fn (\App\Service\Ranking\Ranking $sibling): bool => $sibling->code !== $code,
         ));
 
-        return $this->render('ranking/show.html.twig', [
+        return $this->render('ranking/show.html.twig', $this->filterPanelDataProvider->provide() + [
             'ranking' => $ranking,
             'criterion' => $criterion,
             'rows' => $rows,

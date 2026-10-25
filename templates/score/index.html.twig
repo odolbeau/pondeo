@@ -14,6 +14,7 @@
 
         <div class="mt-8 grid gap-8 lg:grid-cols-[20rem_1fr]">
             <form method="get" action="{{ path('app_score') }}" data-turbo-frame="score-results" data-controller="score" data-score-target="form" class="space-y-6">
+                {{ include('filters/_block.html.twig') }}
                 {% for theme, themeRankings in themes %}
                     <fieldset>
                         <legend class="text-xs font-medium uppercase tracking-wider text-emerald-700">{{ theme }}</legend>
@@ -26,7 +27,7 @@
                                         <output for="{{ id }}" data-score-target="output" class="w-4 shrink-0 text-right font-semibold tabular-nums text-emerald-700">{{ weights[ranking.code] ?? 0 }}</output>
                                     </label>
                                     <input type="range" id="{{ id }}" name="w[{{ ranking.code }}]" min="0" max="{{ maxWeight }}" step="1" value="{{ weights[ranking.code] ?? 0 }}"
-                                           aria-describedby="{{ id }}-hint" data-action="input->score#update"
+                                           aria-describedby="{{ id }}-hint" data-score-target="slider" data-action="input->score#update"
                                            class="mt-1 w-full accent-emerald-600">
                                     <p id="{{ id }}-hint" class="text-xs text-stone-500">{{ ranking.tagline }}</p>
                                 </li>

@@ -26,72 +26,78 @@
             </p>
         </section>
 
-        <div class="mt-6 flex flex-wrap items-center gap-3 text-sm">
-            <span class="text-stone-600">{{ total|fr_number }} unités urbaines{% if filterQuery %} sur {{ nationalTotal|fr_number }}{% endif %}</span>
-            {% if median is not null %}
-                <span class="text-stone-600">· médiane{% if filterQuery %} nationale{% endif %} : <span class="font-medium tabular-nums text-stone-800">{{ median|criterion_value }}{% if criterion.unit %} {{ criterion.unit }}{% endif %}</span></span>
-            {% endif %}
-            <a href="{{ path('app_ranking', {code: ranking.code, ordre: reversed ? 'defaut' : 'inverse'}|merge(filterQuery)) }}"
-               class="rounded-full border border-stone-300 px-3 py-1 text-stone-700 hover:border-emerald-600 hover:text-emerald-700">
-                ⇅ Inverser l'ordre
-            </a>
-        </div>
+        <form method="get" action="{{ path('app_ranking', {code: ranking.code}) }}" data-turbo-frame="ranking-results" class="mt-6">
+            {{ include('filters/_block.html.twig', {keep: ['ordre']}) }}
+        </form>
 
-        {% if rows %}
-            {% if median is not null %}
-                <p class="mt-4 flex items-center gap-2 text-xs text-stone-500"><span aria-hidden="true" class="inline-block h-2.5 w-0.5 bg-stone-500"></span>Repère : médiane de toutes les unités urbaines{% if filterQuery %} de France, filtres compris{% endif %}.</p>
-            {% endif %}
-            <table class="mt-6 w-full text-left text-sm">
-                <thead class="text-xs uppercase tracking-wider text-stone-500">
-                    <tr>
-                        <th class="w-12 py-2 font-medium">#</th>
-                        <th class="py-2 font-medium">Unité urbaine</th>
-                        <th class="hidden py-2 text-right font-medium sm:table-cell">Habitants</th>
-                        <th class="py-2 text-right font-medium">{{ criterion.label }}</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for row in rows %}
-                        <tr class="border-t border-stone-200">
-                            <td class="py-3 font-semibold text-emerald-700">{{ row.rank }}</td>
-                            <td class="py-3">
-                                <a href="{{ path('app_unite_urbaine_detail', {code: row.code}) }}" class="font-medium text-stone-900 hover:text-emerald-700">{{ row.name }}</a>
-                                {% if row.departement %}<span class="ml-1 text-stone-500">{{ row.departement.label }}</span>{% endif %}
-                                {% if maxValue > 0 %}
-                                    <div class="relative mt-1 h-1.5 rounded-full bg-stone-200">
-                                        <div class="h-1.5 rounded-full bg-emerald-500/70" style="width: {{ (row.value|abs / maxValue * 100)|round(1) }}%"></div>
-                                        {% if median is not null %}
-                                            <div class="absolute -top-0.5 h-2.5 w-0.5 bg-stone-500" style="left: {{ (median|abs / maxValue * 100)|round(1) }}%" title="Médiane"></div>
-                                        {% endif %}
-                                    </div>
-                                {% endif %}
-                            </td>
-                            <td class="hidden py-3 text-right tabular-nums text-stone-600 sm:table-cell">{{ row.population is not null ? row.population|fr_number : '—' }}</td>
-                            <td class="py-3 text-right font-semibold tabular-nums">
-                                {% if row.trend %}{{ include('unite_urbaine/_trend.html.twig', {trend: row.trend, until: period}) }}{% endif %}
-                                {{ row.value|criterion_value }}{% if criterion.unit %}<span class="ml-1 font-normal text-stone-600">{{ criterion.unit }}</span>{% endif %}
-                            </td>
+        <turbo-frame id="ranking-results" data-turbo-action="advance">
+            <div class="mt-6 flex flex-wrap items-center gap-3 text-sm">
+                <span class="text-stone-600">{{ total|fr_number }} unités urbaines{% if filterQuery %} sur {{ nationalTotal|fr_number }}{% endif %}</span>
+                {% if median is not null %}
+                    <span class="text-stone-600">· médiane{% if filterQuery %} nationale{% endif %} : <span class="font-medium tabular-nums text-stone-800">{{ median|criterion_value }}{% if criterion.unit %} {{ criterion.unit }}{% endif %}</span></span>
+                {% endif %}
+                <a href="{{ path('app_ranking', {code: ranking.code, ordre: reversed ? 'defaut' : 'inverse'}|merge(filterQuery)) }}"
+                   class="rounded-full border border-stone-300 px-3 py-1 text-stone-700 hover:border-emerald-600 hover:text-emerald-700">
+                    ⇅ Inverser l'ordre
+                </a>
+            </div>
+
+            {% if rows %}
+                {% if median is not null %}
+                    <p class="mt-4 flex items-center gap-2 text-xs text-stone-500"><span aria-hidden="true" class="inline-block h-2.5 w-0.5 bg-stone-500"></span>Repère : médiane de toutes les unités urbaines{% if filterQuery %} de France, filtres compris{% endif %}.</p>
+                {% endif %}
+                <table class="mt-6 w-full text-left text-sm">
+                    <thead class="text-xs uppercase tracking-wider text-stone-500">
+                        <tr>
+                            <th class="w-12 py-2 font-medium">#</th>
+                            <th class="py-2 font-medium">Unité urbaine</th>
+                            <th class="hidden py-2 text-right font-medium sm:table-cell">Habitants</th>
+                            <th class="py-2 text-right font-medium">{{ criterion.label }}</th>
                         </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        {% for row in rows %}
+                            <tr class="border-t border-stone-200">
+                                <td class="py-3 font-semibold text-emerald-700">{{ row.rank }}</td>
+                                <td class="py-3">
+                                    <a href="{{ path('app_unite_urbaine_detail', {code: row.code}) }}" data-turbo-frame="_top" class="font-medium text-stone-900 hover:text-emerald-700">{{ row.name }}</a>
+                                    {% if row.departement %}<span class="ml-1 text-stone-500">{{ row.departement.label }}</span>{% endif %}
+                                    {% if maxValue > 0 %}
+                                        <div class="relative mt-1 h-1.5 rounded-full bg-stone-200">
+                                            <div class="h-1.5 rounded-full bg-emerald-500/70" style="width: {{ (row.value|abs / maxValue * 100)|round(1) }}%"></div>
+                                            {% if median is not null %}
+                                                <div class="absolute -top-0.5 h-2.5 w-0.5 bg-stone-500" style="left: {{ (median|abs / maxValue * 100)|round(1) }}%" title="Médiane"></div>
+                                            {% endif %}
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td class="hidden py-3 text-right tabular-nums text-stone-600 sm:table-cell">{{ row.population is not null ? row.population|fr_number : '—' }}</td>
+                                <td class="py-3 text-right font-semibold tabular-nums">
+                                    {% if row.trend %}{{ include('unite_urbaine/_trend.html.twig', {trend: row.trend, until: period}) }}{% endif %}
+                                    {{ row.value|criterion_value }}{% if criterion.unit %}<span class="ml-1 font-normal text-stone-600">{{ criterion.unit }}</span>{% endif %}
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
 
-            {% if pages > 1 %}
-                <nav class="mt-6 flex items-center justify-between text-sm" aria-label="Pagination">
-                    {% if page > 1 %}
-                        <a href="{{ path('app_ranking', {code: ranking.code, ordre: reversed ? 'inverse' : 'defaut', page: page - 1}|merge(filterQuery)) }}" class="text-emerald-700 hover:underline">← Précédent</a>
-                    {% else %}<span></span>{% endif %}
-                    <span class="text-stone-600">Page {{ page }} sur {{ pages }}</span>
-                    {% if page < pages %}
-                        <a href="{{ path('app_ranking', {code: ranking.code, ordre: reversed ? 'inverse' : 'defaut', page: page + 1}|merge(filterQuery)) }}" class="text-emerald-700 hover:underline">Suivant →</a>
-                    {% else %}<span></span>{% endif %}
-                </nav>
+                {% if pages > 1 %}
+                    <nav class="mt-6 flex items-center justify-between text-sm" aria-label="Pagination">
+                        {% if page > 1 %}
+                            <a href="{{ path('app_ranking', {code: ranking.code, ordre: reversed ? 'inverse' : 'defaut', page: page - 1}|merge(filterQuery)) }}" class="text-emerald-700 hover:underline">← Précédent</a>
+                        {% else %}<span></span>{% endif %}
+                        <span class="text-stone-600">Page {{ page }} sur {{ pages }}</span>
+                        {% if page < pages %}
+                            <a href="{{ path('app_ranking', {code: ranking.code, ordre: reversed ? 'inverse' : 'defaut', page: page + 1}|merge(filterQuery)) }}" class="text-emerald-700 hover:underline">Suivant →</a>
+                        {% else %}<span></span>{% endif %}
+                    </nav>
+                {% endif %}
+            {% else %}
+                <p class="mt-8 text-stone-500">{{ filterQuery ? 'Aucune unité urbaine ne correspond à ces filtres.' : 'Aucune donnée pour ce critère.' }}</p>
             {% endif %}
-        {% else %}
-            <p class="mt-8 text-stone-500">{{ filterQuery ? 'Aucune unité urbaine ne correspond à ces filtres.' : 'Aucune donnée pour ce critère.' }}</p>
-        {% endif %}
+        </turbo-frame>
 
-        <p class="mt-12 text-sm text-stone-600">Plusieurs critères comptent pour vous ? <a href="{{ path('app_score', {w: {(ranking.code): 5}}|merge(filterQuery)) }}" class="text-emerald-700 hover:underline">Pondérez-les dans votre propre classement →</a></p>
+        <p class="mt-12 text-sm text-stone-600">Plusieurs critères comptent pour vous ? <a href="{{ path('app_score', {w: {(ranking.code): 5}}) }}" class="text-emerald-700 hover:underline">Pondérez-les dans votre propre classement →</a></p>
 
         {% if siblings %}
             <section class="mt-12 border-t border-stone-200 pt-6">

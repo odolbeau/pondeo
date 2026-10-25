@@ -26,6 +26,12 @@ Each ranking starts from the best end as defined by the criterion's
 for the criterion across all unités urbaines, never at each unit's own latest.
 Ties share a rank. Pages hold 50 rows (`?page=`).
 
+## Filters
+
+A ranking can be narrowed down with the filters of the map, for instance to
+cities of 20 000 to 150 000 inhabitants within two hours of Paris. The selection
+is ranked among itself; see [filters.md](filters.md).
+
 ## Median marker
 
 A ranking page states the median of all unités urbaines for the criterion and
