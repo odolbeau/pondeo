@@ -1,0 +1,183 @@
+{# The filters of the map, the rankings and the personal ranking: inside an element driven by the filters controller. #}
+<h2 class="text-sm font-semibold uppercase tracking-wide text-stone-600">Population</h2>
+
+<div class="relative mt-6 h-1 rounded bg-stone-300">
+    <input type="range" data-filters-target="minRange"
+           min="0" max="0" step="1" value="0"
+           data-action="input->filters#onRangeInput"
+           class="pointer-events-none absolute inset-x-0 top-1/2 h-1 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-500 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-emerald-500">
+    <input type="range" data-filters-target="maxRange"
+           min="0" max="0" step="1" value="0"
+           data-action="input->filters#onRangeInput"
+           class="pointer-events-none absolute inset-x-0 top-1/2 h-1 w-full -translate-y-1/2 appearance-none bg-transparent [&::-webkit-slider-thumb]:pointer-events-auto [&::-webkit-slider-thumb]:h-4 [&::-webkit-slider-thumb]:w-4 [&::-webkit-slider-thumb]:appearance-none [&::-webkit-slider-thumb]:rounded-full [&::-webkit-slider-thumb]:bg-emerald-500 [&::-moz-range-thumb]:pointer-events-auto [&::-moz-range-thumb]:h-4 [&::-moz-range-thumb]:w-4 [&::-moz-range-thumb]:appearance-none [&::-moz-range-thumb]:rounded-full [&::-moz-range-thumb]:border-0 [&::-moz-range-thumb]:bg-emerald-500">
+</div>
+
+<div class="mt-4 flex items-center gap-2 text-sm text-stone-700">
+    <input type="number" inputmode="numeric" step="1" aria-label="Population minimale"
+           min="{{ populationMin }}" max="{{ populationMax }}" value="{{ populationMin }}"
+           data-filters-target="minInput"
+           data-action="input->filters#onNumberInput change->filters#onNumberChange"
+           class="w-full rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+    <span aria-hidden="true">–</span>
+    <input type="number" inputmode="numeric" step="1" aria-label="Population maximale"
+           min="{{ populationMin }}" max="{{ populationMax }}" value="{{ populationMax }}"
+           data-filters-target="maxInput"
+           data-action="input->filters#onNumberInput change->filters#onNumberChange"
+           class="w-full rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+</div>
+
+<h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Aires d'attraction</h2>
+
+<label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
+    <input type="checkbox" data-filters-target="excludeCouronne" data-action="change->filters#touch"
+           class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
+    <span>Exclure les villes de la couronne d'une autre
+        <span class="block text-xs text-stone-500">Arradon, qui dépend de Vannes, par exemple</span>
+    </span>
+</label>
+
+<label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
+    <input type="checkbox" data-filters-target="excludePolesSecondaires" data-action="change->filters#touch"
+           class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
+    <span>Exclure les pôles secondaires
+        <span class="block text-xs text-stone-500">Villes qui forment un pôle d'emploi dans l'aire d'une plus grande</span>
+    </span>
+</label>
+
+<h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Gares et trains</h2>
+
+<div class="mt-4 flex items-center gap-2 text-sm text-stone-700">
+    <select aria-label="Ville de destination, trajet 1" data-filters-target="trainCity" data-action="change->filters#touch"
+            class="w-full rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+        <option value="">—</option>
+        {% for destination in journeyDestinations %}
+            <option value="{{ destination.value }}">{{ destination.label }}</option>
+        {% endfor %}
+    </select>
+    <span class="shrink-0">à moins de</span>
+    <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="∞"
+           aria-label="Durée maximale du trajet 1, en heures"
+           data-filters-target="trainHours" data-action="input->filters#touch"
+           class="w-16 shrink-0 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+    <span>h</span>
+</div>
+
+<div class="mt-4 flex items-center gap-2 text-sm text-stone-700">
+    <select aria-label="Ville de destination, trajet 2" data-filters-target="trainCity" data-action="change->filters#touch"
+            class="w-full rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+        <option value="">—</option>
+        {% for destination in journeyDestinations %}
+            <option value="{{ destination.value }}">{{ destination.label }}</option>
+        {% endfor %}
+    </select>
+    <span class="shrink-0">à moins de</span>
+    <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="∞"
+           aria-label="Durée maximale du trajet 2, en heures"
+           data-filters-target="trainHours" data-action="input->filters#touch"
+           class="w-16 shrink-0 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+    <span>h</span>
+</div>
+
+<p class="mt-2 text-xs text-stone-500">Voiture jusqu'à la gare la plus pratique, puis train (durée médiane un jour de semaine). Temps de voiture théoriques, sans trafic.</p>
+
+<label class="mt-4 block text-sm text-stone-700">
+    Exclure les trajets à plus de
+    <span class="mt-2 flex items-center gap-2">
+        <input type="number" inputmode="numeric" step="1" min="0" placeholder="∞"
+               aria-label="Nombre maximum de changements"
+               data-filters-target="trainMaxTransfers"
+               data-action="input->filters#touch"
+               class="w-16 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+        <span>changements</span>
+    </span>
+    <span class="mt-1 block text-xs text-stone-500">0 pour un train direct ; s'applique aux villes choisies ci-dessus</span>
+</label>
+
+<label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
+    <input type="checkbox" data-filters-target="withStation" data-action="change->filters#touch"
+           class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
+    <span>Exclure les villes sans gare
+        <span class="block text-xs text-stone-500">Au moins une gare voyageurs dans l'agglomération</span>
+    </span>
+</label>
+
+<h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Commerces</h2>
+
+<label class="mt-4 block text-sm text-stone-700">
+    Au moins
+    <span class="mt-2 flex items-center gap-2">
+        <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="0"
+               aria-label="Commerces minimum pour 1000 habitants"
+               data-filters-target="commerceDensityMin"
+               data-action="input->filters#touch"
+               class="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+        <span>commerces pour 1000 hab.</span>
+    </span>
+    <span class="mt-1 block text-xs text-stone-500">Tous commerces confondus (INSEE, BPE)</span>
+</label>
+{{ include('filters/_stats_hint.html.twig', {code: 'commerces_total_pour_1000_hab', input: 'commerceDensityMin', direction: 'min', unit: 'commerces pour 1000 hab.', decimals: 1}) }}
+
+<h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Restaurants</h2>
+
+<label class="mt-4 block text-sm text-stone-700">
+    Au moins
+    <span class="mt-2 flex items-center gap-2">
+        <input type="number" inputmode="decimal" step="0.5" min="0" placeholder="0"
+               aria-label="Restaurants minimum pour 1000 habitants"
+               data-filters-target="restaurantDensityMin"
+               data-action="input->filters#touch"
+               class="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+        <span>restaurants pour 1000 hab.</span>
+    </span>
+    <span class="mt-1 block text-xs text-stone-500">Restauration traditionnelle et rapide (INSEE, BPE)</span>
+</label>
+{{ include('filters/_stats_hint.html.twig', {code: 'restaurants_pour_1000_hab', input: 'restaurantDensityMin', direction: 'min', unit: 'restaurants pour 1000 hab.', decimals: 1}) }}
+
+<h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Immobilier</h2>
+
+<div class="mt-4 flex overflow-hidden rounded border border-stone-300 text-sm" role="group" aria-label="Type de bien">
+    {% for type, label in {global: 'Global', house: 'Maisons', apartment: 'Appartements'} %}
+        <button type="button" data-filters-target="priceTypeButton" data-price-type="{{ type }}"
+                data-action="filters#onPriceTypeClick" aria-pressed="{{ 'global' == type ? 'true' : 'false' }}"
+                class="flex-1 px-2 py-1 text-stone-700 aria-pressed:bg-emerald-600 aria-pressed:text-white">{{ label }}</button>
+    {% endfor %}
+</div>
+
+<label class="mt-4 block text-sm text-stone-700">
+    Au plus
+    <span class="mt-2 flex items-center gap-2">
+        <input type="number" inputmode="numeric" step="100" min="0" placeholder="∞"
+               aria-label="Prix maximum au mètre carré, en euros"
+               data-filters-target="priceMax"
+               data-action="input->filters#touch"
+               class="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+        <span>€/m²</span>
+    </span>
+    <span class="mt-1 block text-xs text-stone-500" data-filters-target="priceHelp">Appartements et maisons, dernière année (DVF)</span>
+</label>
+{{ include('filters/_stats_hint.html.twig', {input: 'priceMax', direction: 'max', unit: '€/m²', decimals: -2}) }}
+
+<h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Centrales nucléaires</h2>
+
+<label class="mt-4 block text-sm text-stone-700">
+    Écarter les villes à moins de
+    <span class="mt-2 flex items-center gap-2">
+        <input type="number" inputmode="decimal" step="5" min="0" placeholder="0"
+               aria-label="Distance minimale à une centrale nucléaire, en kilomètres"
+               data-filters-target="nuclearExclusionKm"
+               data-action="input->filters#touch"
+               class="w-24 rounded border border-stone-300 bg-white px-2 py-1 text-stone-900 focus:border-emerald-600 focus:outline-none">
+        <span>km d'une centrale</span>
+    </span>
+    <span class="mt-1 block text-xs text-stone-500">Distance mesurée depuis le centre de la ville ; le rayon est tracé sur la carte</span>
+</label>
+
+<h2 class="mt-10 text-sm font-semibold uppercase tracking-wide text-stone-600">Loisirs</h2>
+
+<label class="mt-4 flex cursor-pointer items-start gap-3 text-sm text-stone-700">
+    <input type="checkbox" data-filters-target="withBoardGameAssociation" data-action="change->filters#touch"
+           class="mt-0.5 h-4 w-4 shrink-0 accent-emerald-600">
+    <span>Exclure les villes sans association de jeux
+        <span class="block text-xs text-stone-500">Au moins un club, une ludothèque ou une association de jeux de société dans l'agglomération</span>
+    </span>
+</label>
