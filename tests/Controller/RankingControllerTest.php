@@ -193,6 +193,18 @@ final class RankingControllerTest extends WebTestCase
         self::assertResponseStatusCodeSame(404);
     }
 
+    public function testRestaurantRankingStartsWithTheDensest(): void
+    {
+        $client = self::createClient();
+        $this->createValues('restaurants_pour_1000_hab', ['Vannes' => 2.4, 'Saint-Tropez' => 29.8]);
+
+        $client->request('GET', '/classements/restaurants_pour_1000_hab');
+
+        self::assertResponseIsSuccessful();
+        self::assertSelectorTextContains('h1', 'Le plus de restaurants');
+        self::assertSelectorTextContains('tbody tr:first-child', 'Saint-Tropez');
+    }
+
     public function testIndexGroupsClimateAndRiskRankingsByTheme(): void
     {
         $client = self::createClient();

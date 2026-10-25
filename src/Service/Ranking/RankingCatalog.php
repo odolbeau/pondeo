@@ -101,6 +101,10 @@ final class RankingCatalog
                 'Combien de commerces (boulangeries, supermarchés, magasins de vêtements, stations-service…) pour 1 000 habitants. Avec 20 commerces pour 1 000 habitants, une ville de 50 000 habitants en compte 1 000.',
                 'On compte des établissements, quelle que soit leur taille : un hypermarché pèse autant qu\'un tabac-presse. Ce classement mesure donc la densité de l\'offre de proximité plus que la puissance commerciale.',
             ], 'INSEE, Base permanente des équipements, 2025')),
+            new Ranking('restaurants_pour_1000_hab', 'Qualité de vie', 'Le plus de restaurants', 'Le nombre de restaurants pour 1 000 habitants.', new RankingNote([
+                'Combien de restaurants, de la brasserie au fast-food, pour 1 000 habitants. Avec 3 restaurants pour 1 000 habitants, une ville de 50 000 habitants en compte 150.',
+                'Les restaurants servent aussi les visiteurs : les stations balnéaires et de ski, peu peuplées mais très fréquentées, arrivent en tête. La source ne distingue pas la table gastronomique de la restauration rapide.',
+            ], 'INSEE, Base permanente des équipements, 2025')),
             new Ranking('associations_actives_pour_1000_hab', 'Qualité de vie', 'Les plus associatives', "Le nombre d'associations actives pour 1 000 habitants.", new RankingNote([
                 'Combien d\'associations (clubs de sport, troupes de théâtre, comités des fêtes, entraide…) ont fait une déclaration ces dix dernières années, pour 1 000 habitants. Avec 25 associations pour 1 000 habitants, une ville de 50 000 habitants en compte 1 250.',
                 'Une association compte pour la commune de son siège, pas pour celle où elle agit : les petites villes qui servent tout un territoire arrivent souvent en tête. Le Bas-Rhin, le Haut-Rhin et la Moselle ne sont pas couverts par cette source.',
