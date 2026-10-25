@@ -9,35 +9,35 @@
     <div class="mx-auto max-w-7xl">
         <a href="{{ path('app_rankings') }}" class="text-sm text-emerald-700 hover:underline">← Tous les classements</a>
 
-        <div class="mt-6 grid items-start gap-x-10 gap-y-6 lg:grid-cols-[22rem_minmax(0,1fr)] lg:grid-rows-[auto_1fr]">
-            <header class="lg:col-start-2 lg:row-start-1">
-                <p class="text-xs font-medium uppercase tracking-wider text-emerald-700">{{ ranking.theme }}</p>
-                <h1 class="mt-1 text-4xl font-bold tracking-tight">{{ ranking.title }}</h1>
-                <p class="mt-3 text-stone-600">
-                    {{ ranking.tagline }}
-                    {{ criterion.label }}{% if criterion.unit %} ({{ criterion.unit }}){% endif %}{% if period %}, données {{ period }}{% endif %}.
+        <header class="mt-6">
+            <p class="text-xs font-medium uppercase tracking-wider text-emerald-700">{{ ranking.theme }}</p>
+            <h1 class="mt-1 text-4xl font-bold tracking-tight">{{ ranking.title }}</h1>
+            <p class="mt-3 text-stone-600">
+                {{ ranking.tagline }}
+                {{ criterion.label }}{% if criterion.unit %} ({{ criterion.unit }}){% endif %}{% if period %}, données {{ period }}{% endif %}.
+            </p>
+
+            <section class="mt-6 space-y-3 rounded-xl border border-stone-200 bg-white/70 p-5 text-sm leading-relaxed text-stone-700">
+                {% for paragraph in ranking.note.paragraphs %}
+                    <p>{{ paragraph }}</p>
+                {% endfor %}
+                <p class="border-t border-stone-200 pt-3 text-xs text-stone-500">
+                    Source : {{ ranking.note.source }}.
+                    <a href="{{ path('app_criteria') }}#{{ criterion.code }}" class="ml-1 text-emerald-700 hover:underline">Description du critère →</a>
                 </p>
+            </section>
+        </header>
 
-                <section class="mt-6 space-y-3 rounded-xl border border-stone-200 bg-white/70 p-5 text-sm leading-relaxed text-stone-700">
-                    {% for paragraph in ranking.note.paragraphs %}
-                        <p>{{ paragraph }}</p>
-                    {% endfor %}
-                    <p class="border-t border-stone-200 pt-3 text-xs text-stone-500">
-                        Source : {{ ranking.note.source }}.
-                        <a href="{{ path('app_criteria') }}#{{ criterion.code }}" class="ml-1 text-emerald-700 hover:underline">Description du critère →</a>
-                    </p>
-                </section>
-            </header>
-
-            <aside class="lg:col-start-1 lg:row-start-1 lg:row-span-2">
-                <form method="get" action="{{ path('app_ranking', {code: ranking.code}) }}" data-turbo-frame="ranking-results" class="lg:sticky lg:top-20 lg:max-h-[calc(100dvh-6rem)] lg:overflow-y-auto">
+        <div class="mt-6 grid items-start gap-x-10 gap-y-6 lg:grid-cols-[22rem_minmax(0,1fr)]">
+            <aside>
+                <form method="get" action="{{ path('app_ranking', {code: ranking.code}) }}" data-turbo-frame="ranking-results">
                     {{ include('filters/_block.html.twig', {keep: ['ordre'], always_open: true}) }}
                 </form>
             </aside>
 
-            <div class="lg:col-start-2 lg:row-start-2">
+            <div>
                 <turbo-frame id="ranking-results" data-turbo-action="advance">
-                    <div class="mt-6 flex flex-wrap items-center gap-3 text-sm">
+                    <div class="flex flex-wrap items-center gap-3 text-sm">
                         <span class="text-stone-600">{{ total|fr_number }} unités urbaines{% if filterQuery %} sur {{ nationalTotal|fr_number }}{% endif %}</span>
                         {% if median is not null %}
                             <span class="text-stone-600">· médiane{% if filterQuery %} nationale{% endif %} : <span class="font-medium tabular-nums text-stone-800">{{ median|criterion_value }}{% if criterion.unit %} {{ criterion.unit }}{% endif %}</span></span>
