@@ -47,8 +47,8 @@ A page that is filtered says so: the number of active filters is highlighted
 next to a "Réinitialiser" link that clears them all. On the rankings, the panel
 sits on the left of the results on a large screen, as on the map, and opens from
 a "Filtres" button on a small one; the results refresh in place when a filter
-changes. The personal ranking shows the importances of the criteria and the
-filters side by side, and the results beside them; on a smaller screen, the two
+changes. The personal ranking shows the filters and the importances of the
+criteria side by side, and the results beside them; on a smaller screen, the two
 are stacked.
 
 ## The last filter is kept
