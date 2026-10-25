@@ -20,7 +20,7 @@ final readonly class CriterionGlossary
     private const array GROUP_ORDER = [
         'Démographie', 'Âge', 'Catégories socioprofessionnelles', 'Diplômes',
         'Revenus', 'Revenus fiscaux', 'Emploi',
-        'Logement', 'Immobilier', 'Commerces', 'Vie associative', 'Services et tourisme', 'Santé', 'Petite enfance et seniors', 'Sport et culture',
+        'Logement', 'Achat', 'Location', 'Commerces', 'Vie associative', 'Services et tourisme', 'Santé', 'Petite enfance et seniors', 'Sport et culture',
         'Climat', 'Climat 2050', 'Risques',
     ];
 
@@ -44,7 +44,8 @@ final readonly class CriterionGlossary
         'Revenus fiscaux' => 'DGFiP, impôt sur le revenu par commune (IRCOM)',
         'Emploi' => self::CENSUS,
         'Logement' => self::CENSUS,
-        'Immobilier' => 'DGFiP, Demandes de valeurs foncières (statistiques DVF, Etalab), ventes de 2021 à 2025',
+        'Achat' => 'DGFiP, Demandes de valeurs foncières (statistiques DVF, Etalab), ventes de 2021 à 2025',
+        'Location' => self::RENTS,
         'Commerces' => self::BPE,
         'Services et tourisme' => self::BPE,
         'Santé' => self::BPE,
@@ -60,10 +61,6 @@ final readonly class CriterionGlossary
         'densite' => 'INSEE, populations historiques (population municipale) ; contours des communes (IGN)',
         'tendance_temperature' => 'Open-Meteo.com, réanalyse ERA5, 1991-2020 (CC BY 4.0)',
         'zone_sismique' => 'Géorisques, zonage sismique réglementaire',
-        'loyer_m2_appartement' => self::RENTS,
-        'loyer_m2_appartement_t1_t2' => self::RENTS,
-        'loyer_m2_appartement_t3_plus' => self::RENTS,
-        'loyer_m2_maison' => self::RENTS,
     ];
 
     private const array DESCRIPTIONS = [

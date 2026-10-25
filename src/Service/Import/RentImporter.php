@@ -14,16 +14,18 @@ use App\Enum\CriterionValueType;
  */
 final readonly class RentImporter
 {
+    public const string GROUP = 'Location';
+
     /**
      * Indexed by the CSV property type.
      *
      * @var array<string, array{code: string, label: string, position: int}>
      */
     public const array CRITERIA = [
-        'appartement' => ['code' => 'loyer_m2_appartement', 'label' => 'Loyer au m² (appartements)', 'position' => 3],
-        'appartement_t1_t2' => ['code' => 'loyer_m2_appartement_t1_t2', 'label' => 'Loyer au m² (appartements T1-T2)', 'position' => 4],
-        'appartement_t3_plus' => ['code' => 'loyer_m2_appartement_t3_plus', 'label' => 'Loyer au m² (appartements T3 et plus)', 'position' => 5],
-        'maison' => ['code' => 'loyer_m2_maison', 'label' => 'Loyer au m² (maisons)', 'position' => 6],
+        'appartement' => ['code' => 'loyer_m2_appartement', 'label' => 'Loyer au m² (appartements)', 'position' => 0],
+        'appartement_t1_t2' => ['code' => 'loyer_m2_appartement_t1_t2', 'label' => 'Loyer au m² (appartements T1-T2)', 'position' => 1],
+        'appartement_t3_plus' => ['code' => 'loyer_m2_appartement_t3_plus', 'label' => 'Loyer au m² (appartements T3 et plus)', 'position' => 2],
+        'maison' => ['code' => 'loyer_m2_maison', 'label' => 'Loyer au m² (maisons)', 'position' => 3],
     ];
 
     private const string WEIGHT_STATUS = 'locataires_prives';
@@ -52,7 +54,7 @@ final readonly class RentImporter
                     communeCodeColumn: 'code_insee',
                     periodColumn: 'year',
                     valueColumn: 'loyer_m2',
-                    groupLabel: RealEstatePriceImporter::GROUP,
+                    groupLabel: self::GROUP,
                     filterColumn: 'type',
                     filterValue: $type,
                     position: $position,

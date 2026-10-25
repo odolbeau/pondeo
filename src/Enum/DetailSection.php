@@ -12,6 +12,7 @@ use App\Service\Import\HousingImporter;
 use App\Service\Import\IncomeImporter;
 use App\Service\Import\PopulationTrendDeriver;
 use App\Service\Import\RealEstatePriceImporter;
+use App\Service\Import\RentImporter;
 use App\Service\Import\SocioProfessionalImporter;
 use App\Service\Import\TaxIncomeImporter;
 
@@ -52,7 +53,7 @@ enum DetailSection: string
         return match ($this) {
             self::Population => [PopulationTrendDeriver::GROUP, AgeStructureImporter::GROUP, SocioProfessionalImporter::GROUP, EducationImporter::GROUP],
             self::Economie => [IncomeImporter::GROUP, TaxIncomeImporter::GROUP, EmploymentImporter::GROUP],
-            self::Logement => [HousingImporter::GROUP, RealEstatePriceImporter::GROUP],
+            self::Logement => [HousingImporter::GROUP, RealEstatePriceImporter::GROUP, RentImporter::GROUP],
             self::SanteSportCulture => [EquipmentFamily::GROUP_HEALTH, EquipmentFamily::GROUP_CARE, EquipmentFamily::GROUP_SPORT_CULTURE],
             self::CadreDeVie => [EquipmentFamily::GROUP_SHOPS, EquipmentFamily::GROUP_SERVICES, AssociationsImporter::GROUP],
             self::Autres, self::PointsInteret => [],

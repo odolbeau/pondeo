@@ -219,7 +219,7 @@ final class UniteUrbaineDetailControllerTest extends WebTestCase
 
         $unite = UniteUrbaineFactory::createOne(['inseeCode' => '56501']);
         $other = UniteUrbaineFactory::createOne(['inseeCode' => '44701']);
-        $price = CriterionFactory::createOne(['code' => 'prix_m2', 'label' => 'Prix au m²', 'unit' => '€/m²', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Immobilier']);
+        $price = CriterionFactory::createOne(['code' => 'prix_m2', 'label' => 'Prix au m²', 'unit' => '€/m²', 'valueType' => CriterionValueType::Integer, 'groupLabel' => 'Achat']);
         $unemployment = CriterionFactory::createOne(['code' => 'taux_chomage', 'label' => 'Taux de chômage', 'unit' => '%', 'valueType' => CriterionValueType::Decimal, 'groupLabel' => 'Emploi', 'rankFromLowest' => true]);
 
         $entityManager = self::getContainer()->get(EntityManagerInterface::class);

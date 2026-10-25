@@ -14,7 +14,7 @@ use App\Enum\CriterionValueType;
  */
 final readonly class RealEstatePriceImporter
 {
-    public const string GROUP = 'Immobilier';
+    public const string GROUP = 'Achat';
 
     /**
      * Indexed by the CSV property type.
