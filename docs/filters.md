@@ -43,10 +43,10 @@ The ranking index (`/classements`, a top 3 per ranking) is not filtered.
 
 ## Always visible, never hidden
 
-A page that is filtered says so: the active filters are listed as labels, each
-one removable, with a link to clear them all. On the rankings, the panel sits on
-the left of the results on a large screen, as on the map, and opens from a
-"Filtres" button on a small one; the results refresh in place when a filter
+A page that is filtered says so: the number of active filters is highlighted
+next to a "Réinitialiser" link that clears them all. On the rankings, the panel
+sits on the left of the results on a large screen, as on the map, and opens from
+a "Filtres" button on a small one; the results refresh in place when a filter
 changes. On the personal ranking, it opens from the same button above the
 importances.
 
@@ -61,7 +61,7 @@ way.
 - An address that holds filters wins over the saved ones: a shared link shows its
   filters, and does not replace the saved ones.
 - Filters are saved when the visitor changes them, not when a page is opened.
-- Clearing the filters forgets them.
+- Resetting the filters forgets them.
 - The cookie is only a preference (no tracking, so no consent banner), and a
   saved filter that is not valid is ignored.
 - Search engines have no cookie: they always see the pages without filters, and

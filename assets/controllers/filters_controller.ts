@@ -32,15 +32,13 @@ export type FiltersChange = { params: string; count: number; reason: 'initial' |
 // top step stands in for everything up to populationMaxValue.
 const POPULATION_STEPS = [0, 2_000, 5_000, 10_000, 20_000, 50_000, 100_000, 200_000, 500_000, 1_000_000];
 
-type Chip = { label: string; clear: () => void };
-
 // The filters panel shared by the map, the rankings and the personal ranking.
 // It reads and writes the filter as query params, and says when it changes
 // (`filters:change`); the page decides what to do with it. On a page of
 // results inside a form (`submit` value), the form is submitted with the
 // filter instead, so the results are refreshed in place.
 export default class extends Controller {
-    static targets = ['minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'summary', 'chips', 'hidden', 'toggle', 'drawer'];
+    static targets = ['minRange', 'maxRange', 'minInput', 'maxInput', 'excludeCouronne', 'excludePolesSecondaires', 'commerceDensityMin', 'restaurantDensityMin', 'nuclearExclusionKm', 'priceMax', 'priceTypeButton', 'priceHelp', 'statsHint', 'withStation', 'withBoardGameAssociation', 'trainCity', 'trainHours', 'trainMaxTransfers', 'summary', 'count', 'hidden', 'toggle', 'drawer'];
     static values = {
         populationMin: Number,
         populationMax: Number,
@@ -70,8 +68,8 @@ export default class extends Controller {
     declare readonly trainMaxTransfersTarget: HTMLInputElement;
     declare readonly hasSummaryTarget: boolean;
     declare readonly summaryTarget: HTMLElement;
-    declare readonly hasChipsTarget: boolean;
-    declare readonly chipsTarget: HTMLElement;
+    declare readonly hasCountTarget: boolean;
+    declare readonly countTarget: HTMLElement;
     declare readonly hasHiddenTarget: boolean;
     declare readonly hiddenTarget: HTMLElement;
     declare readonly hasToggleTarget: boolean;
@@ -222,15 +220,12 @@ export default class extends Controller {
     }
 
     announce(reason: FiltersChange['reason']) {
-        const chips = this.chips();
-        this.renderChips(chips);
+        const count = this.activeCount();
+        this.renderCount(count);
         this.syncHidden();
-        if (this.hasToggleTarget) {
-            this.toggleTarget.textContent = 0 === chips.length ? 'Filtres' : `Filtres (${chips.length})`;
-        }
 
         this.lastParams = this.params().toString();
-        this.dispatch('change', { detail: { params: this.lastParams, count: chips.length, reason } satisfies FiltersChange });
+        this.dispatch('change', { detail: { params: this.lastParams, count, reason } satisfies FiltersChange });
     }
 
     // The enclosing form carries the filter as hidden fields, whoever submits it
@@ -318,98 +313,33 @@ export default class extends Controller {
         return (value) => Math.round(value * factor) / factor;
     }
 
-    // What is filtered, one removable label each: the filter is never hidden.
-    chips(): Chip[] {
-        const number = (value: number) => new Intl.NumberFormat('fr-FR').format(value);
-        const chips: Chip[] = [];
-
+    // How many filters are set: a population range is one, so is each train limit.
+    activeCount(): number {
         const [min, max] = this.valuesFromInputs();
-        const hasMin = min !== this.populationMinValue;
-        const hasMax = max !== this.populationMaxValue;
-        if (hasMin || hasMax) {
-            const label = hasMin && hasMax ? `${number(min)} – ${number(max)} habitants` : hasMin ? `Au moins ${number(min)} habitants` : `Au plus ${number(max)} habitants`;
-            chips.push({
-                label,
-                clear: () => {
-                    this.writeInputs(this.populationMinValue, this.populationMaxValue);
-                    this.syncRanges(this.populationMinValue, this.populationMaxValue);
-                },
-            });
-        }
+        const toggles = [this.excludeCouronneTarget, this.excludePolesSecondairesTarget, this.withStationTarget, this.withBoardGameAssociationTarget];
+        const numbers = [this.commerceDensityMinTarget, this.restaurantDensityMinTarget, this.priceMaxTarget, this.nuclearExclusionKmTarget];
+        const trainLimits = this.trainLimits().length;
 
-        const toggles: [HTMLInputElement, string][] = [
-            [this.excludeCouronneTarget, "Hors couronnes d'une aire d'attraction"],
-            [this.excludePolesSecondairesTarget, 'Hors pôles secondaires'],
-            [this.withStationTarget, 'Avec une gare'],
-            [this.withBoardGameAssociationTarget, 'Avec une association de jeux'],
-        ];
-        for (const [input, label] of toggles) {
-            if (input.checked) {
-                chips.push({ label, clear: () => (input.checked = false) });
-            }
-        }
-
-        this.trainCityTargets.forEach((select, row) => {
-            const hours = this.positiveNumber(this.trainHoursTargets[row].value);
-            if ('' === select.value || null === hours) {
-                return;
-            }
-            const city = select.selectedOptions[0].textContent?.trim() ?? select.value;
-            chips.push({
-                label: `${city} à moins de ${number(hours)} h`,
-                clear: () => {
-                    select.value = '';
-                    this.trainHoursTargets[row].value = '';
-                },
-            });
-        });
-        const transfers = this.transfers();
-        if (null !== transfers && this.trainLimits().length > 0) {
-            chips.push({
-                label: 0 === transfers ? 'Trains directs' : `${transfers} changement${transfers > 1 ? 's' : ''} au plus`,
-                clear: () => (this.trainMaxTransfersTarget.value = ''),
-            });
-        }
-
-        const numbers: [HTMLInputElement, (value: number) => string][] = [
-            [this.commerceDensityMinTarget, (value) => `Au moins ${number(value)} commerces pour 1000 hab.`],
-            [this.restaurantDensityMinTarget, (value) => `Au moins ${number(value)} restaurants pour 1000 hab.`],
-            [this.priceMaxTarget, (value) => `${PRICE_LABELS[this.priceType]} à ${number(value)} €/m² au plus`],
-            [this.nuclearExclusionKmTarget, (value) => `À plus de ${number(value)} km d'une centrale`],
-        ];
-        for (const [input, label] of numbers) {
-            const value = this.positiveNumber(input.value);
-            if (null !== value) {
-                chips.push({ label: label(value), clear: () => (input.value = '') });
-            }
-        }
-
-        return chips;
+        return (
+            Number(min !== this.populationMinValue || max !== this.populationMaxValue) +
+            toggles.filter((input) => input.checked).length +
+            numbers.filter((input) => null !== this.positiveNumber(input.value)).length +
+            trainLimits +
+            Number(trainLimits > 0 && null !== this.transfers())
+        );
     }
 
-    renderChips(chips: Chip[]) {
+    // The filter is never hidden: a page that is filtered says so, and offers to start over.
+    renderCount(count: number) {
+        if (this.hasToggleTarget) {
+            this.toggleTarget.textContent = 0 === count ? 'Filtres' : `Filtres (${count})`;
+        }
         if (this.hasSummaryTarget) {
-            this.summaryTarget.hidden = 0 === chips.length;
+            this.summaryTarget.hidden = 0 === count;
         }
-        if (!this.hasChipsTarget) {
-            return;
+        if (this.hasCountTarget) {
+            this.countTarget.textContent = `${count} filtre${count > 1 ? 's' : ''} actif${count > 1 ? 's' : ''}`;
         }
-
-        this.chipsTarget.replaceChildren(
-            ...chips.map((chip) => {
-                const button = document.createElement('button');
-                button.type = 'button';
-                button.className = 'rounded-full border border-emerald-600 bg-emerald-50 px-3 py-1 text-xs text-emerald-800 hover:bg-emerald-100';
-                button.textContent = `${chip.label} ×`;
-                button.setAttribute('aria-label', `Retirer le filtre : ${chip.label}`);
-                button.addEventListener('click', () => {
-                    chip.clear();
-                    this.changed();
-                });
-
-                return button;
-            }),
-        );
     }
 
     // Null (filter off) for an empty or invalid field.
