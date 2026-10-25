@@ -8,8 +8,9 @@ Public pages that order the unités urbaines by one criterion: an index at
 
 Only criteria where "first" or "last" means something get a ranking: population
 and its growth, density, unemployment and activity, living standard and
-poverty, tax income, real-estate prices, vacant housing, commerce density,
-association density, higher-education share, and, from the climate and risk data, sunshine, cool
+poverty, tax income, real-estate prices, rents (apartments and houses), vacant
+housing, commerce density, association density, higher-education share, and,
+from the climate and risk data, sunshine, cool
 nights, summer dryness, muggy heat, the 2050 projections (hot days, tropical
 nights, heat waves, warming) and the exposure to natural disasters, floods and
 forest fires. Age brackets, socio-professional categories, tax brackets and
